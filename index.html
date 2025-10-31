@@ -40,25 +40,17 @@
         }
         
         @media (max-width: 768px) {
-            /* Force grids to use all available space */
-            .grid {
-                grid-template-columns: repeat(auto-fit, minmax(0, 1fr)) !important;
+            /* Enable horizontal scrolling for detail page */
+            [data-detail-container] {
+                overflow-x: auto;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
             }
             
-            /* Allow content to shrink below natural size */
-            .grid > * {
-                min-width: 0 !important;
-                overflow: hidden;
+            /* Prevent the card from shrinking below its min-width */
+            [data-detail-container] > .card-hover {
+                min-width: 1400px; /* Match the desktop max-width */
             }
-            
-            /* Scale down text */
-            html { font-size: 10px; }
-            h1 { font-size: 1.5rem !important; }
-            .type-badge { font-size: 0.6rem; padding: 0.25rem 0.5rem; }
-        }
-        @media (max-width: 480px) {
-            html { font-size: 8px; }
-            h1 { font-size: 1.2rem !important; }
         }
 
         /* Card styles */
