@@ -40,13 +40,40 @@
         }
         
         @media (max-width: 768px) {
-            [data-detail-container] {
-                zoom: 0.75;
+            /* Scale everything proportionally */
+            html {
+                font-size: 12px; /* Base font smaller on mobile */
             }
-        }
-        @media (max-width: 480px) {
-            [data-detail-container] {
-                zoom: 0.6;
+            
+            /* Maintain card aspect ratios */
+            .card-hover {
+                aspect-ratio: auto;
+            }
+            
+            /* Scale headings proportionally */
+            h1 { font-size: 1.5rem; }
+            h2 { font-size: 1.25rem; }
+            h3 { font-size: 1rem; }
+            
+            /* Scale padding proportionally */
+            .card-hover {
+                padding: 0.75rem !important;
+            }
+            
+            /* Keep grid layout, just tighter */
+            .grid {
+                gap: 0.5rem !important;
+            }
+            
+            /* Smaller type badges */
+            .type-badge {
+                font-size: 0.65rem;
+                padding: 0.2rem 0.4rem;
+            }
+            
+            /* Smaller stat text */
+            .stat-value {
+                font-size: 1rem;
             }
         }
 
