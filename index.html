@@ -40,28 +40,26 @@
         }
         
         @media (max-width: 768px) {
-            [data-detail-container] {
-                overflow-x: hidden; /* Prevent horizontal scroll */
-            }
-            
+            /* Scale the main container */
             [data-detail-container] > .card-hover {
                 transform: scale(0.75);
-                transform-origin: top left; /* Changed from center */
-                width: 133.33%; /* Compensate: 100% / 0.75 */
-                margin-left: 0;
-                margin-bottom: -25%;
+                transform-origin: top center;
+                margin-bottom: -25%; /* Compensate for scale */
             }
             
+            /* Reduce font sizes */
             html { font-size: 10px; }
             h1 { font-size: 2rem; }
             .type-badge { font-size: 0.6rem; padding: 0.25rem 0.5rem; }
+            
+            /* Tighter spacing */
             .grid { gap: 0.75rem !important; }
             .card-hover { padding: 1rem !important; }
         }
+        
         @media (max-width: 480px) {
             [data-detail-container] > .card-hover {
                 transform: scale(0.6);
-                width: 166.67%; /* 100% / 0.6 */
                 margin-bottom: -40%;
             }
             
