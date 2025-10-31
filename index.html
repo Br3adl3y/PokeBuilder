@@ -272,30 +272,97 @@
 
     <script>
         async function initializeDatabase() {
-            const db = await openDatabase(); // your existing function
-            
-            // Check if database is empty
-            const tx = db.transaction(['pokemon'], 'readonly');
-            const store = tx.objectStore('pokemon');
-            const count = await store.count();
-            
-            if (count === 0) {
-                console.log('Database empty, loading from JSON...');
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open('PokemonGoDB', 5);
                 
-                // Load the JSON file
-                const response = await fetch('./go-database103125.json');
-                const data = await response.json();
+                request.onerror = () => reject(request.error);
                 
-                // Populate IndexedDB
-                const writeTx = db.transaction(['pokemon'], 'readwrite');
-                const writeStore = writeTx.objectStore('pokemon');
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    
+                    // Create object stores if they don't exist
+                    if (!db.objectStoreNames.contains('pokemon')) {
+                        const pokemonStore = db.createObjectStore('pokemon', { keyPath: 'id' });
+                        pokemonStore.createIndex('dexNumber', 'dexNumber', { unique: false });
+                    }
+                    if (!db.objectStoreNames.contains('moves')) {
+                        db.createObjectStore('moves', { keyPath: 'id' });
+                    }
+                    if (!db.objectStoreNames.contains('metadata')) {
+                        db.createObjectStore('metadata', { keyPath: 'key' });
+                    }
+                    if (!db.objectStoreNames.contains('typeEffectiveness')) {
+                        db.createObjectStore('typeEffectiveness', { keyPath: 'id' });
+                    }
+                    if (!db.objectStoreNames.contains('rankings')) {
+                        const rankingsStore = db.createObjectStore('rankings', { keyPath: 'id' });
+                        rankingsStore.createIndex('league', 'league', { unique: false });
+                        rankingsStore.createIndex('cupName', 'cupName', { unique: false });
+                        rankingsStore.createIndex('timestamp', 'timestamp', { unique: false });
+                    }
+                };
                 
-                for (const pokemon of data) {
-                    await writeStore.add(pokemon);
-                }
-                
-                console.log('Database initialized!');
-            }
+                request.onsuccess = async (event) => {
+                    const db = event.target.result;
+                    
+                    // Check if database is empty
+                    const tx = db.transaction(['pokemon'], 'readonly');
+                    const store = tx.objectStore('pokemon');
+                    const countRequest = store.count();
+                    
+                    countRequest.onsuccess = async () => {
+                        if (countRequest.result === 0) {
+                            console.log('Database empty, loading from JSON...');
+                            
+                            try {
+                                // Load the JSON file
+                                const response = await fetch('./go-database103125.json');
+                                const data = await response.json();
+                                
+                                console.log('JSON loaded, populating database...');
+                                
+                                // Populate IndexedDB
+                                const writeTx = db.transaction(['pokemon', 'moves', 'metadata', 'typeEffectiveness'], 'readwrite');
+                                
+                                // Add all data to respective stores
+                                if (data.pokemon) {
+                                    const pokemonStore = writeTx.objectStore('pokemon');
+                                    data.pokemon.forEach(p => pokemonStore.add(p));
+                                }
+                                if (data.moves) {
+                                    const movesStore = writeTx.objectStore('moves');
+                                    data.moves.forEach(m => movesStore.add(m));
+                                }
+                                if (data.metadata) {
+                                    const metadataStore = writeTx.objectStore('metadata');
+                                    data.metadata.forEach(m => metadataStore.add(m));
+                                }
+                                if (data.typeEffectiveness) {
+                                    const typeStore = writeTx.objectStore('typeEffectiveness');
+                                    data.typeEffectiveness.forEach(t => typeStore.add(t));
+                                }
+                                
+                                writeTx.oncomplete = () => {
+                                    console.log('Database initialized successfully!');
+                                    resolve(db);
+                                };
+                                
+                                writeTx.onerror = () => {
+                                    console.error('Error populating database:', writeTx.error);
+                                    resolve(db);
+                                };
+                                
+                            } catch (error) {
+                                console.error('Error loading JSON:', error);
+                                resolve(db);
+                            }
+                        } else {
+                            console.log('Database already populated');
+                            resolve(db);
+                        }
+                    };
+                };
+            });
         }
 
         const TYPE_COLORS = {
