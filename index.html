@@ -325,19 +325,27 @@
                                 const writeTx = db.transaction(['pokemon', 'moves', 'metadata', 'typeEffectiveness'], 'readwrite');
                                 
                                 // Add all data to respective stores
-                                if (data.pokemon) {
+                                if (data.pokemon && Array.isArray(data.pokemon)) {
                                     const pokemonStore = writeTx.objectStore('pokemon');
                                     data.pokemon.forEach(p => pokemonStore.add(p));
                                 }
-                                if (data.moves) {
+                                if (data.moves && Array.isArray(data.moves)) {
                                     const movesStore = writeTx.objectStore('moves');
                                     data.moves.forEach(m => movesStore.add(m));
                                 }
                                 if (data.metadata) {
                                     const metadataStore = writeTx.objectStore('metadata');
-                                    data.metadata.forEach(m => metadataStore.add(m));
+                                    // Handle if metadata is object or array
+                                    if (Array.isArray(data.metadata)) {
+                                        data.metadata.forEach(m => metadataStore.add(m));
+                                    } else {
+                                        // If it's an object, convert to key-value pairs
+                                        Object.entries(data.metadata).forEach(([key, value]) => {
+                                            metadataStore.add({ key, ...value });
+                                        });
+                                    }
                                 }
-                                if (data.typeEffectiveness) {
+                                if (data.typeEffectiveness && Array.isArray(data.typeEffectiveness)) {
                                     const typeStore = writeTx.objectStore('typeEffectiveness');
                                     data.typeEffectiveness.forEach(t => typeStore.add(t));
                                 }
