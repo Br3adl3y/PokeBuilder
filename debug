@@ -1,0 +1,30 @@
+// Run this in your browser console
+indexedDB.databases().then(dbs => {
+    console.log("Available databases:", dbs);
+    
+    // Try to open the first database we find
+    if (dbs.length > 0) {
+        const dbName = dbs[0].name;
+        const request = indexedDB.open(dbName);
+        
+        request.onsuccess = (event) => {
+            const db = event.target.result;
+            console.log("Database name:", db.name);
+            console.log("Object stores:", Array.from(db.objectStoreNames));
+            
+            // Try to read from each store
+            Array.from(db.objectStoreNames).forEach(storeName => {
+                const transaction = db.transaction([storeName], 'readonly');
+                const store = transaction.objectStore(storeName);
+                const getAll = store.getAll();
+                
+                getAll.onsuccess = () => {
+                    console.log(`Store "${storeName}" has ${getAll.result.length} items`);
+                    if (getAll.result.length > 0) {
+                        console.log(`First item in "${storeName}":`, getAll.result[0]);
+                    }
+                };
+            });
+        };
+    }
+});

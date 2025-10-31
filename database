@@ -1,0 +1,195 @@
+// ============================================================
+// DATABASE.JS - Helper to load scraped data in your main app
+// ============================================================
+// Save this as: js/database.js
+// Usage in other files: import { loadPokemon, loadMoves } from './database.js';
+
+const DB_NAME = 'PokemonGoDB';
+const DB_VERSION = 1;
+let dbConnection = null;
+
+/**
+ * Initialize database connection
+ * Call this once when your app loads
+ */
+export async function initDB() {
+    if (dbConnection) return dbConnection;
+    
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        
+        request.onerror = () => reject(new Error('Failed to open database'));
+        request.onsuccess = () => {
+            dbConnection = request.result;
+            resolve(dbConnection);
+        };
+        
+        request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains('pokemon')) {
+                db.createObjectStore('pokemon', { keyPath: 'dexNumber' });
+            }
+            if (!db.objectStoreNames.contains('moves')) {
+                db.createObjectStore('moves', { keyPath: 'id' });
+            }
+            if (!db.objectStoreNames.contains('metadata')) {
+                db.createObjectStore('metadata', { keyPath: 'key' });
+            }
+        };
+    });
+}
+
+/**
+ * Load all Pokemon from database
+ * @returns {Promise<Array>} Array of Pokemon objects
+ */
+export async function loadPokemon() {
+    const db = await initDB();
+    const transaction = db.transaction(['pokemon'], 'readonly');
+    const store = transaction.objectStore('pokemon');
+    const request = store.getAll();
+    
+    return new Promise((resolve, reject) => {
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+/**
+ * Load a specific Pokemon by Dex Number
+ * @param {number} dexNumber - Pokemon's dex number
+ * @returns {Promise<Object>} Pokemon object
+ */
+export async function getPokemon(dexNumber) {
+    const db = await initDB();
+    const transaction = db.transaction(['pokemon'], 'readonly');
+    const store = transaction.objectStore('pokemon');
+    const request = store.get(dexNumber);
+    
+    return new Promise((resolve, reject) => {
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+/**
+ * Load all moves from database
+ * @returns {Promise<Array>} Array of move objects
+ */
+export async function loadMoves() {
+    const db = await initDB();
+    const transaction = db.transaction(['moves'], 'readonly');
+    const store = transaction.objectStore('moves');
+    const request = store.getAll();
+    
+    return new Promise((resolve, reject) => {
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+/**
+ * Load moves filtered by mode and category
+ * @param {string} mode - 'pvp' or 'pve'
+ * @param {string} category - 'fast' or 'charge'
+ * @returns {Promise<Array>} Filtered move array
+ */
+export async function loadMovesByType(mode, category) {
+    const allMoves = await loadMoves();
+    return allMoves.filter(m => m.mode === mode && m.category === category);
+}
+
+/**
+ * Get metadata (last updated, version, etc.)
+ * @returns {Promise<Object>} Metadata object
+ */
+export async function getMetadata() {
+    const db = await initDB();
+    const transaction = db.transaction(['metadata'], 'readonly');
+    const store = transaction.objectStore('metadata');
+    const request = store.get('lastUpdated');
+    
+    return new Promise((resolve, reject) => {
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+/**
+ * Search Pokemon by name (partial match)
+ * @param {string} searchTerm - Search query
+ * @returns {Promise<Array>} Matching Pokemon
+ */
+export async function searchPokemon(searchTerm) {
+    const allPokemon = await loadPokemon();
+    const term = searchTerm.toLowerCase();
+    
+    return allPokemon.filter(p => 
+        p.name.toLowerCase().includes(term) ||
+        p.form.toLowerCase().includes(term)
+    );
+}
+
+/**
+ * Get Pokemon by type
+ * @param {string} type - Type name (e.g., 'FIRE', 'WATER')
+ * @returns {Promise<Array>} Pokemon of that type
+ */
+export async function getPokemonByType(type) {
+    const allPokemon = await loadPokemon();
+    return allPokemon.filter(p => p.types.includes(type.toUpperCase()));
+}
+
+/**
+ * Check if database has been initialized (data exists)
+ * @returns {Promise<boolean>}
+ */
+export async function isDatabasePopulated() {
+    try {
+        const pokemon = await loadPokemon();
+        return pokemon.length > 0;
+    } catch {
+        return false;
+    }
+}
+
+
+// ============================================================
+// EXAMPLE USAGE IN YOUR MAIN APP
+// ============================================================
+
+/*
+// In your index.html or main.js:
+
+import { loadPokemon, loadMovesByType, searchPokemon } from './js/database.js';
+
+// Load all Pokemon
+const allPokemon = await loadPokemon();
+console.log(`Loaded ${allPokemon.length} Pokemon`);
+
+// Get PvP Fast Moves
+const pvpFastMoves = await loadMovesByType('pvp', 'fast');
+console.log(`Found ${pvpFastMoves.length} PvP fast moves`);
+
+// Search for Charizard
+const results = await searchPokemon('charizard');
+console.log('Search results:', results);
+
+// Example: Build a team from your Bill's PC
+async function buildTeam(userPokemon) {
+    const pokedex = await loadPokemon();
+    const pvpMoves = await loadMovesByType('pvp', 'charge');
+    
+    // Your team building logic here...
+    // Use pokedex to look up base stats
+    // Use pvpMoves to calculate DPE, etc.
+}
+
+// Example: Calculate IV rankings
+async function calculateIVs(dexNumber, cp, ivs) {
+    const pokemon = await getPokemon(dexNumber);
+    
+    // Your IV calculation logic here...
+    // Use pokemon.stats.attack, pokemon.stats.defense, pokemon.stats.hp
+}
+*/

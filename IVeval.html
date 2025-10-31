@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Normal Pokemon IV Analysis</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #cc0000;
+            text-align: center;
+        }
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .stats-box {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .stat-item {
+            padding: 10px;
+            margin: 5px 0;
+            background: #f9f9f9;
+            border-left: 4px solid #4CAF50;
+        }
+        .stat-item strong {
+            color: #cc0000;
+        }
+        .debug-item {
+            padding: 10px;
+            margin: 5px 0;
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            font-size: 14px;
+        }
+        table {
+            width: 100%;
+            background: white;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #4CAF50;
+            color: white;
+            font-weight: bold;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        #status {
+            padding: 15px;
+            background-color: #fff;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #4CAF50;
+        }
+        .error {
+            border-left-color: #cc0000 !important;
+            color: #cc0000;
+        }
+        .little-league-note {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 10px;
+            margin: 10px 0;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Normal Pokemon IV Analysis</h1>
+    
+    <div class="controls">
+        <p><strong>Analyze Normal-class Pokemon IVs from your database</strong></p>
+        <button id="analyzeBtn">Run Analysis</button>
+    </div>
+
+    <div id="status">Ready. Click "Run Analysis" to begin.</div>
+
+    <div id="stats" class="stats-box" style="display: none;">
+        <h2>Analysis Results</h2>
+        <div id="statsContent"></div>
+        
+        <h3 style="margin-top: 20px;">League Coverage</h3>
+        <div id="debugContent"></div>
+    </div>
+
+    <div id="results" style="display: none;">
+        <h2>IVs with Def or Sta < 10</h2>
+        <div class="little-league-note">
+            <strong>Note:</strong> Little League results only show first-stage Pokemon that can evolve (excludes evolved forms and non-evolving Pokemon)
+        </div>
+        <table id="resultsTable">
+            <thead>
+                <tr>
+                    <th>Pokemon</th>
+                    <th>League</th>
+                    <th>Atk</th>
+                    <th>Def</th>
+                    <th>Sta</th>
+                    <th>IV Spread</th>
+                </tr>
+            </thead>
+            <tbody id="resultsBody"></tbody>
+        </table>
+    </div>
+
+    <script>
+        const DB_NAME = 'PokemonGoDB';
+
+        function openDatabase() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, 2);
+                
+                request.onerror = () => reject(new Error('Failed to open database: ' + request.error));
+                request.onsuccess = () => resolve(request.result);
+            });
+        }
+
+        function getAllNormalPokemon(db) {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(['pokemon'], 'readonly');
+                const store = transaction.objectStore('pokemon');
+                const request = store.getAll();
+                
+                request.onerror = () => reject(new Error('Failed to fetch data: ' + request.error));
+                request.onsuccess = () => {
+                    const allPokemon = request.result;
+                    const normalPokemon = allPokemon.filter(p => p.pokemonClass === 'NORMAL');
+                    resolve(normalPokemon);
+                };
+            });
+        }
+
+        function isLittleLeagueEligible(pokemon) {
+            // Must be able to evolve (has evolutions array with at least one entry)
+            const canEvolve = pokemon.evolutions && Array.isArray(pokemon.evolutions) && pokemon.evolutions.length > 0;
+            
+            // Must NOT be evolved (no parent)
+            const isNotEvolved = !pokemon.parent || pokemon.parent === null || pokemon.parent === '';
+            
+            // Both conditions must be true
+            return canEvolve && isNotEvolved;
+        }
+
+        async function analyzeNormalPokemon() {
+            const statusEl = document.getElementById('status');
+            const statsEl = document.getElementById('stats');
+            const resultsEl = document.getElementById('results');
+            const statsContent = document.getElementById('statsContent');
+            const debugContent = document.getElementById('debugContent');
+            const resultsBody = document.getElementById('resultsBody');
+            
+            statusEl.textContent = '⏳ Opening database...';
+            statusEl.classList.remove('error');
+            
+            try {
+                const db = await openDatabase();
+                
+                statusEl.textContent = '⏳ Fetching Normal-class Pokemon...';
+                const normalPokemon = await getAllNormalPokemon(db);
+                
+                if (normalPokemon.length === 0) {
+                    statusEl.textContent = '⚠️ No Normal-class Pokemon found in database.';
+                    return;
+                }
+                
+                statusEl.textContent = `⏳ Analyzing ${normalPokemon.length} Normal-class Pokemon...`;
+                
+                let totalIVs = 0;
+                let ivsWithLowDefOrSta = [];
+                let maxAtkAmongLowIVs = 0;
+                let ivsWithAtkHigherThanDefAndSta = 0;
+                
+                // Debug counters
+                let greatCount = 0;
+                let ultraCount = 0;
+                let littleCount = 0;
+                let littleFilteredCount = 0;
+                let missingIVsCount = 0;
+                
+                const leagues = ['great', 'ultra', 'little'];
+                
+                for (const pokemon of normalPokemon) {
+                    let hasAnyIV = false;
+                    
+                    for (const league of leagues) {
+                        if (!pokemon[league] || !pokemon[league].iv) {
+                            continue;
+                        }
+                        
+                        hasAnyIV = true;
+                        totalIVs++;
+                        
+                        // Count per league
+                        if (league === 'great') greatCount++;
+                        if (league === 'ultra') ultraCount++;
+                        if (league === 'little') littleCount++;
+                        
+                        const leagueData = pokemon[league];
+                        const atk = leagueData.iv.atk || 0;
+                        const def = leagueData.iv.def || 0;
+                        const sta = leagueData.iv.sta || 0;
+                        
+                        if (def < 10 || sta < 10) {
+                            // For Little League, only include eligible Pokemon
+                            if (league === 'little') {
+                                if (!isLittleLeagueEligible(pokemon)) {
+                                    littleFilteredCount++;
+                                    continue; // Skip this one
+                                }
+                            }
+                            
+                            ivsWithLowDefOrSta.push({
+                                pokemon: pokemon.name || pokemon.id || 'Unknown',
+                                league: league.charAt(0).toUpperCase() + league.slice(1) + ' League',
+                                atk: atk,
+                                def: def,
+                                sta: sta
+                            });
+                            
+                            if (atk > maxAtkAmongLowIVs) {
+                                maxAtkAmongLowIVs = atk;
+                            }
+                        }
+                        
+                        if (atk > def && atk > sta) {
+                            ivsWithAtkHigherThanDefAndSta++;
+                        }
+                    }
+                    
+                    if (!hasAnyIV) {
+                        missingIVsCount++;
+                    }
+                }
+                
+                statsContent.innerHTML = `
+                    <div class="stat-item">
+                        <strong>Total Normal-class Pokemon:</strong> ${normalPokemon.length}
+                    </div>
+                    <div class="stat-item">
+                        <strong>Total IVs analyzed:</strong> ${totalIVs}
+                    </div>
+                    <div class="stat-item">
+                        <strong>IVs with Def or Sta < 10:</strong> ${ivsWithLowDefOrSta.length}
+                    </div>
+                    <div class="stat-item">
+                        <strong>Little League IVs filtered out:</strong> ${littleFilteredCount} (evolved or can't evolve)
+                    </div>
+                    <div class="stat-item">
+                        <strong>Highest Atk among low IVs:</strong> ${maxAtkAmongLowIVs}
+                    </div>
+                    <div class="stat-item">
+                        <strong>IVs where Atk > Def AND Atk > Sta:</strong> ${ivsWithAtkHigherThanDefAndSta}
+                    </div>
+                `;
+                
+                debugContent.innerHTML = `
+                    <div class="debug-item">
+                        <strong>Great League IVs:</strong> ${greatCount} / ${normalPokemon.length} (${((greatCount/normalPokemon.length)*100).toFixed(1)}%)
+                    </div>
+                    <div class="debug-item">
+                        <strong>Ultra League IVs:</strong> ${ultraCount} / ${normalPokemon.length} (${((ultraCount/normalPokemon.length)*100).toFixed(1)}%)
+                    </div>
+                    <div class="debug-item">
+                        <strong>Little League IVs:</strong> ${littleCount} / ${normalPokemon.length} (${((littleCount/normalPokemon.length)*100).toFixed(1)}%)
+                    </div>
+                    <div class="debug-item">
+                        <strong>Pokemon with no IVs:</strong> ${missingIVsCount}
+                    </div>
+                    <div class="debug-item">
+                        <strong>Expected total if all had 3 leagues:</strong> ${normalPokemon.length * 3}
+                    </div>
+                `;
+                
+                statsEl.style.display = 'block';
+                
+                if (ivsWithLowDefOrSta.length > 0) {
+                    resultsBody.innerHTML = '';
+                    
+                    ivsWithLowDefOrSta.forEach(iv => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${iv.pokemon}</td>
+                            <td>${iv.league}</td>
+                            <td>${iv.atk}</td>
+                            <td style="color: ${iv.def < 10 ? '#cc0000' : '#000'}; font-weight: ${iv.def < 10 ? 'bold' : 'normal'}">${iv.def}</td>
+                            <td style="color: ${iv.sta < 10 ? '#cc0000' : '#000'}; font-weight: ${iv.sta < 10 ? 'bold' : 'normal'}">${iv.sta}</td>
+                            <td>${iv.atk}/${iv.def}/${iv.sta}</td>
+                        `;
+                        resultsBody.appendChild(row);
+                    });
+                    
+                    resultsEl.style.display = 'block';
+                } else {
+                    resultsEl.style.display = 'none';
+                }
+                
+                statusEl.textContent = `✅ Analysis complete! Found ${ivsWithLowDefOrSta.length} IVs with Def or Sta < 10.`;
+                
+            } catch (error) {
+                statusEl.textContent = `❌ Error: ${error.message}`;
+                statusEl.classList.add('error');
+                console.error('Analysis error:', error);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('analyzeBtn').addEventListener('click', analyzeNormalPokemon);
+        });
+    </script>
+</body>
+</html>
