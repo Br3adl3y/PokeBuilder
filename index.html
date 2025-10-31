@@ -40,40 +40,43 @@
         }
         
         @media (max-width: 768px) {
-            /* Scale everything proportionally */
-            html {
-                font-size: 12px; /* Base font smaller on mobile */
+            /* Scale down all card content */
+            .card-hover > * {
+                transform: scale(0.8);
+                transform-origin: top left;
             }
             
-            /* Maintain card aspect ratios */
-            .card-hover {
-                aspect-ratio: auto;
+            /* Scale down grid containers */
+            [data-detail-container] .grid > div {
+                transform: scale(0.85);
+                transform-origin: center;
             }
             
-            /* Scale headings proportionally */
-            h1 { font-size: 1.5rem; }
-            h2 { font-size: 1.25rem; }
-            h3 { font-size: 1rem; }
+            /* Scale text elements */
+            h1 { font-size: 2rem; }
+            h2 { font-size: 1.5rem; }
+            h3 { font-size: 1.25rem; }
             
-            /* Scale padding proportionally */
-            .card-hover {
-                padding: 0.75rem !important;
+            /* Scale sprites */
+            .pokemon-sprite {
+                transform: scale(0.8);
             }
             
-            /* Keep grid layout, just tighter */
-            .grid {
-                gap: 0.5rem !important;
-            }
-            
-            /* Smaller type badges */
+            /* Scale type badges */
             .type-badge {
-                font-size: 0.65rem;
-                padding: 0.2rem 0.4rem;
+                font-size: 0.7rem;
+                padding: 0.3rem 0.6rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            /* Even smaller on very small screens */
+            .card-hover > * {
+                transform: scale(0.65);
             }
             
-            /* Smaller stat text */
-            .stat-value {
-                font-size: 1rem;
+            [data-detail-container] .grid > div {
+                transform: scale(0.7);
             }
         }
 
