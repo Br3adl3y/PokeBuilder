@@ -55,15 +55,19 @@
             /* Tighter spacing */
             .grid { gap: 0.75rem !important; }
             .card-hover { padding: 1rem !important; }
-        }
-        
-        @media (max-width: 480px) {
-            [data-detail-container] > .card-hover {
-                transform: scale(0.6);
-                margin-bottom: -40%;
+
+            /* Use abbreviated IV button text */
+            .iv-btn {
+                font-size: 0 !important;
+                padding: 0.2rem 0.4rem !important;
+                min-width: 24px !important;
             }
             
-            html { font-size: 8px; }
+            .iv-btn::before {
+                content: attr(data-short);
+                font-size: 0.625rem;
+                font-weight: 700;
+            }
         }
 
         /* Card styles */
@@ -413,6 +417,15 @@
 
         /* Extra small phones */
         @media (max-width: 480px) {
+            /* Old styles from first block */
+            [data-detail-container] > .card-hover {
+                transform: scale(0.6);
+                margin-bottom: -40%;
+            }
+            
+            html { font-size: 8px; }
+            
+            /* Styles from second block */
             .detail-row-1 {
                 gap: 0.375rem;
             }
@@ -436,9 +449,9 @@
                 height: 150px;
             }
             
-            /* Use abbreviated button text on very small screens */
+            /* Use abbreviated IV button text on very small screens */
             .iv-btn {
-                font-size: 0;
+                font-size: 0 !important;
                 padding: 0.2rem 0.4rem !important;
                 min-width: 24px !important;
             }
