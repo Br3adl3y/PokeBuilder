@@ -787,7 +787,7 @@
 }
 
 /* ============================================
-   FIGHTING TYPE - Blurry Dojo (Simple)
+   FIGHTING TYPE - Blurry Dojo with Doorway
    ============================================ */
 .type-bg-fighting {
     background: linear-gradient(180deg, #8B4513 0%, #D2B48C 100%) !important;
@@ -795,7 +795,23 @@
     overflow: hidden;
 }
 
+/* Outdoor gradient behind everything */
 .type-bg-fighting::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 50%;
+    background: linear-gradient(180deg, 
+        rgba(255, 255, 255, 0.9) 0%,
+        rgba(200, 255, 100, 0.85) 50%,
+        rgba(144, 238, 144, 0.8) 100%);
+    z-index: 0;
+}
+
+/* Grid wall with doorway cutout */
+.type-bg-fighting::after {
     content: '';
     position: absolute;
     top: 0;
@@ -810,85 +826,66 @@
             transparent, transparent 19px, 
             rgba(101, 67, 33, 0.7) 19px, rgba(101, 67, 33, 0.7) 21px),
         #D2B48C;
+    clip-path: polygon(
+        0% 0%,
+        25% 0%,
+        25% 15%,
+        25% 42%,
+        75% 42%,
+        75% 15%,
+        75% 0%,
+        100% 0%,
+        100% 100%,
+        0% 100%
+    );
     filter: blur(3px);
-    z-index: 0;
+    z-index: 1;
 }
 
 .type-bg-fighting img {
     position: relative;
-    z-index: 1;
+    z-index: 2;
 }
 
 /* ============================================
-   WATER TYPE - Underwater Bubbles (5 bubbles)
+   WATER TYPE - Underwater with 5 Bubbles (2 groups)
    ============================================ */
-@keyframes bubble-rise-1 {
+@keyframes bubble-group-1 {
     0% {
-        transform: translate(0, 0);
-        opacity: 0;
+        background-image:
+            radial-gradient(circle 8px at 18% calc(100% + 20px), rgba(255, 255, 255, 0) 0%, rgba(173, 216, 230, 0) 50%, transparent 80%),
+            radial-gradient(circle 10px at 52% calc(100% + 20px), rgba(255, 255, 255, 0) 0%, rgba(173, 216, 230, 0) 50%, transparent 80%);
     }
     10% {
-        opacity: 0.8;
+        background-image:
+            radial-gradient(circle 8px at 19% calc(100% - 40px), rgba(255, 255, 255, 0.8) 0%, rgba(173, 216, 230, 0.6) 50%, transparent 80%),
+            radial-gradient(circle 10px at 51% calc(100% - 40px), rgba(255, 255, 255, 0.75) 0%, rgba(173, 216, 230, 0.55) 50%, transparent 80%);
     }
     100% {
-        transform: translate(25px, -420px);
-        opacity: 0;
+        background-image:
+            radial-gradient(circle 8px at 21% calc(100% - 420px), rgba(255, 255, 255, 0) 0%, rgba(173, 216, 230, 0) 50%, transparent 80%),
+            radial-gradient(circle 10px at 49% calc(100% - 420px), rgba(255, 255, 255, 0) 0%, rgba(173, 216, 230, 0) 50%, transparent 80%);
     }
 }
 
-@keyframes bubble-rise-2 {
+@keyframes bubble-group-2 {
     0% {
-        transform: translate(0, 0);
-        opacity: 0;
+        background-image:
+            radial-gradient(circle 7px at 35% calc(100% + 20px), rgba(255, 255, 255, 0) 0%, rgba(173, 216, 230, 0) 50%, transparent 80%),
+            radial-gradient(circle 9px at 73% calc(100% + 20px), rgba(255, 255, 255, 0) 0%, rgba(173, 216, 230, 0) 50%, transparent 80%),
+            radial-gradient(circle 8.5px at 88% calc(100% + 20px), rgba(255, 255, 255, 0) 0%, rgba(173, 216, 230, 0) 50%, transparent 80%);
     }
     10% {
-        opacity: 0.75;
+        background-image:
+            radial-gradient(circle 7px at 34% calc(100% - 40px), rgba(255, 255, 255, 0.7) 0%, rgba(173, 216, 230, 0.5) 50%, transparent 80%),
+            radial-gradient(circle 9px at 75% calc(100% - 40px), rgba(255, 255, 255, 0.75) 0%, rgba(173, 216, 230, 0.55) 50%, transparent 80%),
+            radial-gradient(circle 8.5px at 89% calc(100% - 40px), rgba(255, 255, 255, 0.8) 0%, rgba(173, 216, 230, 0.6) 50%, transparent 80%);
     }
     100% {
-        transform: translate(-30px, -450px);
-        opacity: 0;
-    }
-}
-
-@keyframes bubble-rise-3 {
-    0% {
-        transform: translate(0, 0);
-        opacity: 0;
-    }
-    10% {
-        opacity: 0.7;
-    }
-    100% {
-        transform: translate(40px, -400px);
-        opacity: 0;
-    }
-}
-
-@keyframes bubble-rise-4 {
-    0% {
-        transform: translate(0, 0);
-        opacity: 0;
-    }
-    10% {
-        opacity: 0.65;
-    }
-    100% {
-        transform: translate(-15px, -435px);
-        opacity: 0;
-    }
-}
-
-@keyframes bubble-rise-5 {
-    0% {
-        transform: translate(0, 0);
-        opacity: 0;
-    }
-    10% {
-        opacity: 0.8;
-    }
-    100% {
-        transform: translate(20px, -410px);
-        opacity: 0;
+        background-image:
+            radial-gradient(circle 7px at 33% calc(100% - 435px), rgba(255, 255, 255, 0) 0%, rgba(173, 216, 230, 0) 50%, transparent 80%),
+            radial-gradient(circle 9px at 77% calc(100% - 435px), rgba(255, 255, 255, 0) 0%, rgba(173, 216, 230, 0) 50%, transparent 80%),
+            radial-gradient(circle 8.5px at 90% calc(100% - 435px), rgba(255, 255, 255, 0) 0%, rgba(173, 216, 230, 0) 50%, transparent 80%);
     }
 }
 
@@ -898,166 +895,38 @@
     overflow: hidden;
 }
 
-/* Bubble 1 */
 .type-bg-water::before {
     content: '';
     position: absolute;
-    bottom: -20px;
-    left: 18%;
-    width: 16px;
-    height: 16px;
-    background: radial-gradient(circle, 
-        rgba(255, 255, 255, 0.85) 0%, 
-        rgba(173, 216, 230, 0.6) 50%, 
-        transparent 80%);
-    border-radius: 50%;
-    box-shadow: inset -3px -3px 6px rgba(255, 255, 255, 0.4);
-    animation: bubble-rise-1 8.5s ease-in infinite;
-    z-index: 0;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image:
+        radial-gradient(circle 8px at 18% calc(100% + 20px), rgba(255, 255, 255, 0) 0%, rgba(173, 216, 230, 0) 50%, transparent 80%),
+        radial-gradient(circle 10px at 52% calc(100% + 20px), rgba(255, 255, 255, 0) 0%, rgba(173, 216, 230, 0) 50%, transparent 80%);
+    animation: bubble-group-1 7s ease-in infinite;
+    z-index: 2;
 }
 
-/* Bubble 2 */
 .type-bg-water::after {
     content: '';
     position: absolute;
-    bottom: -20px;
-    left: 52%;
-    width: 20px;
-    height: 20px;
-    background: radial-gradient(circle, 
-        rgba(255, 255, 255, 0.8) 0%, 
-        rgba(173, 216, 230, 0.55) 50%, 
-        transparent 80%);
-    border-radius: 50%;
-    box-shadow: inset -3px -3px 6px rgba(255, 255, 255, 0.4);
-    animation: bubble-rise-2 10s ease-in infinite 2.3s;
-    z-index: 0;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image:
+        radial-gradient(circle 7px at 35% calc(100% + 20px), rgba(255, 255, 255, 0) 0%, rgba(173, 216, 230, 0) 50%, transparent 80%),
+        radial-gradient(circle 9px at 73% calc(100% + 20px), rgba(255, 255, 255, 0) 0%, rgba(173, 216, 230, 0) 50%, transparent 80%),
+        radial-gradient(circle 8.5px at 88% calc(100% + 20px), rgba(255, 255, 255, 0) 0%, rgba(173, 216, 230, 0) 50%, transparent 80%);
+    animation: bubble-group-2 13s ease-in infinite;
+    z-index: 2;
 }
 
 .type-bg-water img {
     position: relative;
     z-index: 1;
-}
-
-/* Bubble 3 - separate element simulation */
-.type-bg-water {
-    background-image:
-        radial-gradient(circle 9px at calc(73% + 0px) calc(100% + 0px), 
-            rgba(255, 255, 255, 0.75) 0%, 
-            rgba(173, 216, 230, 0.5) 50%, 
-            transparent 80%),
-        radial-gradient(circle 7px at calc(35% + 0px) calc(100% + 0px), 
-            rgba(255, 255, 255, 0.7) 0%, 
-            rgba(173, 216, 230, 0.45) 50%, 
-            transparent 80%),
-        radial-gradient(circle 8.5px at calc(88% + 0px) calc(100% + 0px), 
-            rgba(255, 255, 255, 0.8) 0%, 
-            rgba(173, 216, 230, 0.6) 50%, 
-            transparent 80%),
-        radial-gradient(ellipse at center, #4A90A4 0%, #2F6B7C 50%, #1E4D5C 100%);
-    animation: 
-        water-bubble-3 7.2s ease-in infinite 4.1s,
-        water-bubble-4 9.3s ease-in infinite 1.5s,
-        water-bubble-5 8.8s ease-in infinite 5.7s;
-}
-
-@keyframes water-bubble-3 {
-    0% {
-        background-image:
-            radial-gradient(circle 9px at calc(73% + 0px) calc(100% + 20px), 
-                rgba(255, 255, 255, 0) 0%, 
-                rgba(173, 216, 230, 0) 50%, 
-                transparent 80%),
-            radial-gradient(circle 7px at 35% 100%, rgba(255, 255, 255, 0.7) 0%, rgba(173, 216, 230, 0.45) 50%, transparent 80%),
-            radial-gradient(circle 8.5px at 88% 100%, rgba(255, 255, 255, 0.8) 0%, rgba(173, 216, 230, 0.6) 50%, transparent 80%),
-            radial-gradient(ellipse at center, #4A90A4 0%, #2F6B7C 50%, #1E4D5C 100%);
-    }
-    10% {
-        background-image:
-            radial-gradient(circle 9px at calc(73% + 5px) calc(100% - 50px), 
-                rgba(255, 255, 255, 0.75) 0%, 
-                rgba(173, 216, 230, 0.5) 50%, 
-                transparent 80%),
-            radial-gradient(circle 7px at 35% 100%, rgba(255, 255, 255, 0.7) 0%, rgba(173, 216, 230, 0.45) 50%, transparent 80%),
-            radial-gradient(circle 8.5px at 88% 100%, rgba(255, 255, 255, 0.8) 0%, rgba(173, 216, 230, 0.6) 50%, transparent 80%),
-            radial-gradient(ellipse at center, #4A90A4 0%, #2F6B7C 50%, #1E4D5C 100%);
-    }
-    100% {
-        background-image:
-            radial-gradient(circle 9px at calc(73% + 40px) calc(100% - 400px), 
-                rgba(255, 255, 255, 0) 0%, 
-                rgba(173, 216, 230, 0) 50%, 
-                transparent 80%),
-            radial-gradient(circle 7px at 35% 100%, rgba(255, 255, 255, 0.7) 0%, rgba(173, 216, 230, 0.45) 50%, transparent 80%),
-            radial-gradient(circle 8.5px at 88% 100%, rgba(255, 255, 255, 0.8) 0%, rgba(173, 216, 230, 0.6) 50%, transparent 80%),
-            radial-gradient(ellipse at center, #4A90A4 0%, #2F6B7C 50%, #1E4D5C 100%);
-    }
-}
-
-@keyframes water-bubble-4 {
-    0% {
-        background-image:
-            radial-gradient(circle 9px at 73% 100%, rgba(255, 255, 255, 0.75) 0%, rgba(173, 216, 230, 0.5) 50%, transparent 80%),
-            radial-gradient(circle 7px at calc(35% + 0px) calc(100% + 20px), 
-                rgba(255, 255, 255, 0) 0%, 
-                rgba(173, 216, 230, 0) 50%, 
-                transparent 80%),
-            radial-gradient(circle 8.5px at 88% 100%, rgba(255, 255, 255, 0.8) 0%, rgba(173, 216, 230, 0.6) 50%, transparent 80%),
-            radial-gradient(ellipse at center, #4A90A4 0%, #2F6B7C 50%, #1E4D5C 100%);
-    }
-    10% {
-        background-image:
-            radial-gradient(circle 9px at 73% 100%, rgba(255, 255, 255, 0.75) 0%, rgba(173, 216, 230, 0.5) 50%, transparent 80%),
-            radial-gradient(circle 7px at calc(35% - 3px) calc(100% - 50px), 
-                rgba(255, 255, 255, 0.7) 0%, 
-                rgba(173, 216, 230, 0.45) 50%, 
-                transparent 80%),
-            radial-gradient(circle 8.5px at 88% 100%, rgba(255, 255, 255, 0.8) 0%, rgba(173, 216, 230, 0.6) 50%, transparent 80%),
-            radial-gradient(ellipse at center, #4A90A4 0%, #2F6B7C 50%, #1E4D5C 100%);
-    }
-    100% {
-        background-image:
-            radial-gradient(circle 9px at 73% 100%, rgba(255, 255, 255, 0.75) 0%, rgba(173, 216, 230, 0.5) 50%, transparent 80%),
-            radial-gradient(circle 7px at calc(35% - 15px) calc(100% - 435px), 
-                rgba(255, 255, 255, 0) 0%, 
-                rgba(173, 216, 230, 0) 50%, 
-                transparent 80%),
-            radial-gradient(circle 8.5px at 88% 100%, rgba(255, 255, 255, 0.8) 0%, rgba(173, 216, 230, 0.6) 50%, transparent 80%),
-            radial-gradient(ellipse at center, #4A90A4 0%, #2F6B7C 50%, #1E4D5C 100%);
-    }
-}
-
-@keyframes water-bubble-5 {
-    0% {
-        background-image:
-            radial-gradient(circle 9px at 73% 100%, rgba(255, 255, 255, 0.75) 0%, rgba(173, 216, 230, 0.5) 50%, transparent 80%),
-            radial-gradient(circle 7px at 35% 100%, rgba(255, 255, 255, 0.7) 0%, rgba(173, 216, 230, 0.45) 50%, transparent 80%),
-            radial-gradient(circle 8.5px at calc(88% + 0px) calc(100% + 20px), 
-                rgba(255, 255, 255, 0) 0%, 
-                rgba(173, 216, 230, 0) 50%, 
-                transparent 80%),
-            radial-gradient(ellipse at center, #4A90A4 0%, #2F6B7C 50%, #1E4D5C 100%);
-    }
-    10% {
-        background-image:
-            radial-gradient(circle 9px at 73% 100%, rgba(255, 255, 255, 0.75) 0%, rgba(173, 216, 230, 0.5) 50%, transparent 80%),
-            radial-gradient(circle 7px at 35% 100%, rgba(255, 255, 255, 0.7) 0%, rgba(173, 216, 230, 0.45) 50%, transparent 80%),
-            radial-gradient(circle 8.5px at calc(88% + 4px) calc(100% - 50px), 
-                rgba(255, 255, 255, 0.8) 0%, 
-                rgba(173, 216, 230, 0.6) 50%, 
-                transparent 80%),
-            radial-gradient(ellipse at center, #4A90A4 0%, #2F6B7C 50%, #1E4D5C 100%);
-    }
-    100% {
-        background-image:
-            radial-gradient(circle 9px at 73% 100%, rgba(255, 255, 255, 0.75) 0%, rgba(173, 216, 230, 0.5) 50%, transparent 80%),
-            radial-gradient(circle 7px at 35% 100%, rgba(255, 255, 255, 0.7) 0%, rgba(173, 216, 230, 0.45) 50%, transparent 80%),
-            radial-gradient(circle 8.5px at calc(88% + 20px) calc(100% - 410px), 
-                rgba(255, 255, 255, 0) 0%, 
-                rgba(173, 216, 230, 0) 50%, 
-                transparent 80%),
-            radial-gradient(ellipse at center, #4A90A4 0%, #2F6B7C 50%, #1E4D5C 100%);
-    }
 }
 
 /* ============================================
@@ -1077,118 +946,96 @@
     content: '';
     position: absolute;
     bottom: 0;
-    left: 0;
-    width: 25%;
-    height: 40%;
+    left: -5%;
+    width: 35%;
+    height: 28%;
     background: #E6A866;
     clip-path: polygon(
         0% 100%,
-        0% 5%,
-        8% 15%,
-        12% 0%,
-        18% 20%,
-        25% 3%,
-        32% 12%,
-        38% 0%,
+        5% 8%,
+        8% 18%,
+        12% 5%,
+        15% 15%,
+        18% 3%,
+        22% 12%,
+        25% 0%,
+        28% 10%,
+        32% 5%,
+        35% 15%,
+        38% 8%,
+        42% 18%,
         45% 10%,
-        52% 5%,
-        60% 18%,
-        68% 8%,
-        75% 22%,
-        82% 12%,
-        90% 25%,
-        100% 15%,
+        48% 20%,
+        52% 12%,
+        55% 22%,
+        58% 15%,
+        62% 25%,
+        65% 18%,
+        68% 28%,
+        72% 20%,
+        75% 30%,
+        78% 22%,
+        82% 32%,
+        85% 25%,
+        88% 35%,
+        92% 28%,
+        95% 38%,
+        100% 30%,
         100% 100%
     );
-    filter: blur(5px);
-    z-index: 0;
+    filter: blur(6px);
+    z-index: 2;
 }
 
 .type-bg-normal::after {
     content: '';
     position: absolute;
     bottom: 0;
-    right: 0;
-    width: 25%;
-    height: 40%;
+    right: -5%;
+    width: 35%;
+    height: 28%;
     background: #E6A866;
     clip-path: polygon(
-        0% 15%,
-        10% 25%,
-        18% 12%,
-        25% 22%,
-        32% 8%,
-        40% 18%,
-        48% 5%,
+        0% 30%,
+        5% 38%,
+        8% 28%,
+        12% 35%,
+        15% 25%,
+        18% 32%,
+        22% 22%,
+        25% 30%,
+        28% 20%,
+        32% 28%,
+        35% 18%,
+        38% 25%,
+        42% 15%,
+        45% 22%,
+        48% 12%,
+        52% 20%,
         55% 10%,
-        62% 0%,
-        68% 12%,
+        58% 18%,
+        62% 8%,
+        65% 15%,
+        68% 5%,
+        72% 12%,
         75% 3%,
-        82% 20%,
-        88% 0%,
-        92% 15%,
-        100% 5%,
+        78% 10%,
+        82% 0%,
+        85% 8%,
+        88% 5%,
+        92% 12%,
+        95% 8%,
+        100% 15%,
         100% 100%,
         0% 100%
     );
-    filter: blur(5px);
-    z-index: 0;
+    filter: blur(6px);
+    z-index: 2;
 }
 
 .type-bg-normal img {
     position: relative;
-    z-index: 1;
-}
-
-/* ============================================
-   STEEL TYPE - Polished Metal Surface
-   ============================================ */
-@keyframes steel-glint {
-    0% {
-        transform: translateX(-150%) translateY(-150%);
-        opacity: 0;
-    }
-    50% {
-        opacity: 1;
-    }
-    100% {
-        transform: translateX(150%) translateY(150%);
-        opacity: 0;
-    }
-}
-
-.type-bg-steel {
-    background: 
-        radial-gradient(ellipse at center, 
-            #B0C4DE 0%, 
-            #8FA5C0 40%, 
-            #6E8CA0 100%) !important;
-    position: relative;
-    overflow: hidden;
-}
-
-.type-bg-steel::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: linear-gradient(135deg,
-        transparent 0%,
-        transparent 45%,
-        rgba(255, 255, 255, 0.8) 48%,
-        rgba(255, 255, 255, 1) 50%,
-        rgba(255, 255, 255, 0.8) 52%,
-        transparent 55%,
-        transparent 100%);
-    animation: steel-glint 4s ease-in-out infinite;
-    z-index: 0;
-}
-
-.type-bg-steel img {
-    position: relative;
-    z-index: 1;
+    z-index: 3;
 }
 
 /* ============================================
@@ -1235,7 +1082,7 @@
     content: '';
     position: absolute;
     top: 30%;
-    left: 65%;
+    right: 25%;
     width: 70px;
     height: 70px;
     background: radial-gradient(circle, 
@@ -1266,85 +1113,52 @@
     z-index: 0;
 }
 
-/* Lightning bolt - thin jagged bolt */
+/* Lightning bolt - jagged diagonal bolt across screen */
 .type-bg-electric {
     background-image:
         linear-gradient(135deg,
             transparent 0%,
-            transparent calc(50% - 1.5px),
-            rgba(255, 255, 255, 1) calc(50% - 1.5px),
-            rgba(255, 255, 255, 1) calc(50% + 1.5px),
-            transparent calc(50% + 1.5px),
+            transparent calc(10% - 1.5px),
+            rgba(255, 255, 255, 1) calc(10% - 1.5px),
+            rgba(255, 255, 255, 1) calc(10% + 1.5px),
+            transparent calc(10% + 1.5px),
+            transparent calc(25% - 1.5px),
+            rgba(255, 255, 255, 1) calc(25% - 1.5px),
+            rgba(255, 255, 255, 1) calc(25% + 1.5px),
+            transparent calc(25% + 1.5px),
+            transparent calc(28% - 2px),
+            rgba(255, 255, 255, 1) calc(28% - 2px),
+            rgba(255, 255, 255, 1) calc(28% + 2px),
+            transparent calc(28% + 2px),
+            transparent calc(45% - 1.5px),
+            rgba(255, 255, 255, 1) calc(45% - 1.5px),
+            rgba(255, 255, 255, 1) calc(45% + 1.5px),
+            transparent calc(45% + 1.5px),
+            transparent calc(60% - 1.5px),
+            rgba(255, 255, 255, 1) calc(60% - 1.5px),
+            rgba(255, 255, 255, 1) calc(60% + 1.5px),
+            transparent calc(60% + 1.5px),
+            transparent calc(63% - 2px),
+            rgba(255, 255, 255, 1) calc(63% - 2px),
+            rgba(255, 255, 255, 1) calc(63% + 2px),
+            transparent calc(63% + 2px),
+            transparent calc(80% - 1.5px),
+            rgba(255, 255, 255, 1) calc(80% - 1.5px),
+            rgba(255, 255, 255, 1) calc(80% + 1.5px),
+            transparent calc(80% + 1.5px),
             transparent 100%
         ),
         radial-gradient(ellipse at 40% 30%, 
             #3D4A5C 0%, 
             #2C3544 40%, 
             #1A1F2E 100%);
-    background-size: 100% 100%, 100% 100%;
-    background-position: center, center;
-}
-
-/* Create jagged bolt with multiple pseudo elements via positioning trick */
-.type-bg-electric {
-    background-image:
-        radial-gradient(ellipse at 40% 30%, 
-            #3D4A5C 0%, 
-            #2C3544 40%, 
-            #1A1F2E 100%);
-}
-
-.type-bg-electric::before {
-    content: '';
-    position: absolute;
-    top: 5%;
-    right: 10%;
-    width: 3px;
-    height: 95%;
-    background: 
-        linear-gradient(to bottom,
-            rgba(255, 255, 255, 1) 0%,
-            rgba(255, 255, 255, 1) 18%,
-            transparent 18%,
-            transparent 20%,
-            rgba(255, 255, 255, 1) 20%,
-            rgba(255, 255, 255, 1) 42%,
-            transparent 42%,
-            transparent 44%,
-            rgba(255, 255, 255, 1) 44%,
-            rgba(255, 255, 255, 1) 58%,
-            transparent 58%,
-            transparent 60%,
-            rgba(255, 255, 255, 1) 60%,
-            rgba(255, 255, 255, 1) 78%,
-            transparent 78%,
-            transparent 80%,
-            rgba(255, 255, 255, 1) 80%,
-            rgba(255, 255, 255, 1) 100%
-        );
-    transform: rotate(25deg);
-    transform-origin: top center;
-    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.9)) drop-shadow(0 0 4px rgba(200, 200, 255, 0.8));
+    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.6));
     animation: lightning-flash 5s ease-in-out infinite;
-    z-index: 1;
 }
 
-/* Second intercloud - repositioned */
-.type-bg-electric::after {
-    content: '';
-    position: absolute;
-    top: 15%;
-    left: 20%;
-    width: 75px;
-    height: 75px;
-    background: radial-gradient(circle, 
-        rgba(255, 255, 180, 1) 0%, 
-        rgba(255, 255, 220, 0.65) 40%, 
-        transparent 70%);
-    border-radius: 50%;
-    filter: blur(25px);
-    animation: intercloud-flash-2 9s ease-in-out infinite;
-    z-index: 0;
+.type-bg-electric img {
+    position: relative;
+    z-index: 2;
 }
 
 /* ============================================
@@ -1371,24 +1185,29 @@
     clip-path: polygon(
         0% 100%,
         0% 50%,
-        3% 45%,
-        5% 48%,
-        8% 40%,
-        10% 43%,
-        13% 35%,
-        15% 38%,
-        18% 30%,
-        20% 34%,
-        23% 28%,
-        25% 32%,
-        28% 25%,
-        30% 29%,
-        33% 22%,
-        35% 26%,
-        38% 20%,
-        40% 24%,
-        43% 18%,
-        45% 22%,
+        2% 48%,
+        4% 45%,
+        6% 47%,
+        8% 42%,
+        10% 44%,
+        12% 38%,
+        14% 41%,
+        16% 35%,
+        18% 38%,
+        20% 32%,
+        22% 35%,
+        24% 30%,
+        26% 33%,
+        28% 27%,
+        30% 30%,
+        32% 25%,
+        34% 28%,
+        36% 23%,
+        38% 26%,
+        40% 20%,
+        42% 24%,
+        44% 18%,
+        46% 22%,
         48% 16%,
         50% 20%,
         52% 15%,
@@ -1412,13 +1231,13 @@
         88% 35%,
         90% 40%,
         92% 37%,
-        94% 42%,
+        94% 43%,
         96% 40%,
         98% 45%,
-        100% 43%,
+        100% 48%,
         100% 100%
     );
-    filter: blur(40px);
+    filter: blur(35px);
     z-index: 0;
 }
 
@@ -1431,25 +1250,16 @@
    MOBILE OPTIMIZATIONS
    ============================================ */
 @media (max-width: 768px) {
-    .type-bg-electric::after {
-        width: 80%;
-        height: 120%;
-    }
-    
-    .type-bg-fighting::before {
+    .type-bg-fighting::after {
         filter: blur(2px);
     }
     
-    .type-bg-fighting::after {
-        filter: blur(6px);
-    }
-    
     .type-bg-rock::before {
-        filter: blur(30px);
+        filter: blur(25px);
     }
     
     .type-bg-normal::before,
     .type-bg-normal::after {
-        filter: blur(3px);
+        filter: blur(4px);
     }
 }
