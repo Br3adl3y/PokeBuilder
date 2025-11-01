@@ -830,8 +830,8 @@
         0% 0%,
         0% 100%,
         30% 100%,
-        30% 65%,
-        70% 65%,
+        30% 41.5%,
+        70% 41.5%,
         70% 100%,
         100% 100%,
         100% 0%
@@ -850,35 +850,35 @@
    ============================================ */
 @keyframes bubble-group-1 {
     0% {
-        background-image:
-            radial-gradient(circle 8px at 18% calc(100% + 20px), rgba(255, 255, 255, 0.8) 0%, rgba(173, 216, 230, 0.6) 50%, transparent 80%),
-            radial-gradient(circle 10px at 52% calc(100% + 20px), rgba(255, 255, 255, 0.75) 0%, rgba(173, 216, 230, 0.55) 50%, transparent 80%);
+        transform: translateY(0);
+        opacity: 0;
+    }
+    5% {
+        opacity: 0.8;
+    }
+    95% {
+        opacity: 0;
     }
     100% {
-        background-image:
-            radial-gradient(circle 8px at 21% -40px, rgba(255, 255, 255, 0) 0%, rgba(173, 216, 230, 0) 50%, transparent 80%),
-            radial-gradient(circle 10px at 49% -40px, rgba(255, 255, 255, 0) 0%, rgba(173, 216, 230, 0) 50%, transparent 80%);
+        transform: translateY(-450px);
+        opacity: 0;
     }
 }
 
 @keyframes bubble-group-2 {
     0%, 30% {
-        background-image:
-            radial-gradient(circle 7px at 35% calc(100% + 20px), rgba(255, 255, 255, 0) 0%, rgba(173, 216, 230, 0) 50%, transparent 80%),
-            radial-gradient(circle 9px at 73% calc(100% + 20px), rgba(255, 255, 255, 0) 0%, rgba(173, 216, 230, 0) 50%, transparent 80%),
-            radial-gradient(circle 8.5px at 88% calc(100% + 20px), rgba(255, 255, 255, 0) 0%, rgba(173, 216, 230, 0) 50%, transparent 80%);
+        transform: translateY(0);
+        opacity: 0;
     }
     35% {
-        background-image:
-            radial-gradient(circle 7px at 35% calc(100% + 20px), rgba(255, 255, 255, 0.7) 0%, rgba(173, 216, 230, 0.5) 50%, transparent 80%),
-            radial-gradient(circle 9px at 73% calc(100% + 20px), rgba(255, 255, 255, 0.75) 0%, rgba(173, 216, 230, 0.55) 50%, transparent 80%),
-            radial-gradient(circle 8.5px at 88% calc(100% + 20px), rgba(255, 255, 255, 0.8) 0%, rgba(173, 216, 230, 0.6) 50%, transparent 80%);
+        opacity: 0.75;
+    }
+    95% {
+        opacity: 0;
     }
     100% {
-        background-image:
-            radial-gradient(circle 7px at 33% -40px, rgba(255, 255, 255, 0) 0%, rgba(173, 216, 230, 0) 50%, transparent 80%),
-            radial-gradient(circle 9px at 77% -40px, rgba(255, 255, 255, 0) 0%, rgba(173, 216, 230, 0) 50%, transparent 80%),
-            radial-gradient(circle 8.5px at 90% -40px, rgba(255, 255, 255, 0) 0%, rgba(173, 216, 230, 0) 50%, transparent 80%);
+        transform: translateY(-450px);
+        opacity: 0;
     }
 }
 
@@ -891,13 +891,13 @@
 .type-bg-water::before {
     content: '';
     position: absolute;
-    top: 0;
+    bottom: -20px;
     left: 0;
     width: 100%;
     height: 100%;
     background-image:
-        radial-gradient(circle 8px at 18% calc(100% + 20px), rgba(255, 255, 255, 0.8) 0%, rgba(173, 216, 230, 0.6) 50%, transparent 80%),
-        radial-gradient(circle 10px at 52% calc(100% + 20px), rgba(255, 255, 255, 0.75) 0%, rgba(173, 216, 230, 0.55) 50%, transparent 80%);
+        radial-gradient(circle 8px at 18% 100%, rgba(255, 255, 255, 0.8) 0%, rgba(173, 216, 230, 0.6) 50%, transparent 80%),
+        radial-gradient(circle 10px at 52% 100%, rgba(255, 255, 255, 0.75) 0%, rgba(173, 216, 230, 0.55) 50%, transparent 80%);
     animation: bubble-group-1 8s ease-in infinite;
     z-index: 2;
 }
@@ -905,14 +905,14 @@
 .type-bg-water::after {
     content: '';
     position: absolute;
-    top: 0;
+    bottom: -20px;
     left: 0;
     width: 100%;
     height: 100%;
     background-image:
-        radial-gradient(circle 7px at 35% calc(100% + 20px), rgba(255, 255, 255, 0) 0%, rgba(173, 216, 230, 0) 50%, transparent 80%),
-        radial-gradient(circle 9px at 73% calc(100% + 20px), rgba(255, 255, 255, 0) 0%, rgba(173, 216, 230, 0) 50%, transparent 80%),
-        radial-gradient(circle 8.5px at 88% calc(100% + 20px), rgba(255, 255, 255, 0) 0%, rgba(173, 216, 230, 0) 50%, transparent 80%);
+        radial-gradient(circle 7px at 35% 100%, rgba(255, 255, 255, 0.7) 0%, rgba(173, 216, 230, 0.5) 50%, transparent 80%),
+        radial-gradient(circle 9px at 73% 100%, rgba(255, 255, 255, 0.75) 0%, rgba(173, 216, 230, 0.55) 50%, transparent 80%),
+        radial-gradient(circle 8.5px at 88% 100%, rgba(255, 255, 255, 0.8) 0%, rgba(173, 216, 230, 0.6) 50%, transparent 80%);
     animation: bubble-group-2 13s ease-in infinite;
     z-index: 2;
 }
@@ -935,58 +935,34 @@
     overflow: hidden;
 }
 
-/* Tree canopy silhouette */
+/* Tree silhouette cutout following red line */
 .type-bg-normal::before {
     content: '';
     position: absolute;
     bottom: 0;
     left: 0;
     width: 100%;
-    height: 35%;
-    background: #E6A866;
+    height: 40%;
+    background: #E89860;
     clip-path: polygon(
         0% 100%,
-        0% 55%,
-        3% 48%,
-        5% 52%,
-        7% 45%,
-        10% 50%,
-        12% 42%,
-        15% 48%,
-        18% 40%,
-        20% 45%,
-        23% 38%,
-        25% 43%,
-        28% 35%,
-        30% 40%,
-        33% 32%,
-        35% 38%,
-        38% 30%,
-        40% 35%,
-        42% 28%,
-        45% 33%,
-        47% 25%,
-        50% 30%,
-        52% 23%,
-        55% 28%,
-        57% 20%,
-        60% 25%,
-        62% 18%,
-        65% 23%,
-        67% 15%,
-        70% 20%,
-        72% 22%,
-        75% 18%,
-        77% 25%,
-        80% 20%,
-        82% 28%,
-        85% 23%,
-        87% 30%,
-        90% 25%,
-        92% 33%,
-        95% 28%,
-        97% 35%,
-        100% 30%,
+        0% 75%,
+        8% 68%,
+        12% 60%,
+        18% 55%,
+        22% 48%,
+        28% 45%,
+        35% 40%,
+        42% 35%,
+        50% 32%,
+        58% 35%,
+        65% 40%,
+        72% 45%,
+        78% 48%,
+        82% 55%,
+        88% 60%,
+        92% 68%,
+        100% 75%,
         100% 100%
     );
     filter: blur(5px);
@@ -1039,100 +1015,42 @@
     overflow: hidden;
 }
 
-/* Mountain range with blur */
+/* Mountain range with blur following RED LINE from Cranidos image */
 .type-bg-rock::before {
     content: '';
     position: absolute;
     bottom: 0;
     left: 0;
     width: 100%;
-    height: 45%;
+    height: 100%;
     background: #A0826D;
     clip-path: polygon(
         0% 100%,
-        0% 65%,
-        5% 58%,
-        8% 63%,
-        12% 52%,
-        15% 57%,
-        18% 48%,
-        22% 55%,
-        25% 45%,
-        28% 52%,
-        32% 42%,
-        35% 48%,
-        38% 38%,
-        42% 45%,
-        45% 35%,
-        48% 42%,
-        52% 32%,
+        0% 25%,
+        5% 18%,
+        10% 22%,
+        15% 30%,
+        20% 35%,
+        25% 32%,
+        30% 28%,
+        35% 30%,
+        40% 35%,
+        45% 38%,
+        50% 38%,
         55% 38%,
-        58% 28%,
-        62% 35%,
-        65% 25%,
-        68% 32%,
-        72% 22%,
+        60% 38%,
+        65% 35%,
+        70% 30%,
         75% 28%,
-        78% 35%,
-        82% 30%,
-        85% 40%,
-        88% 35%,
-        92% 45%,
-        95% 40%,
-        98% 50%,
-        100% 45%,
+        80% 25%,
+        85% 30%,
+        90% 20%,
+        95% 28%,
+        100% 22%,
         100% 100%
     );
     filter: blur(4px);
-    z-index: 1;
-}
-
-/* Shadow gradient on mountains */
-.type-bg-rock::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 45%;
-    background: linear-gradient(180deg, transparent 0%, rgba(80, 60, 50, 0.3) 100%);
-    clip-path: polygon(
-        0% 100%,
-        0% 65%,
-        5% 58%,
-        8% 63%,
-        12% 52%,
-        15% 57%,
-        18% 48%,
-        22% 55%,
-        25% 45%,
-        28% 52%,
-        32% 42%,
-        35% 48%,
-        38% 38%,
-        42% 45%,
-        45% 35%,
-        48% 42%,
-        52% 32%,
-        55% 38%,
-        58% 28%,
-        62% 35%,
-        65% 25%,
-        68% 32%,
-        72% 22%,
-        75% 28%,
-        78% 35%,
-        82% 30%,
-        85% 40%,
-        88% 35%,
-        92% 45%,
-        95% 40%,
-        98% 50%,
-        100% 45%,
-        100% 100%
-    );
-    filter: blur(4px);
-    z-index: 2;
+    z-index: 0;
 }
 
 .type-bg-rock img {
