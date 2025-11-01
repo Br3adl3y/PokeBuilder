@@ -1,36 +1,63 @@
 /* ============================================
-   WATER TYPE - Teal to Royal Blue Gradient + Bubbles
+   STEEL TYPE - Polished Metal + Slow Glint
    ============================================ */
-@keyframes bubble-rise {
-    0% {
-        transform: translateY(0) scale(0);
+@keyframes metal-glint {
+    0%, 85%, 100% {
         opacity: 0;
+        transform: translateX(-150%) translateY(150%) rotate(-45deg);
     }
-    10% {
+    90%, 95% {
         opacity: 0.8;
-    }
-    90% {
-        opacity: 0.4;
-    }
-    100% {
-        transform: translateY(-400px) scale(1);
-        opacity: 0;
+        transform: translateX(150%) translateY(-150%) rotate(-45deg);
     }
 }
 
-.type-bg-water {
-    background: linear-gradient(135deg, #4db8c4 0%, #1e5f99 100%) !important;
+.type-bg-steel {
+    background: radial-gradient(ellipse at 60% 50%, #e8e8e8 0%, #c0c0c0 40%, #a8a8a8 100%) !important;
     position: relative;
     overflow: hidden;
 }
 
-.type-bg-water::before,
-.type-bg-water::after {
+.type-bg-steel::before {
     content: '';
     position: absolute;
-    bottom: -20px;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(135deg, 
+        transparent 0%,
+        transparent 45%,
+        rgba(255, 255, 255, 0.6) 48%,
+        rgba(255, 255, 255, 0.9) 50%,
+        rgba(255, 255, 255, 0.6) 52%,
+        transparent 55%,
+        transparent 100%);
+    animation: metal-glint 8s ease-in-out infinite;
+    z-index: 0;
+}
+
+.type-bg-steel img {
+    position: relative;
+    z-index: 1;
+}
+
+/* ============================================
+   NORMAL TYPE - Dawn Sky over Trees
+   ============================================ */
+.type-bg-normal {
+    background: linear-gradient(180deg, #FFE5B4 0%, #FFDAB9 40%, #FFA07A 100%) !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.type-bg-normal::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
     width: 100%;
-    height: 100%;
+    height: 30%;
     background-image:
         linear-gradient(to top, 
             rgba(255, 140, 0, 0.6) 0%,
@@ -116,7 +143,7 @@
 @media (max-width: 768px) {
     .type-bg-water::before,
     .type-bg-water::after {
-        background-size: 50px 100px, 80px 130px, 40px 120px, 70px 150px;
+        background-size: 50px 100px, 80px 130px, 40px 120px, 70px 150px, 60px 110px;
     }
     
     .type-bg-psychic::before,
@@ -130,11 +157,6 @@
         opacity: 0.5;
     }
     
-    .type-bg-electric::after {
-        width: 120px;
-        height: 120px;
-    }
-    
     .type-bg-fairy::before {
         width: 40px;
         height: 40px;
@@ -144,20 +166,58 @@
         width: 35px;
         height: 35px;
     }
-} 
-        radial-gradient(circle, rgba(100, 200, 255, 0.6) 2px, transparent 2px),
-        radial-gradient(circle, rgba(150, 220, 255, 0.5) 3px, transparent 3px),
-        radial-gradient(circle, rgba(180, 230, 255, 0.4) 1.5px, transparent 1.5px),
-        radial-gradient(circle, rgba(120, 210, 255, 0.5) 2.5px, transparent 2.5px);
-    background-size: 80px 150px, 120px 200px, 60px 180px, 100px 220px;
-    background-position: 10% 0, 40% 50px, 70% 20px, 85% 80px;
+    
+    .type-bg-grass::before,
+    .type-bg-grass::after {
+        background-size: 35px 65px, 45px 75px, 40px 55px;
+    }
+}WATER TYPE - Underwater with Rising Bubbles
+   ============================================ */
+@keyframes bubble-rise {
+    0% {
+        transform: translateY(0) scale(0);
+        opacity: 0;
+    }
+    10% {
+        opacity: 0.8;
+    }
+    90% {
+        opacity: 0.4;
+    }
+    100% {
+        transform: translateY(-400px) scale(1);
+        opacity: 0;
+    }
+}
+
+.type-bg-water {
+    background: radial-gradient(ellipse at center, #2d5a7d 0%, #1a3d5c 50%, #0d2438 100%) !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.type-bg-water::before,
+.type-bg-water::after {
+    content: '';
+    position: absolute;
+    bottom: -20px;
+    width: 100%;
+    height: 100%;
+    background-image: 
+        radial-gradient(circle, rgba(150, 200, 255, 0.7) 2px, transparent 2px),
+        radial-gradient(circle, rgba(180, 220, 255, 0.6) 3px, transparent 3px),
+        radial-gradient(circle, rgba(200, 230, 255, 0.5) 1.5px, transparent 1.5px),
+        radial-gradient(circle, rgba(160, 210, 255, 0.6) 2.5px, transparent 2.5px),
+        radial-gradient(circle, rgba(190, 225, 255, 0.5) 2px, transparent 2px);
+    background-size: 93px 167px, 137px 211px, 71px 193px, 113px 229px, 89px 181px;
+    background-position: 7% 0, 43% 57px, 73% 23px, 89% 87px, 27% 41px;
     animation: bubble-rise 8s ease-in infinite;
     z-index: 0;
 }
 
 .type-bg-water::after {
     animation-delay: 4s;
-    background-position: 25% 30px, 55% 0, 80% 60px, 15% 100px;
+    background-position: 29% 37px, 59% 11px, 83% 67px, 17% 103px, 51% 19px;
 }
 
 .type-bg-water img {
@@ -199,15 +259,15 @@
     background-image: 
         radial-gradient(circle, rgba(255, 120, 0, 0.8) 1px, transparent 1px),
         radial-gradient(circle, rgba(255, 200, 50, 0.6) 1.5px, transparent 1.5px);
-    background-size: 50px 100px, 70px 130px;
-    background-position: 20% 0, 60% 20px;
+    background-size: 53px 107px, 79px 139px;
+    background-position: 23% 0, 67% 29px;
     animation: ember-float 6s linear infinite;
     z-index: 0;
 }
 
 .type-bg-fire::after {
     animation-delay: 3s;
-    background-position: 40% 10px, 80% 30px;
+    background-position: 47% 17px, 87% 41px;
 }
 
 .type-bg-fire img {
@@ -246,17 +306,18 @@
     width: 100%;
     height: 100%;
     background-image:
-        linear-gradient(45deg, transparent 45%, rgba(100, 200, 50, 0.6) 47%, rgba(100, 200, 50, 0.6) 53%, transparent 55%),
-        linear-gradient(-45deg, transparent 45%, rgba(120, 220, 70, 0.5) 47%, rgba(120, 220, 70, 0.5) 53%, transparent 55%);
-    background-size: 40px 60px, 50px 70px;
-    background-position: 15% 0, 45% 30px;
+        radial-gradient(ellipse 8px 15px, rgba(100, 200, 50, 0.7) 0%, transparent 70%),
+        radial-gradient(ellipse 10px 18px, rgba(120, 220, 70, 0.6) 0%, transparent 70%),
+        radial-gradient(ellipse 7px 13px, rgba(90, 180, 40, 0.7) 0%, transparent 70%);
+    background-size: 47px 83px, 61px 97px, 53px 71px;
+    background-position: 19% 0, 53% 37px, 83% 19px;
     animation: leaf-fall 10s linear infinite;
     z-index: 0;
 }
 
 .type-bg-grass::after {
     animation-delay: 5s;
-    background-position: 70% 0, 85% 50px;
+    background-position: 73% 11px, 31% 59px, 89% 43px;
     opacity: 0.7;
 }
 
@@ -272,20 +333,17 @@
     0%, 90%, 100% {
         opacity: 0;
     }
-    92%, 94%, 96% {
+    92% {
         opacity: 1;
     }
-    93%, 95% {
+    93% {
         opacity: 0.3;
     }
-}
-
-@keyframes electric-pulse {
-    0%, 100% {
-        box-shadow: 0 0 20px rgba(255, 220, 0, 0.3);
+    94% {
+        opacity: 1;
     }
-    50% {
-        box-shadow: 0 0 40px rgba(255, 220, 0, 0.8);
+    95% {
+        opacity: 0;
     }
 }
 
@@ -298,43 +356,38 @@
 .type-bg-electric::before {
     content: '';
     position: absolute;
-    top: 20%;
-    left: 30%;
-    width: 4px;
-    height: 100px;
+    top: 15%;
+    left: 35%;
+    width: 3px;
+    height: 120px;
     background: linear-gradient(180deg, 
-        rgba(255, 255, 100, 1) 0%,
-        rgba(255, 220, 0, 0.9) 50%,
+        rgba(255, 255, 200, 1) 0%,
+        rgba(255, 255, 150, 1) 20%,
+        rgba(255, 255, 100, 0.9) 40%,
+        rgba(255, 220, 0, 0.8) 60%,
         transparent 100%);
-    transform: rotate(20deg) scaleY(1.5);
     clip-path: polygon(
-        50% 0%,
-        45% 30%,
-        55% 30%,
-        40% 50%,
-        60% 50%,
-        35% 70%,
-        65% 70%,
-        45% 100%
+        40% 0%,
+        60% 0%,
+        55% 25%,
+        70% 25%,
+        45% 45%,
+        60% 45%,
+        40% 60%,
+        55% 60%,
+        35% 80%,
+        50% 80%,
+        30% 100%,
+        45% 100%,
+        50% 70%,
+        40% 70%,
+        55% 50%,
+        35% 50%,
+        50% 30%,
+        35% 30%
     );
-    animation: lightning-strike 4s ease-in-out infinite;
-    filter: blur(1px);
-    z-index: 0;
-}
-
-.type-bg-electric::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 200px;
-    height: 200px;
-    border-radius: 50%;
-    background: radial-gradient(circle, 
-        rgba(255, 220, 0, 0.2) 0%,
-        transparent 70%);
-    animation: electric-pulse 2s ease-in-out infinite;
+    animation: lightning-strike 5s ease-in-out infinite;
+    filter: blur(0.5px) drop-shadow(0 0 3px rgba(255, 255, 150, 0.8));
     z-index: 0;
 }
 
@@ -344,7 +397,7 @@
 }
 
 /* ============================================
-   GHOST TYPE - Foggy Graveyard with Rolling Fog
+   GHOST TYPE - Foggy Graveyard with Yellow Moon
    ============================================ */
 @keyframes fog-roll {
     0% {
@@ -357,7 +410,7 @@
 
 .type-bg-ghost {
     background: 
-        radial-gradient(circle at 70% 20%, rgba(200, 200, 220, 0.3) 8%, transparent 12%),
+        radial-gradient(circle at 70% 20%, rgba(255, 223, 100, 0.9) 3%, rgba(255, 223, 100, 0.4) 6%, transparent 10%),
         linear-gradient(180deg, #1a0f2e 0%, #2d1b3d 50%, #0d0515 100%) !important;
     position: relative;
     overflow: hidden;
@@ -427,15 +480,15 @@
         radial-gradient(circle, rgba(255, 255, 255, 0.9) 1px, transparent 1px),
         radial-gradient(circle, rgba(200, 230, 255, 0.7) 1.5px, transparent 1.5px),
         radial-gradient(circle, rgba(220, 240, 255, 0.8) 1px, transparent 1px);
-    background-size: 60px 120px, 80px 150px, 50px 100px;
-    background-position: 10% 0, 50% 30px, 80% 10px;
+    background-size: 67px 127px, 89px 157px, 59px 109px;
+    background-position: 13% 0, 57% 37px, 87% 13px;
     animation: snow-fall 12s linear infinite;
     z-index: 0;
 }
 
 .type-bg-ice::after {
     animation-delay: 6s;
-    background-position: 30% 20px, 65% 0, 90% 40px;
+    background-position: 37% 23px, 71% 0, 97% 47px;
 }
 
 .type-bg-ice img {
@@ -444,21 +497,21 @@
 }
 
 /* ============================================
-   DRAGON TYPE - Pulsing Scale Diamonds
+   DRAGON TYPE - Yellow Scales on Green/Yellow
    ============================================ */
 @keyframes scale-pulse {
     0%, 100% {
-        opacity: 0.2;
-        transform: scale(0.9);
+        opacity: 0.3;
+        transform: scale(0.95);
     }
     50% {
-        opacity: 0.5;
+        opacity: 0.6;
         transform: scale(1);
     }
 }
 
 .type-bg-dragon {
-    background: linear-gradient(135deg, #1a0d33 0%, #0d0520 50%, #1a0033 100%) !important;
+    background: radial-gradient(ellipse at center, #8b9d3f 0%, #6b7d2f 50%, #4b5d1f 100%) !important;
     position: relative;
     overflow: hidden;
 }
@@ -471,12 +524,19 @@
     width: 100%;
     height: 100%;
     background-image:
-        radial-gradient(ellipse 40px 60px at 20% 30%, rgba(100, 50, 200, 0.4) 0%, transparent 50%),
-        radial-gradient(ellipse 50px 70px at 80% 20%, rgba(150, 100, 250, 0.3) 0%, transparent 50%),
-        radial-gradient(ellipse 35px 55px at 60% 70%, rgba(200, 50, 100, 0.4) 0%, transparent 50%),
-        radial-gradient(ellipse 45px 65px at 30% 80%, rgba(100, 150, 200, 0.3) 0%, transparent 50%),
-        radial-gradient(ellipse 55px 75px at 70% 50%, rgba(180, 80, 180, 0.3) 0%, transparent 50%);
-    filter: blur(15px);
+        radial-gradient(ellipse 35px 55px at 15% 20%, rgba(220, 200, 80, 0.5) 0%, transparent 50%),
+        radial-gradient(ellipse 40px 60px at 45% 15%, rgba(240, 220, 100, 0.4) 0%, transparent 50%),
+        radial-gradient(ellipse 30px 50px at 75% 25%, rgba(230, 210, 90, 0.5) 0%, transparent 50%),
+        radial-gradient(ellipse 45px 65px at 25% 50%, rgba(210, 190, 70, 0.4) 0%, transparent 50%),
+        radial-gradient(ellipse 38px 58px at 60% 45%, rgba(250, 230, 110, 0.5) 0%, transparent 50%),
+        radial-gradient(ellipse 32px 52px at 85% 55%, rgba(225, 205, 85, 0.4) 0%, transparent 50%),
+        radial-gradient(ellipse 42px 62px at 20% 75%, rgba(235, 215, 95, 0.5) 0%, transparent 50%),
+        radial-gradient(ellipse 36px 56px at 50% 80%, rgba(245, 225, 105, 0.4) 0%, transparent 50%),
+        radial-gradient(ellipse 40px 60px at 80% 70%, rgba(220, 200, 80, 0.5) 0%, transparent 50%),
+        radial-gradient(ellipse 34px 54px at 35% 35%, rgba(230, 210, 90, 0.4) 0%, transparent 50%),
+        radial-gradient(ellipse 38px 58px at 65% 65%, rgba(240, 220, 100, 0.5) 0%, transparent 50%),
+        radial-gradient(ellipse 32px 52px at 90% 40%, rgba(215, 195, 75, 0.4) 0%, transparent 50%);
+    filter: blur(12px);
     animation: scale-pulse 8s ease-in-out infinite;
     z-index: 0;
 }
@@ -489,10 +549,13 @@
     width: 100%;
     height: 100%;
     background-image:
-        radial-gradient(ellipse 45px 65px at 50% 40%, rgba(120, 80, 220, 0.3) 0%, transparent 50%),
-        radial-gradient(ellipse 40px 60px at 15% 60%, rgba(150, 50, 150, 0.4) 0%, transparent 50%),
-        radial-gradient(ellipse 50px 70px at 85% 75%, rgba(100, 100, 250, 0.3) 0%, transparent 50%);
-    filter: blur(15px);
+        radial-gradient(ellipse 40px 60px at 30% 60%, rgba(225, 205, 85, 0.4) 0%, transparent 50%),
+        radial-gradient(ellipse 35px 55px at 55% 30%, rgba(235, 215, 95, 0.5) 0%, transparent 50%),
+        radial-gradient(ellipse 42px 62px at 70% 85%, rgba(245, 225, 105, 0.4) 0%, transparent 50%),
+        radial-gradient(ellipse 36px 56px at 10% 45%, rgba(220, 200, 80, 0.5) 0%, transparent 50%),
+        radial-gradient(ellipse 38px 58px at 40% 90%, rgba(230, 210, 90, 0.4) 0%, transparent 50%),
+        radial-gradient(ellipse 34px 54px at 95% 75%, rgba(240, 220, 100, 0.5) 0%, transparent 50%);
+    filter: blur(12px);
     animation: scale-pulse 8s ease-in-out infinite;
     animation-delay: 4s;
     z-index: 0;
@@ -559,7 +622,7 @@
 }
 
 /* ============================================
-   FAIRY TYPE - Lavender/Purple + Pink Orbs
+   FAIRY TYPE - Lavender/Purple + Bright Pink Orbs
    ============================================ */
 @keyframes orb-float {
     0%, 100% {
@@ -575,12 +638,12 @@
 
 @keyframes orb-pulse {
     0%, 100% {
-        opacity: 0.4;
-        filter: blur(8px);
+        opacity: 0.7;
+        filter: blur(3px);
     }
     50% {
-        opacity: 0.8;
-        filter: blur(12px);
+        opacity: 1;
+        filter: blur(5px);
     }
 }
 
@@ -595,13 +658,14 @@
     position: absolute;
     top: 30%;
     left: 20%;
-    width: 60px;
-    height: 60px;
+    width: 50px;
+    height: 50px;
     border-radius: 50%;
     background: radial-gradient(circle, 
-        rgba(255, 105, 180, 0.8) 0%,
-        rgba(255, 182, 193, 0.4) 50%,
-        transparent 70%);
+        rgba(255, 105, 180, 1) 0%,
+        rgba(255, 105, 180, 0.8) 30%,
+        rgba(255, 182, 193, 0.5) 60%,
+        transparent 80%);
     animation: orb-float 8s ease-in-out infinite, orb-pulse 3s ease-in-out infinite;
     z-index: 0;
 }
@@ -611,13 +675,14 @@
     position: absolute;
     top: 60%;
     left: 70%;
-    width: 50px;
-    height: 50px;
+    width: 45px;
+    height: 45px;
     border-radius: 50%;
     background: radial-gradient(circle, 
-        rgba(255, 105, 180, 0.7) 0%,
-        rgba(255, 182, 193, 0.3) 50%,
-        transparent 70%);
+        rgba(255, 105, 180, 1) 0%,
+        rgba(255, 105, 180, 0.8) 30%,
+        rgba(255, 182, 193, 0.5) 60%,
+        transparent 80%);
     animation: orb-float 10s ease-in-out infinite, orb-pulse 3.5s ease-in-out infinite;
     animation-delay: 2s, 1s;
     z-index: 0;
@@ -633,11 +698,11 @@
    ============================================ */
 .type-bg-fighting {
     background: 
-        linear-gradient(180deg, rgba(255, 255, 100, 0.8) 0%, rgba(150, 255, 100, 0.6) 50%, transparent 100%),
+        radial-gradient(ellipse 40% 30% at 50% 45%, rgba(255, 255, 150, 1) 0%, rgba(200, 255, 150, 0.8) 40%, transparent 70%),
         linear-gradient(180deg, #8B7355 60%, #D2B48C 100%) !important;
     position: relative;
     overflow: hidden;
-    filter: blur(2px);
+    filter: blur(3px);
 }
 
 .type-bg-fighting img {
@@ -734,8 +799,8 @@
     background-image:
         radial-gradient(circle, rgba(139, 115, 85, 0.6) 1px, transparent 1px),
         radial-gradient(circle, rgba(160, 130, 109, 0.5) 1.5px, transparent 1.5px);
-    background-size: 30px 50px, 50px 70px;
-    background-position: 0 0, 25px 35px;
+    background-size: 37px 61px, 59px 83px;
+    background-position: 0 0, 31px 43px;
     animation: sand-blow 8s linear infinite;
     z-index: 0;
     filter: blur(0);
@@ -861,7 +926,7 @@
 }
 
 /* ============================================
-   ROCK TYPE - Blue Sky + Craggy Mountains
+   ROCK TYPE - Blue Sky + Blurry Mountains
    ============================================ */
 .type-bg-rock {
     background: linear-gradient(180deg, #87CEEB 0%, #B0C4DE 40%, #8B7355 100%) !important;
@@ -891,7 +956,7 @@
         100% 60%,
         100% 100%
     );
-    filter: blur(8px);
+    filter: blur(15px);
     z-index: 0;
 }
 
@@ -901,63 +966,3 @@
 }
 
 /* ============================================
-   STEEL TYPE - Polished Metal + Glint
-   ============================================ */
-@keyframes metal-glint {
-    0%, 80%, 100% {
-        opacity: 0;
-        transform: translateX(-150%) translateY(150%) rotate(-45deg);
-    }
-    85%, 95% {
-        opacity: 1;
-        transform: translateX(150%) translateY(-150%) rotate(-45deg);
-    }
-}
-
-.type-bg-steel {
-    background: radial-gradient(ellipse at 60% 50%, #e8e8e8 0%, #c0c0c0 40%, #a8a8a8 100%) !important;
-    position: relative;
-    overflow: hidden;
-}
-
-.type-bg-steel::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: linear-gradient(135deg, 
-        transparent 0%,
-        transparent 45%,
-        rgba(255, 255, 255, 0.8) 48%,
-        rgba(255, 255, 255, 1) 50%,
-        rgba(255, 255, 255, 0.8) 52%,
-        transparent 55%,
-        transparent 100%);
-    animation: metal-glint 5s ease-in-out infinite;
-    z-index: 0;
-}
-
-.type-bg-steel img {
-    position: relative;
-    z-index: 1;
-}
-
-/* ============================================
-   NORMAL TYPE - Dawn Sky over Trees
-   ============================================ */
-.type-bg-normal {
-    background: linear-gradient(180deg, #FFE5B4 0%, #FFDAB9 40%, #FFA07A 100%) !important;
-    position: relative;
-    overflow: hidden;
-}
-
-.type-bg-normal::before {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 30%;
-    background-image:
