@@ -147,7 +147,7 @@ function renderPokemonCard(forms) {
     const spriteUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${basePokemon.dexNumber}.png`;
     
     return `
-        <div class="card-hover rounded-2xl p-4 shadow-lg" data-pokemon-id="${basePokemon.id}">
+        <div class="rounded-2xl p-4 shadow-lg" data-pokemon-id="${basePokemon.id}">
             <div class="text-center">
                 <img src="${spriteUrl}" alt="${basePokemon.name}" class="pokemon-sprite w-24 h-24 mx-auto mb-2">
                 <div class="text-teal-600 text-xs font-medium">#${String(basePokemon.dexNumber).padStart(4, '0')}</div>
@@ -636,7 +636,7 @@ function renderMoveDetail() {
 
     return `
         <div class="min-h-screen pokedex-bg p-4 py-8">
-            <div class="card-hover rounded-3xl p-6 shadow-2xl max-w-4xl mx-auto">
+            <div class="rounded-3xl p-6 shadow-2xl max-w-4xl mx-auto">
                 <div class="flex justify-between items-start mb-4">
                     <div>
                         <h2 class="text-3xl font-bold text-gray-800">${m.name}</h2>
@@ -684,7 +684,7 @@ function renderMoveDetail() {
                             const isElite = p.moves[`${m.category}Elite`].includes(m.name);
                             const spriteUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.dexNumber}.png`;
                             return `
-                                <div class="card-hover rounded-xl p-2 text-center ${isElite ? 'elite-move' : ''}" data-pokemon-id="${p.id}">
+                                <div class="rounded-xl p-2 text-center ${isElite ? 'elite-move' : ''}" data-pokemon-id="${p.id}">
                                     <img src="${spriteUrl}" class="pokemon-sprite w-16 h-16 mx-auto">
                                     <div class="text-xs font-medium mt-1">${p.name}</div>
                                     ${isElite ? '<div class="text-xs text-purple-600 font-bold">ELITE</div>' : ''}
