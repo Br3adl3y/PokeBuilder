@@ -395,17 +395,31 @@
 }
 
 /* ============================================
-   ELECTRIC TYPE - Dark Storm Clouds + Lightning Bolts
+   ELECTRIC TYPE - Dark Storm Clouds + Electric Glow
    ============================================ */
-@keyframes lightning-strike {
+@keyframes electric-spark {
     0%, 70%, 100% {
         opacity: 0;
+        box-shadow: 0 0 0 rgba(255, 255, 150, 0);
     }
     75%, 78% {
         opacity: 1;
+        box-shadow: 0 0 30px rgba(255, 255, 150, 0.9), 0 0 60px rgba(255, 220, 0, 0.6);
     }
     76%, 77% {
         opacity: 0.5;
+        box-shadow: 0 0 15px rgba(255, 255, 150, 0.5), 0 0 30px rgba(255, 220, 0, 0.3);
+    }
+}
+
+@keyframes electric-aura {
+    0%, 100% {
+        opacity: 0.2;
+        transform: scale(0.9);
+    }
+    50% {
+        opacity: 0.5;
+        transform: scale(1.1);
     }
 }
 
@@ -418,97 +432,35 @@
 .type-bg-electric::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(135deg, 
-        transparent 0%,
-        transparent 48%,
-        rgba(255, 255, 200, 1) 49%,
-        rgba(255, 255, 150, 0.9) 50%,
-        rgba(255, 240, 100, 0.8) 51%,
-        transparent 52%,
+    top: 30%;
+    left: 40%;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: radial-gradient(circle, 
+        rgba(255, 255, 200, 1) 0%,
+        rgba(255, 255, 150, 0.8) 30%,
+        rgba(255, 240, 100, 0.4) 60%,
         transparent 100%);
-    clip-path: polygon(
-        15% 10%,
-        17% 10%,
-        18% 15%,
-        20% 15%,
-        19% 20%,
-        21% 20%,
-        20% 25%,
-        22% 25%,
-        21% 30%,
-        23% 30%,
-        22% 35%,
-        24% 35%,
-        25% 40%,
-        23% 40%,
-        24% 45%,
-        22% 45%,
-        23% 50%,
-        21% 50%,
-        22% 55%,
-        20% 55%,
-        19% 60%,
-        21% 60%,
-        20% 65%,
-        18% 65%,
-        17% 70%,
-        15% 70%
-    );
-    animation: lightning-strike 4s ease-in-out infinite;
-    filter: drop-shadow(0 0 5px rgba(255, 255, 150, 0.9));
+    animation: electric-spark 3s ease-in-out infinite;
+    filter: blur(3px);
     z-index: 0;
 }
 
 .type-bg-electric::after {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(-135deg, 
-        transparent 0%,
-        transparent 48%,
-        rgba(255, 255, 200, 1) 49%,
-        rgba(255, 255, 150, 0.9) 50%,
-        rgba(255, 240, 100, 0.8) 51%,
-        transparent 52%,
-        transparent 100%);
-    clip-path: polygon(
-        85% 10%,
-        83% 10%,
-        82% 15%,
-        80% 15%,
-        81% 20%,
-        79% 20%,
-        80% 25%,
-        78% 25%,
-        79% 30%,
-        77% 30%,
-        78% 35%,
-        76% 35%,
-        75% 40%,
-        77% 40%,
-        76% 45%,
-        78% 45%,
-        77% 50%,
-        79% 50%,
-        78% 55%,
-        80% 55%,
-        81% 60%,
-        79% 60%,
-        80% 65%,
-        82% 65%,
-        83% 70%,
-        85% 70%
-    );
-    animation: lightning-strike 4s ease-in-out infinite;
-    animation-delay: 2s;
-    filter: drop-shadow(0 0 5px rgba(255, 255, 150, 0.9));
+    top: 30%;
+    left: 40%;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: radial-gradient(circle, 
+        rgba(255, 255, 200, 0.3) 0%,
+        rgba(255, 240, 100, 0.15) 50%,
+        transparent 70%);
+    animation: electric-aura 2s ease-in-out infinite;
+    filter: blur(10px);
     z-index: 0;
 }
 
