@@ -428,13 +428,13 @@
             }
             
             /* Use abbreviated button text on very small screens */
-            .iv-button {
-                font-size: 0;
+            .iv-btn {
+                font-size: 0 !important;
                 padding: 0.2rem 0.4rem !important;
                 min-width: 24px !important;
             }
             
-            .iv-button::before {
+            .iv-btn::before {
                 content: attr(data-short);
                 font-size: 0.625rem;
                 font-weight: 700;
