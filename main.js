@@ -489,7 +489,7 @@ class PokeApp {
         if (results.pokemon.length > 0) {
             html += `<div class="mb-6">
                 <h2 class="text-white text-xl font-bold mb-3">Pokémon</h2>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div class="grid grid-cols-4 gap-3">
                     ${results.pokemon.map(forms => renderPokemonCard.call(this, forms)).join('')}
                 </div>
             </div>`;
