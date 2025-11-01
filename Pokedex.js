@@ -105,17 +105,12 @@ async function renderEvolutionChain(tree) {
         
         if (node.evolutions && node.evolutions.length > 0) {
             node.evolutions.forEach(evo => {
-                console.log('Evolution data:', evo);
                 addToChain(evo.branch, evo.candyCost, evo.evolveRequirement);
             });
         }
     };
     
     addToChain(tree);
-    
-    const spriteSize = result.length === 3 ? 'h-23' : 'h-16';
-    const textSize = result.length === 3 ? 'text-lg' : 'text-base';
-    const candySize = result.length === 3 ? 'text-base' : 'text-sm';
     
     // Fetch all sprite IDs
     const items = await Promise.all(result.map(async (item) => {
@@ -130,12 +125,12 @@ async function renderEvolutionChain(tree) {
     
     return items.map((item) => {
         return `
-            <div class="flex items-center gap-4 mb-4">
-                <img src="${item.sprite}" class="pokemon-sprite ${spriteSize} cursor-pointer hover:scale-110 transition flex-shrink-0" style="image-rendering: pixelated;" data-pokemon-dex="${item.pokemon.dexNumber}">
-                <div class="flex-1">
-                    <div class="${textSize} text-gray-700 font-medium">${item.pokemon.name}</div>
-                    ${item.candyCost ? `<div class="${candySize} text-gray-500">${item.candyCost} 🍬</div>` : ''}
-                    ${item.evolveRequirement ? `<div class="text-xs text-gray-400 italic mt-1">${item.evolveRequirement}</div>` : ''}
+            <div class="flex items-center gap-2 mb-3">
+                <img src="${item.sprite}" class="pokemon-sprite h-16 cursor-pointer hover:scale-110 transition flex-shrink-0" style="image-rendering: pixelated;" data-pokemon-dex="${item.pokemon.dexNumber}">
+                <div class="flex-1 min-w-0">
+                    <div class="text-sm text-gray-700 font-medium truncate">${item.pokemon.name}</div>
+                    ${item.candyCost ? `<div class="text-xs text-gray-500">${item.candyCost} 🍬</div>` : ''}
+                    ${item.evolveRequirement ? `<div class="text-xs text-gray-400 italic mt-1 truncate">${item.evolveRequirement}</div>` : ''}
                 </div>
             </div>
         `;
@@ -213,25 +208,24 @@ async function renderPokemonDetail() {
 
     return `
         <div class="min-h-screen pokedex-bg p-4 py-8" data-detail-container>
-            <div class="card-hover rounded-3xl shadow-2xl mx-auto bg-gradient-to-br from-cyan-50 to-blue-100" style="max-width: 1400px; padding: 24px;">
+            <div class="detail-container card-hover rounded-3xl shadow-2xl mx-auto bg-gradient-to-br from-cyan-50 to-blue-100" style="max-width: 1400px; padding: clamp(0.5rem, 3vw, 1.5rem);">
                 
-                <!-- ROW 1: 2/3 left column, 1/3 right column -->
-                <div class="grid gap-6 mb-6" style="grid-template-columns: 2fr 1fr; min-width: 600px;">
+                <!-- ROW 1: 2/3 sprite + 1/3 evolution -->
+                <div class="detail-row-1 mb-4">
                     
-                    <!-- LEFT COLUMN (2/3 width): Sprite with overlaid name/type -->
-                    <div class="relative bg-white/30 rounded-xl flex items-center justify-center ${typeBgClass}" style="height: 400px;">
-                        <!-- Sprite fills container -->
+                    <!-- LEFT: Sprite (2/3 width) -->
+                    <div class="sprite-container relative bg-white/30 rounded-xl flex items-center justify-center ${typeBgClass}" style="height: clamp(250px, 50vw, 400px);">
                         <img src="${spriteUrl}" alt="${p.name}" class="w-1/2 h-1/2 object-contain mx-auto">
                         
                         <!-- Name/Type overlaid at BOTTOM -->
-                        <div class="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-white/90 to-transparent">
+                        <div class="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-white/90 to-transparent">
                             <div class="text-gray-500 text-xs mb-1">#${String(p.dexNumber).padStart(4, '0')}</div>
                             
-                            <div class="flex items-end gap-3">
-                                <h1 class="text-4xl font-bold text-gray-800 leading-none">${p.name.toUpperCase()}</h1>
-                                <div class="flex gap-2 pb-1">
+                            <div class="flex items-end gap-2 flex-wrap">
+                                <h1 class="text-2xl md:text-4xl font-bold text-gray-800 leading-none">${p.name.toUpperCase()}</h1>
+                                <div class="flex gap-1 pb-1">
                                     ${p.types.map(type => 
-                                        `<span class="type-badge px-4 py-2 rounded-full text-white font-semibold uppercase text-sm" style="background-color: ${TYPE_COLORS[type]}">${type}</span>`
+                                        `<span class="type-badge px-2 md:px-4 py-1 md:py-2 rounded-full text-white font-semibold uppercase text-xs md:text-sm" style="background-color: ${TYPE_COLORS[type]}">${type}</span>`
                                     ).join('')}
                                 </div>
                             </div>
@@ -245,22 +239,22 @@ async function renderPokemonDetail() {
                         </div>
                     </div>
                     
-                    <!-- RIGHT COLUMN (1/3 width): Evolution Chain -->
-                    <div class="bg-white rounded-xl p-4 shadow flex flex-col" style="height: 400px;">
-                        <div class="text-sm font-semibold text-gray-600 mb-3">Evolution</div>
-                        <div class="flex-1 overflow-y-auto">
-                            ${chain ? await renderEvolutionChain.call(this, chain) : ''}
+                    <!-- RIGHT: Evolution (1/3 width) -->
+                    <div class="evolution-container bg-white rounded-xl p-3 shadow flex flex-col" style="height: clamp(250px, 50vw, 400px);">
+                        <div class="text-xs md:text-sm font-semibold text-gray-600 mb-2">Evolution</div>
+                        <div class="evolution-scroll flex-1">
+                            ${chain ? await renderEvolutionChain.call(this, chain) : '<div class="text-xs text-gray-400">No evolutions</div>'}
                         </div>
                     </div>
                 </div>
 
-                <!-- ROW 2: Base Stats | Max CP/Costs | Placeholder | IV Buttons -->
-                <div class="grid gap-6 mb-6" style="grid-template-columns: 1fr 1fr 1fr 2fr; min-width: 700px;">
+                <!-- ROW 2: Base Stats (2/9) | Max CP (2/9) | Future data (2/9) | IV Buttons (3/9 = 1/3) -->
+                <div class="detail-row-2 mb-4">
                     
-                    <!-- Base Stats -->
-                    <div class="bg-white rounded-xl p-4 shadow">
-                        <div class="text-sm font-semibold text-gray-600 mb-3">Base Stats</div>
-                        <div class="space-y-2 text-sm">
+                    <!-- Base Stats (2/9) -->
+                    <div class="stats-container bg-white rounded-xl p-3 shadow">
+                        <div class="text-xs md:text-sm font-semibold text-gray-600 mb-2">Base Stats</div>
+                        <div class="space-y-1 text-xs md:text-sm">
                             <div class="flex justify-between">
                                 <span class="text-gray-600">ATK</span>
                                 <span class="text-red-500 font-bold">${p.stats.attack}</span>
@@ -276,41 +270,41 @@ async function renderPokemonDetail() {
                         </div>
                     </div>
                     
-                    <!-- Max CP / Costs -->
-                    <div class="bg-white rounded-xl p-4 shadow">
-                        <div class="text-sm font-semibold text-gray-600 mb-3">max cp</div>
-                        <div class="text-2xl font-bold mb-4">${p.maxCP || 'TBD'}</div>
+                    <!-- Max CP (2/9) -->
+                    <div class="maxcp-container bg-white rounded-xl p-3 shadow">
+                        <div class="text-xs md:text-sm font-semibold text-gray-600 mb-2">max cp</div>
+                        <div class="text-xl md:text-2xl font-bold">${p.maxCP || 'TBD'}</div>
                         
                         ${p.thirdMoveCost ? `
-                            <div class="mb-3">
+                            <div class="mt-2">
                                 <div class="text-xs text-gray-500 mb-1">2nd Charge Move</div>
-                                <div class="text-sm">${p.thirdMoveCost.candy} 🍬 + ${(p.thirdMoveCost.stardust / 1000).toFixed(0)}k ⭐</div>
+                                <div class="text-xs md:text-sm">${p.thirdMoveCost.candy} 🍬 + ${(p.thirdMoveCost.stardust / 1000).toFixed(0)}k ⭐</div>
                             </div>
                         ` : ''}
                         
                         ${p.shadowInfo ? `
-                            <div>
+                            <div class="mt-2">
                                 <div class="text-xs text-gray-500 mb-1">Purification</div>
-                                <div class="text-sm">${p.shadowInfo.purificationCandy} 🍬 + ${(p.shadowInfo.purificationStardust / 1000).toFixed(0)}k ⭐</div>
+                                <div class="text-xs md:text-sm">${p.shadowInfo.purificationCandy} 🍬 + ${(p.shadowInfo.purificationStardust / 1000).toFixed(0)}k ⭐</div>
                             </div>
                         ` : ''}
                     </div>
                     
-                    <!-- Placeholder -->
-                    <div class="bg-white rounded-xl p-4 shadow flex items-center justify-center text-gray-400 text-sm border-2 border-dashed border-gray-300">
+                    <!-- Future data (2/9) -->
+                    <div class="bg-white rounded-xl p-3 shadow flex items-center justify-center text-gray-400 text-xs md:text-sm border-2 border-dashed border-gray-300">
                         Future data
                     </div>
                     
-                    <!-- IV Buttons for all Pokemon in chain -->
-                    <div class="bg-white rounded-xl p-4 shadow overflow-hidden flex flex-col">
-                        <div class="flex-1 overflow-y-auto space-y-3" style="max-height: 200px;">
+                    <!-- IV Buttons (3/9 = 1/3) -->
+                    <div class="iv-container bg-white rounded-xl p-2 md:p-3 shadow overflow-hidden flex flex-col">
+                        <div class="iv-scroll flex-1 space-y-2">
                             ${chainPokemon.map(mon => `
-                                <div class="flex items-center justify-between">
-                                    <span class="text-sm text-gray-700 font-medium">${mon.name}</span>
-                                    <div class="flex gap-2">
-                                        <button class="px-3 py-1 rounded-full bg-yellow-300 text-yellow-900 font-semibold hover:bg-yellow-400 transition text-xs" data-action="iv-spread" data-league="little" data-pokemon="${mon.id}">Little</button>
-                                        <button class="px-3 py-1 rounded-full bg-cyan-400 text-cyan-900 font-semibold hover:bg-cyan-500 transition text-xs" data-action="iv-spread" data-league="great" data-pokemon="${mon.id}">Great</button>
-                                        <button class="px-3 py-1 rounded-full bg-purple-500 text-white font-semibold hover:bg-purple-600 transition text-xs" data-action="iv-spread" data-league="ultra" data-pokemon="${mon.id}">Ultra</button>
+                                <div class="iv-row">
+                                    <span class="iv-name text-xs md:text-sm text-gray-700 font-medium truncate">${mon.name}</span>
+                                    <div class="iv-buttons">
+                                        <button class="iv-btn px-2 py-1 rounded-full bg-yellow-300 text-yellow-900 font-semibold hover:bg-yellow-400 transition text-xs" data-action="iv-spread" data-league="little" data-pokemon="${mon.id}" data-full="Little" data-short="L">Little</button>
+                                        <button class="iv-btn px-2 py-1 rounded-full bg-cyan-400 text-cyan-900 font-semibold hover:bg-cyan-500 transition text-xs" data-action="iv-spread" data-league="great" data-pokemon="${mon.id}" data-full="Great" data-short="G">Great</button>
+                                        <button class="iv-btn px-2 py-1 rounded-full bg-purple-500 text-white font-semibold hover:bg-purple-600 transition text-xs" data-action="iv-spread" data-league="ultra" data-pokemon="${mon.id}" data-full="Ultra" data-short="U">Ultra</button>
                                     </div>
                                 </div>
                             `).join('')}
