@@ -953,8 +953,8 @@
     width: 100%;
     height: 100%;
     background-image:
-        radial-gradient(circle 8px at 18% 50%, rgba(255, 255, 255, 0.8) 0%, rgba(173, 216, 230, 0.6) 50%, transparent 80%),
-        radial-gradient(circle 10px at 52% 50%, rgba(255, 255, 255, 0.75) 0%, rgba(173, 216, 230, 0.55) 50%, transparent 80%);
+        radial-gradient(circle 8px at 18% 100%, rgba(255, 255, 255, 0.8) 0%, rgba(173, 216, 230, 0.6) 50%, transparent 80%),
+        radial-gradient(circle 10px at 52% 100%, rgba(255, 255, 255, 0.75) 0%, rgba(173, 216, 230, 0.55) 50%, transparent 80%);
     animation: bubble-group-1 8s ease-in infinite;
     z-index: 2;
     pointer-events: none;
@@ -968,9 +968,9 @@
     width: 100%;
     height: 100%;
     background-image:
-        radial-gradient(circle 7px at 30% 50%, rgba(255, 255, 255, 0.7) 0%, rgba(173, 216, 230, 0.5) 50%, transparent 80%),
-        radial-gradient(circle 9px at 75% 50%, rgba(255, 255, 255, 0.75) 0%, rgba(173, 216, 230, 0.55) 50%, transparent 80%),
-        radial-gradient(circle 8.5px at 88% 50%, rgba(255, 255, 255, 0.8) 0%, rgba(173, 216, 230, 0.6) 50%, transparent 80%);
+        radial-gradient(circle 7px at 30% 100%, rgba(255, 255, 255, 0.7) 0%, rgba(173, 216, 230, 0.5) 50%, transparent 80%),
+        radial-gradient(circle 9px at 75% 100%, rgba(255, 255, 255, 0.75) 0%, rgba(173, 216, 230, 0.55) 50%, transparent 80%),
+        radial-gradient(circle 8.5px at 88% 100%, rgba(255, 255, 255, 0.8) 0%, rgba(173, 216, 230, 0.6) 50%, transparent 80%);
     animation: bubble-group-2 13s ease-in infinite;
     z-index: 2;
     pointer-events: none;
@@ -1004,47 +1004,89 @@
     height: 100%;
     background: #8B6F47;
     clip-path: polygon(
-        0% 100%,
         0% 11%,
-        3% 14%,
-        6% 16%,
-        8% 13%,
-        11% 18%,
-        13% 15%,
-        15% 20%,
-        18% 17%,
-        20% 22%,
+        2% 13%,
+        4% 11%,
+        6% 14%,
+        8% 12%,
+        10% 15%,
+        12% 13%,
+        14% 16%,
+        16% 14%,
+        18% 18%,
+        20% 16%,
         22% 19%,
-        24% 23%,
-        26% 20%,
-        28% 25%,
-        30% 22%,
-        32% 28%,
+        24% 17%,
+        26% 21%,
+        28% 19%,
+        30% 23%,
+        32% 22%,
         34% 26%,
-        36% 35%,
-        38% 41%,
-        40% 100%,
-        60% 100%,
-        62% 38%,
-        64% 32%,
-        66% 28%,
-        68% 25%,
-        70% 23%,
-        72% 20%,
-        74% 24%,
-        76% 21%,
-        78% 26%,
+        36% 25%,
+        38% 29%,
+        40% 28%,
+        42% 32%,
+        44% 35%,
+        46% 38%,
+        48% 42%,
+        50% 46%,
+        52% 50%,
+        54% 53%,
+        56% 55%,
+        0% 55%,
+        0% 100%,
+        100% 100%,
+        100% 50%,
+        98% 48%,
+        96% 45%,
+        94% 42%,
+        92% 39%,
+        90% 36%,
+        88% 33%,
+        86% 30%,
+        84% 28%,
+        82% 25%,
         80% 23%,
-        82% 19%,
-        84% 22%,
-        86% 18%,
-        88% 15%,
-        90% 19%,
-        92% 16%,
-        94% 13%,
-        97% 17%,
-        100% 14%,
-        100% 100%
+        78% 21%,
+        76% 19%,
+        74% 17%,
+        72% 16%,
+        70% 14%,
+        68% 13%,
+        66% 12%,
+        64% 11%,
+        62% 10%,
+        60% 11%,
+        58% 12%,
+        56% 11%,
+        54% 10%,
+        52% 11%,
+        50% 12%,
+        48% 11%,
+        46% 10%,
+        44% 11%,
+        42% 12%,
+        40% 11%,
+        38% 10%,
+        36% 11%,
+        34% 10%,
+        32% 11%,
+        30% 10%,
+        28% 11%,
+        26% 10%,
+        24% 11%,
+        22% 10%,
+        20% 11%,
+        18% 10%,
+        16% 11%,
+        14% 10%,
+        12% 11%,
+        10% 10%,
+        8% 11%,
+        6% 10%,
+        4% 11%,
+        2% 10%,
+        0% 11%
     );
     filter: blur(5px);
     z-index: 0;
@@ -1061,8 +1103,6 @@
 @keyframes intercloud-lightning {
     0%, 1.5% {
         opacity: 1;
-        top: 8%;
-        left: 15%;
     }
     2%, 47% {
         opacity: 0;
@@ -1098,7 +1138,6 @@
 @keyframes lightning-bolt-flash {
     0%, 2% {
         opacity: 0.9;
-        transform: translate(-50%, -50%) rotate(-8deg);
     }
     2.5%, 29% {
         opacity: 0;
@@ -1106,7 +1145,6 @@
     }
     30%, 32% {
         opacity: 0.9;
-        transform: translate(-50%, -50%) rotate(12deg);
     }
     32.5%, 59% {
         opacity: 0;
@@ -1114,14 +1152,13 @@
     }
     60%, 62% {
         opacity: 0.9;
-        transform: translate(-50%, -50%) rotate(3deg);
     }
     62.5%, 63% {
         opacity: 0;
+        transform: translate(-50%, -50%) rotate(3deg);
     }
     63.5%, 65.5% {
         opacity: 0.9;
-        transform: translate(-50%, -50%) rotate(7deg);
     }
     66%, 100% {
         opacity: 0;
@@ -1157,69 +1194,71 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%) rotate(-8deg);
-    width: 3px;
-    height: 85%;
-    background: linear-gradient(180deg, 
-        transparent 0%,
-        #FFEB3B 8%,
-        #FFF9C4 15%,
-        #FFEB3B 22%,
-        #FFF9C4 30%,
-        #FFEB3B 35%,
-        #FFF9C4 45%,
-        #FFEB3B 52%,
-        #FFF9C4 60%,
-        #FFEB3B 68%,
-        #FFF9C4 75%,
-        #FFEB3B 82%,
-        transparent 95%
-    );
+    width: 100%;
+    height: 200%;
+    background: transparent;
     clip-path: polygon(
-        45% 0%,
-        55% 0%,
-        52% 12%,
-        60% 12%,
-        50% 18%,
-        58% 18%,
-        48% 28%,
-        55% 28%,
-        47% 35%,
-        54% 35%,
-        46% 42%,
-        53% 42%,
-        45% 50%,
-        52% 50%,
-        44% 58%,
-        51% 58%,
-        43% 65%,
-        50% 65%,
-        42% 72%,
-        49% 72%,
-        41% 80%,
-        48% 80%,
-        40% 88%,
-        55% 88%,
-        48% 75%,
-        53% 75%,
-        50% 68%,
-        55% 68%,
-        52% 60%,
-        57% 60%,
-        54% 52%,
-        59% 52%,
-        56% 44%,
-        61% 44%,
-        58% 36%,
-        63% 36%,
-        60% 28%,
-        65% 28%,
-        62% 20%,
-        67% 20%,
-        64% 12%,
-        55% 12%,
-        55% 0%
+        8% 5%,
+        9% 5%,
+        15% 18%,
+        14% 18%,
+        19% 28%,
+        18% 28%,
+        23% 38%,
+        22% 38%,
+        28% 48%,
+        27% 48%,
+        33% 58%,
+        32% 58%,
+        38% 68%,
+        37% 68%,
+        43% 78%,
+        42% 78%,
+        48% 88%,
+        49% 88%,
+        44% 80%,
+        45% 80%,
+        39% 70%,
+        40% 70%,
+        34% 60%,
+        35% 60%,
+        29% 50%,
+        30% 50%,
+        24% 40%,
+        25% 40%,
+        20% 30%,
+        21% 30%,
+        16% 20%,
+        17% 20%,
+        10% 8%,
+        9% 8%
     );
     opacity: 0;
+    background: linear-gradient(165deg, 
+        transparent 0%,
+        transparent 3%,
+        #FFEB3B 4%,
+        #FFF9C4 8%,
+        #FFEB3B 12%,
+        #FFF9C4 18%,
+        #FFEB3B 22%,
+        #FFF9C4 28%,
+        #FFEB3B 32%,
+        #FFF9C4 38%,
+        #FFEB3B 42%,
+        #FFF9C4 48%,
+        #FFEB3B 52%,
+        #FFF9C4 58%,
+        #FFEB3B 62%,
+        #FFF9C4 68%,
+        #FFEB3B 72%,
+        #FFF9C4 78%,
+        #FFEB3B 82%,
+        #FFF9C4 88%,
+        #FFEB3B 92%,
+        transparent 96%,
+        transparent 100%
+    );
     filter: drop-shadow(0 0 8px rgba(255, 235, 59, 0.9)) drop-shadow(0 0 12px rgba(255, 235, 59, 0.6));
     animation: lightning-bolt-flash 20s ease-in-out infinite;
     z-index: 2;
