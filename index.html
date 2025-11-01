@@ -21,17 +21,17 @@
         }
         
         .pokedex-bg::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        left: -50%;
-        width: 200%;
-        height: 200%;
-        background-image: 
-            repeating-linear-gradient(50deg, transparent, transparent 80px, rgba(255,255,255,0.25) 80px, rgba(255,255,255,0.25) 81px),
-            repeating-linear-gradient(-50deg, transparent, transparent 80px, rgba(255,255,255,0.25) 80px, rgba(255,255,255,0.25) 81px);
-        animation: diamondScroll 30s linear infinite;
-        pointer-events: none;
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background-image: 
+                repeating-linear-gradient(50deg, transparent, transparent 80px, rgba(255,255,255,0.25) 80px, rgba(255,255,255,0.25) 81px),
+                repeating-linear-gradient(-50deg, transparent, transparent 80px, rgba(255,255,255,0.25) 80px, rgba(255,255,255,0.25) 81px);
+            animation: diamondScroll 30s linear infinite;
+            pointer-events: none;
         }
 
         @keyframes diamondScroll {
@@ -292,1394 +292,214 @@
             position: relative;
             z-index: 1;
         }
+        /* Prevent horizontal scrolling globally */
+        html, body {
+            overflow-x: hidden;
+            max-width: 100vw;
+        }
+
+        /* Responsive container for detail page */
+        .detail-container {
+            width: 100%;
+            max-width: 100vw;
+            box-sizing: border-box;
+        }
+
+        /* Row 1: 2/3 and 1/3 split - responsive */
+        .detail-row-1 {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1rem;
+            width: 100%;
+        }
+
+        /* Row 2: 2/9, 2/9, 2/9, 1/3 (3/9) split - responsive */
+        .detail-row-2 {
+            display: grid;
+            grid-template-columns: 2fr 2fr 2fr 3fr;
+            gap: 1rem;
+            width: 100%;
+        }
+
+        /* IV row layout */
+        .iv-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.25rem;
+        }
+
+        .iv-buttons {
+            display: flex;
+            gap: 0.25rem;
+            flex-shrink: 1;
+        }
+
+        /* Mobile responsive breakpoint */
+        @media (max-width: 768px) {
+            .detail-row-1,
+            .detail-row-2 {
+                gap: 0.5rem;
+            }
+            
+            /* Scale IV buttons to fit width - no wrapping */
+            .iv-row {
+                gap: 0.125rem;
+            }
+            
+            .iv-buttons {
+                gap: 0.125rem;
+                flex-shrink: 1;
+            }
+            
+            /* Sprite container - scale content to fit */
+            .sprite-container {
+                padding: 0.5rem !important;
+            }
+            
+            .sprite-container h1 {
+                font-size: clamp(1rem, 5vw, 2.5rem) !important;
+            }
+            
+            .sprite-container .type-badge {
+                font-size: clamp(0.5rem, 2vw, 0.875rem) !important;
+                padding: 0.25rem 0.5rem !important;
+            }
+            
+            /* Evolution container - scale content */
+            .evolution-container {
+                font-size: clamp(0.65rem, 2.5vw, 1rem);
+            }
+            
+            .evolution-container img {
+                max-width: 60px;
+                height: auto;
+            }
+            
+            /* IV name - allow shrinking */
+            .iv-name {
+                min-width: 0;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            
+            /* IV buttons container - scale buttons to fit without wrapping */
+            .iv-container button {
+                font-size: clamp(0.45rem, 1.5vw, 0.75rem) !important;
+                padding: clamp(0.15rem, 0.5vw, 0.25rem) clamp(0.25rem, 1vw, 0.5rem) !important;
+                white-space: nowrap;
+                flex-shrink: 1;
+                min-width: 0;
+            }
+            
+            .iv-container .text-sm {
+                font-size: clamp(0.65rem, 2vw, 0.875rem);
+            }
+            
+            /* Base stats container - scale text */
+            .stats-container {
+                font-size: clamp(0.7rem, 2.5vw, 0.875rem);
+            }
+            
+            /* Max CP container - scale text */
+            .maxcp-container {
+                font-size: clamp(0.7rem, 2.5vw, 0.875rem);
+            }
+            
+            .maxcp-container .text-2xl {
+                font-size: clamp(1.25rem, 4vw, 1.5rem) !important;
+            }
+        }
+
+        /* Extra small phones */
+        @media (max-width: 480px) {
+            .detail-row-1 {
+                gap: 0.375rem;
+            }
+            
+            .detail-row-2 {
+                gap: 0.375rem;
+            }
+            
+            .sprite-container h1 {
+                font-size: clamp(0.875rem, 4.5vw, 2rem) !important;
+            }
+            
+            .evolution-container img {
+                max-width: 50px;
+            }
+            
+            /* Scale down psychic background animation on mobile */
+            .type-bg-psychic::before,
+            .type-bg-psychic::after {
+                width: 150px;
+                height: 150px;
+            }
+            
+            /* Use abbreviated button text on very small screens */
+            .iv-btn {
+                font-size: 0;
+                padding: 0.2rem 0.4rem !important;
+                min-width: 24px !important;
+            }
+            
+            .iv-btn::before {
+                content: attr(data-short);
+                font-size: 0.625rem;
+                font-weight: 700;
+            }
+            
+            .iv-row {
+                gap: 0.25rem;
+            }
+            
+            .iv-buttons {
+                gap: 0.2rem;
+            }
+        }
+
+        /* Scrollable containers */
+        .evolution-scroll {
+            overflow-y: auto;
+            overflow-x: hidden;
+            max-height: 100%;
+        }
+
+        .iv-scroll {
+            overflow-y: auto;
+            overflow-x: hidden;
+            max-height: 100%;
+        }
+
+        /* Custom scrollbar */
+        .evolution-scroll::-webkit-scrollbar,
+        .iv-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .evolution-scroll::-webkit-scrollbar-track,
+        .iv-scroll::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        .evolution-scroll::-webkit-scrollbar-thumb,
+        .iv-scroll::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+
+        .evolution-scroll::-webkit-scrollbar-thumb:hover,
+        .iv-scroll::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
     </style>
 </head>
 <body>
     <div id="app"></div>
 
-    <script>
-        async function initializeDatabase() {
-            return new Promise((resolve, reject) => {
-                const request = indexedDB.open('PokemonGoDB', 5);
-                
-                request.onerror = () => reject(request.error);
-                
-                request.onupgradeneeded = (event) => {
-                    const db = event.target.result;
-                    
-                    // Create object stores if they don't exist
-                    if (!db.objectStoreNames.contains('pokemon')) {
-                        const pokemonStore = db.createObjectStore('pokemon', { keyPath: 'id' });
-                        pokemonStore.createIndex('dexNumber', 'dexNumber', { unique: false });
-                    }
-                    if (!db.objectStoreNames.contains('moves')) {
-                        db.createObjectStore('moves', { keyPath: 'id' });
-                    }
-                    if (!db.objectStoreNames.contains('metadata')) {
-                        db.createObjectStore('metadata', { keyPath: 'key' });
-                    }
-                    if (!db.objectStoreNames.contains('typeEffectiveness')) {
-                        db.createObjectStore('typeEffectiveness', { keyPath: 'id' });
-                    }
-                    if (!db.objectStoreNames.contains('rankings')) {
-                        const rankingsStore = db.createObjectStore('rankings', { keyPath: 'id' });
-                        rankingsStore.createIndex('league', 'league', { unique: false });
-                        rankingsStore.createIndex('cupName', 'cupName', { unique: false });
-                        rankingsStore.createIndex('timestamp', 'timestamp', { unique: false });
-                    }
-                };
-                
-                request.onsuccess = async (event) => {
-                    const db = event.target.result;
-                    
-                    // Check if database is empty
-                    const tx = db.transaction(['pokemon'], 'readonly');
-                    const store = tx.objectStore('pokemon');
-                    const countRequest = store.count();
-                    
-                    countRequest.onsuccess = async () => {
-                        if (countRequest.result === 0) {
-                            console.log('Database empty, loading from JSON...');
-                            
-                            try {
-                                // Load the JSON file
-                                const response = await fetch('./go-database103125.json');
-                                const data = await response.json();
-                                
-                                console.log('JSON loaded, populating database...');
-                                
-                                // Populate IndexedDB
-                                const writeTx = db.transaction(['pokemon', 'moves', 'metadata', 'typeEffectiveness'], 'readwrite');
-                                
-                                // Add all data to respective stores
-                                if (data.pokemon && Array.isArray(data.pokemon)) {
-                                    const pokemonStore = writeTx.objectStore('pokemon');
-                                    data.pokemon.forEach(p => pokemonStore.add(p));
-                                }
-                                if (data.moves && Array.isArray(data.moves)) {
-                                    const movesStore = writeTx.objectStore('moves');
-                                    data.moves.forEach(m => movesStore.add(m));
-                                }
-                                if (data.metadata) {
-                                    const metadataStore = writeTx.objectStore('metadata');
-                                    // Handle if metadata is object or array
-                                    if (Array.isArray(data.metadata)) {
-                                        data.metadata.forEach(m => metadataStore.add(m));
-                                    } else {
-                                        // If it's an object, convert to key-value pairs
-                                        Object.entries(data.metadata).forEach(([key, value]) => {
-                                            metadataStore.add({ key, ...value });
-                                        });
-                                    }
-                                }
-                                if (data.typeEffectiveness && Array.isArray(data.typeEffectiveness)) {
-                                    const typeStore = writeTx.objectStore('typeEffectiveness');
-                                    data.typeEffectiveness.forEach(t => typeStore.add(t));
-                                }
-                                
-                                writeTx.oncomplete = () => {
-                                    console.log('Database initialized successfully!');
-                                    resolve(db);
-                                };
-                                
-                                writeTx.onerror = () => {
-                                    console.error('Error populating database:', writeTx.error);
-                                    resolve(db);
-                                };
-                                
-                            } catch (error) {
-                                console.error('Error loading JSON:', error);
-                                resolve(db);
-                            }
-                        } else {
-                            console.log('Database already populated');
-                            resolve(db);
-                        }
-                    };
-                };
-            });
-        }
-
-        const TYPE_COLORS = {
-            NORMAL: '#A8A878', FIRE: '#F08030', WATER: '#6890F0', ELECTRIC: '#F8D030',
-            GRASS: '#78C850', ICE: '#98D8D8', FIGHTING: '#C03028', POISON: '#A040A0',
-            GROUND: '#E0C068', FLYING: '#A890F0', PSYCHIC: '#F85888', BUG: '#A8B820',
-            ROCK: '#B8A038', GHOST: '#705898', DRAGON: '#7038F8', DARK: '#705848',
-            STEEL: '#B8B8D0', FAIRY: '#EE99AC'
-        };
-
-        function formatNumber(num) {
-            if (num === undefined || num === null) return 'N/A';
-            return Number(num.toFixed(2));
-        }
-
-        class PokeApp {
-            constructor() {
-                this.currentView = 'menu';
-                this.currentList = 'pokemon';
-                this.pokemon = [];
-                this.moves = [];
-                this.searchTerm = '';
-                this.selectedPokemon = null;
-                this.selectedForm = null;
-                this.selectedMove = null;
-                this.expandedSections = {};
-                this.expandedMoves = {};
-                this.moveMode = 'pvp';
-                this.userTags = {};
-                this.moveTags = {};
-                this.loading = false;
-                this.touchStartX = 0;
-                this.touchStartY = 0;
-                this.touchEndY = 0;
-                this.longPressTimer = null;
-                this.showTagInput = false;
-                
-                this.loadUserTags();
-                this.loadFromIndexedDB();
-                this.render();
-            }
-
-            async getShowdownSpriteId(pokemon) {
-                if (!pokemon.form) {
-                    return pokemon.dexNumber;
-                }
-                
-                const pokemonName = pokemon.name.toLowerCase();
-                let formName = pokemon.form.toLowerCase()
-                    .replace(/\s+/g, '-')
-                    .replace(/%/g, '');
-                
-                // Special case: "Galarian" -> "galar", "Alolan" -> "alola", etc.
-                if (formName === 'galarian') formName = 'galar';
-                if (formName === 'alolan') formName = 'alola';
-                if (formName === 'hisuian') formName = 'hisui';
-                if (formName === 'paldean') formName = 'paldea';
-                
-                const apiUrl = `https://pokeapi.co/api/v2/pokemon/${pokemonName}-${formName}`;
-                
-                console.log('Fetching sprite ID for:', pokemonName, formName, 'from', apiUrl);
-                
-                try {
-                    const response = await fetch(apiUrl);
-                    if (!response.ok) throw new Error('Form not found');
-                    const data = await response.json();
-                    console.log('Got sprite ID:', data.id);
-                    return data.id;
-                } catch (error) {
-                    console.warn(`Could not fetch sprite ID for ${pokemon.name} (${pokemon.form})`, error);
-                    return pokemon.dexNumber;
-                }
-            }
-            loadFromIndexedDB() {
-                this.loading = true;
-                this.render();
-
-                const dbRequest = indexedDB.open('PokemonGoDB');
-                
-                dbRequest.onsuccess = (event) => {
-                    const db = event.target.result;
-                    
-                    const pokemonTransaction = db.transaction(['pokemon'], 'readonly');
-                    const pokemonStore = pokemonTransaction.objectStore('pokemon');
-                    const pokemonRequest = pokemonStore.getAll();
-                    
-                    pokemonRequest.onsuccess = () => {
-                        this.pokemon = pokemonRequest.result || [];
-                        this.checkLoadComplete();
-                    };
-
-                    const movesTransaction = db.transaction(['moves'], 'readonly');
-                    const movesStore = movesTransaction.objectStore('moves');
-                    const movesRequest = movesStore.getAll();
-                    
-                    movesRequest.onsuccess = () => {
-                        this.moves = movesRequest.result || [];
-                        this.checkLoadComplete();
-                    };
-                };
-
-                dbRequest.onerror = () => {
-                    this.loading = false;
-                    this.render();
-                };
-            }
-
-            checkLoadComplete() {
-                if (this.pokemon.length > 0 && this.moves.length > 0) {
-                    this.loading = false;
-                    this.render();
-                }
-            }
-
-            loadUserTags() {
-                const stored = localStorage.getItem('pokemonTags');
-                if (stored) this.userTags = JSON.parse(stored);
-                
-                const moveTags = localStorage.getItem('moveTags');
-                if (moveTags) this.moveTags = JSON.parse(moveTags);
-            }
-
-            saveUserTags() {
-                localStorage.setItem('pokemonTags', JSON.stringify(this.userTags));
-            }
-
-            saveMoveTags() {
-                localStorage.setItem('moveTags', JSON.stringify(this.moveTags));
-            }
-
-            addTag(itemId, tag, isMove = false) {
-                const tags = isMove ? this.moveTags : this.userTags;
-                if (!tags[itemId]) tags[itemId] = [];
-                if (!tags[itemId].includes(tag)) {
-                    tags[itemId].push(tag);
-                    isMove ? this.saveMoveTags() : this.saveUserTags();
-                    this.showTagInput = false;
-                    this.render();
-                }
-            }
-
-            removeTag(itemId, tag, isMove = false) {
-                const tags = isMove ? this.moveTags : this.userTags;
-                if (tags[itemId]) {
-                    tags[itemId] = tags[itemId].filter(t => t !== tag);
-                    isMove ? this.saveMoveTags() : this.saveUserTags();
-                    this.render();
-                }
-            }
-
-            getMoveDetails(moveName, category, mode) {
-                return this.moves.find(m => 
-                    m.name === moveName && 
-                    m.category === category && 
-                    m.mode === mode
-                );
-            }
-
-            getUniqueMoves(category) {
-                const unique = new Map();
-                this.moves.filter(m => m.category === category && m.mode === this.moveMode)
-                    .forEach(m => unique.set(m.name, m));
-                return Array.from(unique.values());
-            }
-
-            toggleMoveSection(section) {
-                if (section === 'fast') {
-                    this.expandedSections.fast = !this.expandedSections.fast;
-                    this.expandedSections.charge = false;
-                } else {
-                    this.expandedSections.charge = !this.expandedSections.charge;
-                    this.expandedSections.fast = false;
-                }
-                this.render();
-            }
-
-            setMoveMode(mode) {
-                this.moveMode = mode;
-                this.render();
-            }
-
-            setView(view) {
-                this.currentView = view;
-                this.selectedPokemon = null;
-                this.selectedForm = null;
-                this.selectedMove = null;
-                this.expandedSections = {};
-                this.expandedMoves = {};
-                this.searchTerm = '';
-                this.moveMode = 'pvp';
-                this.currentList = 'pokemon';
-                this.showTagInput = false;
-                this.render();
-            }
-
-            setList(list) {
-                this.currentList = list;
-                this.searchTerm = '';
-                this.render();
-            }
-
-            setSearchTerm(term) {
-                this.searchTerm = term;
-                this.updateCurrentView();
-            }
-
-            selectPokemon(pokemon) {
-                const forms = this.getPokemonForms(pokemon.dexNumber);
-                const baseForm = forms.find(f => !f.form || f.form === '');
-                this.selectedPokemon = pokemon;
-                this.selectedForm = baseForm || forms[0];
-                this.expandedSections = {};
-                this.moveMode = 'pvp';
-                this.showTagInput = false;
-                this.render();
-            }
-
-            selectMove(move) {
-                this.selectedMove = move;
-                this.showTagInput = false;
-                this.render();
-            }
-
-            selectForm(formId) {
-                this.selectedForm = this.pokemon.find(p => p.id === formId);
-                this.expandedSections = {};
-                this.render();
-            }
-
-            navigatePokemon(direction) {
-                const currentDex = (this.selectedForm || this.selectedPokemon).dexNumber;
-                const newDex = currentDex + direction;
-                const newPokemon = this.pokemon.find(p => p.dexNumber === newDex);
-                if (newPokemon) {
-                    this.selectPokemon(newPokemon);
-                }
-            }
-
-            getPokemonForms(dexNumber) {
-                return this.pokemon.filter(p => p.dexNumber === dexNumber);
-            }
-
-            getEvolutionChain(pokemon) {
-                // Step 1: Find the base form (walk backwards)
-                let base = pokemon;
-                const visited = new Set();
-                
-                while (true) {
-                    const preEvo = this.pokemon.find(p => 
-                        p.evolutions && p.evolutions.some(evo => 
-                            evo.name === base.name && (evo.form || '') === (base.form || '')
-                        )
-                    );
-                    
-                    if (!preEvo || visited.has(preEvo.id)) break;
-                    visited.add(preEvo.id);
-                    base = preEvo;
-                }
-                
-                // Step 2: Build FULL tree from base (recursively explore all branches)
-                const buildFullTree = (current, depth = 0) => {
-                    if (depth > 5) return null; // Prevent infinite loops
-                    
-                    if (!current.evolutions || current.evolutions.length === 0) {
-                        // Leaf node - no evolutions
-                        return {
-                            pokemon: current,
-                            evolutions: []
-                        };
-                    }
-                    
-                    // Return current pokemon with all evolution branches explored
-                    return {
-                        pokemon: current,
-                        evolutions: current.evolutions.map(evo => {
-                            const evoPokemon = this.pokemon.find(p => 
-                                p.name === evo.name && (p.form || '') === (evo.form || '')
-                            );
-                            
-                            if (!evoPokemon) return null;
-                            
-                            return {
-                                candyCost: evo.candyCost,
-                                evolveRequirement: evo.evolveRequirement, // <-- ADD THIS LINE
-                                branch: buildFullTree(evoPokemon, depth + 1)
-                            };
-                        }).filter(e => e !== null)
-                    };
-                };
-                
-                return buildFullTree(base);
-            }
-
-            getGroupedPokemon() {
-                const grouped = {};
-                this.pokemon.forEach(p => {
-                    if (!grouped[p.dexNumber]) grouped[p.dexNumber] = [];
-                    grouped[p.dexNumber].push(p);
-                });
-                return Object.values(grouped);
-            }
-
-            getFilteredPokemonGroups() {
-                if (!this.searchTerm) return this.getGroupedPokemon();
-                const term = this.searchTerm.toLowerCase();
-                return this.getGroupedPokemon().filter(forms => 
-                    forms[0].name.toLowerCase().includes(term) ||
-                    forms[0].dexNumber.toString().includes(term)
-                );
-            }
-
-            getFilteredMoves(category) {
-                const moves = this.getUniqueMoves(category);
-                if (!this.searchTerm) return moves;
-                const term = this.searchTerm.toLowerCase();
-                return moves.filter(m => m.name.toLowerCase().includes(term));
-            }
-
-            getSearchResults() {
-                if (!this.searchTerm) return null;
-                
-                const term = this.searchTerm.toLowerCase();
-                return {
-                    fast: this.getUniqueMoves('fast').filter(m => m.name.toLowerCase().includes(term)),
-                    charge: this.getUniqueMoves('charge').filter(m => m.name.toLowerCase().includes(term)),
-                    pokemon: this.getGroupedPokemon().filter(forms => 
-                        forms[0].name.toLowerCase().includes(term) ||
-                        forms[0].dexNumber.toString().includes(term)
-                    )
-                };
-            }
-
-            getPokemonThatLearnMove(moveName, category) {
-                return this.pokemon.filter(p => 
-                    p.moves[category].includes(moveName) ||
-                    p.moves[`${category}Elite`].includes(moveName)
-                );
-            }
-
-            updateCurrentView() {
-                const gridContainer = document.querySelector('[data-content-grid]');
-                if (gridContainer && !this.selectedPokemon && !this.selectedMove) {
-                    if (this.searchTerm) {
-                        gridContainer.innerHTML = this.renderSearchResults();
-                    } else if (this.currentList === 'pokemon') {
-                        gridContainer.innerHTML = this.renderPokemonGrid();
-                    } else if (this.currentList === 'fast') {
-                        gridContainer.innerHTML = this.renderMoveList('fast');
-                    } else if (this.currentList === 'charge') {
-                        gridContainer.innerHTML = this.renderMoveList('charge');
-                    }
-                    this.attachListListeners();
-                }
-            }
-
-            handleTouchStart(e, context) {
-                this.touchStartX = e.changedTouches[0].screenX;
-                this.touchStartY = e.changedTouches[0].screenY;
-                
-                if (context === 'move') {
-                    this.longPressTimer = setTimeout(() => {
-                        const moveCard = e.target.closest('[data-move-name]');
-                        if (moveCard) {
-                            const moveName = moveCard.dataset.moveName;
-                            const category = moveCard.dataset.moveCategory;
-                            const moveData = this.getMoveDetails(moveName, category, this.moveMode);
-                            if (moveData) this.selectMove(moveData);
-                        }
-                    }, 500);
-                }
-            }
-
-            handleTouchEnd(e, context) {
-                clearTimeout(this.longPressTimer);
-                this.touchEndY = e.changedTouches[0].screenY;
-                
-                if (context === 'detail' && this.selectedPokemon) {
-                    const diffY = this.touchStartY - this.touchEndY;
-                    if (diffY < -100) {
-                        // Swipe down to close
-                        this.selectedPokemon = null;
-                        this.selectedForm = null;
-                        this.render();
-                    }
-                }
-            }
-
-            async render() {
-                const app = document.getElementById('app');
-                
-                if (this.currentView === 'menu') {
-                    app.innerHTML = this.renderMenu();
-                } else if (this.currentView === 'pokedex') {
-                    if (this.selectedPokemon) {
-                        app.innerHTML = await this.renderPokemonDetail();
-                    } else if (this.selectedMove) {
-                        app.innerHTML = this.renderMoveDetail();
-                    } else {
-                        app.innerHTML = this.renderPokedexView();
-                    }
-                }
-
-                this.attachEventListeners();
-            }
-
-            renderMenu() {
-                return `
-                    <div class="min-h-screen bg-gradient-to-br from-teal-400 via-teal-500 to-emerald-500 flex flex-col items-center justify-center p-8">
-                        <div class="w-full max-w-md space-y-4">
-                            ${this.renderMenuItem('fa-solid fa-book', 'POKÉDEX', 'pokedex')}
-                            ${this.renderMenuItem('fa-solid fa-star', 'COLLECTION', null)}
-                            ${this.renderMenuItem('fa-solid fa-users', 'PVP', null)}
-                            ${this.renderMenuItem('fa-solid fa-rocket', 'PVE', null)}
-                            ${this.renderMenuItem('fa-solid fa-message', 'FEEDBACK', null)}
-                        </div>
-                        
-                        <button class="fab-button fab-left bg-blue-500 text-white" data-action="team-builder">
-                            <i class="fa-solid fa-calculator text-xl"></i>
-                        </button>
-                        <button class="fab-button fab-right bg-purple-500 text-white" data-action="add-pokemon">
-                            <i class="fa-solid fa-plus text-xl"></i>
-                        </button>
-                    </div>
-                `;
-            }
-
-            renderMenuItem(icon, label, view) {
-                const disabled = view === null;
-                return `
-                    <button 
-                        class="menu-item w-full bg-white bg-opacity-10 backdrop-blur-sm rounded-2xl p-6 flex items-center justify-between ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}"
-                        ${disabled ? 'disabled' : `data-view="${view}"`}
-                    >
-                        <span class="text-white text-xl font-light tracking-widest">${label}</span>
-                        <i class="${icon} text-white text-opacity-80 text-2xl"></i>
-                    </button>
-                `;
-            }
-
-            renderPokedexView() {
-                const fabsHidden = this.searchTerm ? 'hidden' : '';
-                
-                let leftFab, rightFab;
-                if (this.currentList === 'pokemon') {
-                    leftFab = { icon: 'fa-bolt', color: 'bg-yellow-500', action: 'fast' };
-                    rightFab = { icon: 'fa-battery-three-quarters', color: 'bg-blue-500', action: 'charge' };
-                } else if (this.currentList === 'fast') {
-                    leftFab = { icon: 'fa-battery-three-quarters', color: 'bg-blue-500', action: 'charge' };
-                    rightFab = { icon: 'fa-dragon', color: 'bg-red-500', action: 'pokemon' };
-                } else {
-                    leftFab = { icon: 'fa-dragon', color: 'bg-red-500', action: 'pokemon' };
-                    rightFab = { icon: 'fa-bolt', color: 'bg-yellow-500', action: 'fast' };
-                }
-
-                return `
-                    <div class="min-h-screen pokedex-bg pb-20">
-                    <div class="bg-white bg-opacity-15 backdrop-blur-sm p-4 sticky top-0 z-20">
-                        <div class="max-w-6xl mx-auto">
-                            <div class="relative">
-                                <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 transform -translate-y-1/2 text-teal-600"></i>
-                                <input
-                                    type="text"
-                                    placeholder="Search..."
-                                    value="${this.searchTerm}"
-                                    data-action="search"
-                                    class="w-full bg-white bg-opacity-90 rounded-full py-3 pl-12 pr-4 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white"
-                                />
-                            </div>
-                            <button data-action="advanced-filters" class="mt-2 text-white text-sm opacity-75 hover:opacity-100">
-                                <i class="fa-solid fa-filter mr-1"></i> Advanced Filters
-                            </button>
-                        </div>
-                    </div>
-
-                        <div class="max-w-6xl mx-auto p-4" data-content-grid>
-                            ${this.loading ? 
-                                '<div class="text-white text-center py-12">Loading...</div>' :
-                                this.searchTerm ? this.renderSearchResults() :
-                                this.currentList === 'pokemon' ? this.renderPokemonGrid() :
-                                this.currentList === 'fast' ? this.renderMoveList('fast') :
-                                this.renderMoveList('charge')
-                            }
-                        </div>
-                        
-                        <button class="fab-button fab-left ${leftFab.color} text-white ${fabsHidden}" data-action="set-list" data-list="${leftFab.action}">
-                            <i class="fa-solid ${leftFab.icon} text-xl"></i>
-                        </button>
-                        <button class="fab-button fab-right ${rightFab.color} text-white ${fabsHidden}" data-action="set-list" data-list="${rightFab.action}">
-                            <i class="fa-solid ${rightFab.icon} text-xl"></i>
-                        </button>
-                        <button class="fab-button fab-center bg-gray-600 text-white" data-action="back">
-                            <i class="fa-solid fa-xmark text-xl"></i>
-                        </button>
-                    </div>
-                `;
-            }
-
-            renderSearchResults() {
-                const results = this.getSearchResults();
-                if (!results) return '';
-
-                let html = '';
-                
-                if (results.fast.length > 0) {
-                    html += `<div class="mb-6">
-                        <h2 class="text-white text-xl font-bold mb-3">Fast Moves</h2>
-                        ${results.fast.map(m => this.renderMoveListItem(m, this.expandedMoves[m.id])).join('')}
-                    </div>`;
-                }
-                
-                if (results.charge.length > 0) {
-                    html += `<div class="mb-6">
-                        <h2 class="text-white text-xl font-bold mb-3">Charge Moves</h2>
-                        ${results.charge.map(m => this.renderMoveListItem(m, this.expandedMoves[m.id])).join('')}
-                    </div>`;
-                }
-                
-                if (results.pokemon.length > 0) {
-                    html += `<div class="mb-6">
-                        <h2 class="text-white text-xl font-bold mb-3">Pokémon</h2>
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                            ${results.pokemon.map(forms => this.renderPokemonCard(forms)).join('')}
-                        </div>
-                    </div>`;
-                }
-                
-                if (!html) {
-                    html = '<div class="text-white text-center py-12">No results found</div>';
-                }
-                
-                return html;
-            }
-
-            renderPokemonGrid() {
-                const filtered = this.getFilteredPokemonGroups();
-                return `
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        ${filtered.map(forms => this.renderPokemonCard(forms)).join('')}
-                    </div>
-                `;
-            }
-
-            renderMoveList(category) {
-                const moves = this.getFilteredMoves(category);
-                return moves.map(m => this.renderMoveListItem(m, this.expandedMoves[m.id])).join('');
-            }
-
-            renderPokemonCard(forms) {
-                const basePokemon = forms[0];
-                const tags = this.userTags[basePokemon.id] || [];
-                const spriteUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${basePokemon.dexNumber}.png`;
-                
-                return `
-                    <div class="card-hover rounded-2xl p-4 shadow-lg" data-pokemon-id="${basePokemon.id}">
-                        <div class="text-center">
-                            <img src="${spriteUrl}" alt="${basePokemon.name}" class="pokemon-sprite w-24 h-24 mx-auto mb-2">
-                            <div class="text-teal-600 text-xs font-medium">#${String(basePokemon.dexNumber).padStart(4, '0')}</div>
-                            <div class="flex items-center justify-center gap-1 mb-2">
-                                <span class="text-gray-800 font-semibold text-sm">${basePokemon.name}</span>
-                                ${basePokemon.types.map(type => 
-                                    `<span class="type-circle" style="background-color: ${TYPE_COLORS[type]}" title="${type}"></span>`
-                                ).join('')}
-                            </div>
-                        </div>
-                        
-                        ${tags.length > 0 ? `
-                            <div class="flex gap-1 flex-wrap justify-center mt-2">
-                                ${tags.map(tag => 
-                                    `<span class="text-xs px-2 py-1 rounded-full bg-purple-200 text-purple-800">${tag}</span>`
-                                ).join('')}
-                            </div>
-                        ` : ''}
-                    </div>
-                `;
-            }
-
-            renderMoveListItem(move, isExpanded) {
-                const tags = this.moveTags[move.id] || [];
-                const stats = move.category === 'fast' 
-                    ? `DPT: ${formatNumber(move.dpt)} / EPT: ${formatNumber(move.ept)}`
-                    : `DPE: ${formatNumber(move.dpe)} / Energy: ${move.energy}`;
-
-                return `
-                    <div class="move-list-item rounded-xl p-4 mb-3 shadow-md ${isExpanded ? 'expanded' : ''}" 
-                         data-move-id="${move.id}">
-                        <div class="flex items-center justify-between cursor-pointer" data-toggle-move="${move.id}">
-                            <div class="flex-1">
-                                <div class="font-semibold text-gray-800">${move.name}</div>
-                                <div class="text-xs text-gray-600 mt-1">
-                                    <span class="type-badge" style="background-color: ${TYPE_COLORS[move.type]}">${move.type}</span>
-                                    <span class="ml-2">${stats}</span>
-                                </div>
-                            </div>
-                            <i class="fa-solid fa-chevron-${isExpanded ? 'up' : 'down'} text-gray-400"></i>
-                        </div>
-                        
-                        ${isExpanded ? `
-                            <div class="mt-3 pt-3 border-t border-gray-200 space-y-2 text-sm">
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">Power:</span>
-                                    <span class="font-medium">${move.power}</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">Energy:</span>
-                                    <span class="font-medium">${move.category === 'fast' ? '+' : ''}${move.energy}</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">Duration:</span>
-                                    <span class="font-medium">${move.duration}${this.moveMode === 'pve' ? 's' : 't'}</span>
-                                </div>
-                                ${move.buffs?.activationChance > 0 ? `
-                                    <div class="mt-2 pt-2 border-t border-gray-200">
-                                        <div class="font-medium mb-1">Buffs (${formatNumber(move.buffs.activationChance * 100)}%)</div>
-                                        ${move.buffs.attackerAttackPercent !== 0 ? `<div>Atk: ${move.buffs.attackerAttackPercent > 0 ? '+' : ''}${move.buffs.attackerAttackPercent}</div>` : ''}
-                                        ${move.buffs.attackerDefensePercent !== 0 ? `<div>Def: ${move.buffs.attackerDefensePercent > 0 ? '+' : ''}${move.buffs.attackerDefensePercent}</div>` : ''}
-                                    </div>
-                                ` : ''}
-                                
-                                ${tags.length > 0 ? `
-                                    <div class="flex gap-1 flex-wrap mt-2">
-                                        ${tags.map(tag => 
-                                            `<span class="text-xs px-2 py-1 rounded-full bg-purple-200 text-purple-800">${tag}</span>`
-                                        ).join('')}
-                                    </div>
-                                ` : ''}
-                            </div>
-                        ` : ''}
-                    </div>
-                `;
-            }
-
-            async renderEvolutionChain(tree) {
-                if (!tree) return '';
-                
-                const result = [];
-                const visited = new Set();
-                
-                const addToChain = (node, candyCost = null, evolveRequirement = null) => {
-                    if (visited.has(node.pokemon.id)) return;
-                    visited.add(node.pokemon.id);
-                    
-                    result.push({
-                        pokemon: node.pokemon,
-                        candyCost: candyCost,
-                        evolveRequirement: evolveRequirement
-                    });
-                    
-                    if (node.evolutions && node.evolutions.length > 0) {
-                        node.evolutions.forEach(evo => {
-                            console.log('Evolution data:', evo);
-                            addToChain(evo.branch, evo.candyCost, evo.evolveRequirement);
-                        });
-                    }
-                };
-                
-                addToChain(tree);
-                
-                const spriteSize = result.length === 3 ? 'h-23' : 'h-16';
-                const textSize = result.length === 3 ? 'text-lg' : 'text-base';
-                const candySize = result.length === 3 ? 'text-base' : 'text-sm';
-                
-                // Fetch all sprite IDs
-                const items = await Promise.all(result.map(async (item) => {
-                    const spriteId = await this.getShowdownSpriteId(item.pokemon);
-                    const sprite = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/${spriteId}.gif`;
-                    
-                    return {
-                        ...item,
-                        sprite
-                    };
-                }));
-                
-                return items.map((item) => {
-                    return `
-                        <div class="flex items-center gap-4 mb-4">
-                            <img src="${item.sprite}" class="pokemon-sprite ${spriteSize} cursor-pointer hover:scale-110 transition flex-shrink-0" style="image-rendering: pixelated;" data-pokemon-dex="${item.pokemon.dexNumber}">
-                            <div class="flex-1">
-                                <div class="${textSize} text-gray-700 font-medium">${item.pokemon.name}</div>
-                                ${item.candyCost ? `<div class="${candySize} text-gray-500">${item.candyCost} 🍬</div>` : ''}
-                                ${item.evolveRequirement ? `<div class="text-xs text-gray-400 italic mt-1">${item.evolveRequirement}</div>` : ''}
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            }
-            async renderPokemonDetail() {
-                const p = this.selectedForm || this.selectedPokemon;
-                const forms = this.getPokemonForms(p.dexNumber);
-                const tags = this.userTags[p.id] || [];
-                const spriteId = await this.getShowdownSpriteId(p);
-                const spriteUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/${spriteId}.gif`;                
-                const chain = this.getEvolutionChain(p);
-                const isSingleType = p.types.length === 1;
-                const typeBgClass = isSingleType ? `type-bg-${p.types[0].toLowerCase()}` : '';
-
-                // Get all Pokemon in evolution chain for IV buttons (deduplicated)
-                const getAllChainPokemon = (tree) => {
-                    if (!tree) return [];
-                    const result = [];
-                    const visited = new Set();
-                    
-                    const traverse = (node) => {
-                        if (visited.has(node.pokemon.id)) return;
-                        visited.add(node.pokemon.id);
-                        result.push(node.pokemon);
-                        
-                        if (node.evolutions && node.evolutions.length > 0) {
-                            node.evolutions.forEach(evo => traverse(evo.branch));
-                        }
-                    };
-                    
-                    traverse(tree);
-                    return result;
-                };
-                
-                const chainPokemon = chain ? getAllChainPokemon(chain) : [];
-
-                return `
-                    <div class="min-h-screen pokedex-bg p-4 py-8" data-detail-container>
-                        <div class="card-hover rounded-3xl shadow-2xl mx-auto bg-gradient-to-br from-cyan-50 to-blue-100" style="max-width: 1400px; padding: 24px;">
-                            
-                            <!-- ROW 1: 2/3 left column, 1/3 right column -->
-                            <div class="grid gap-6 mb-6" style="grid-template-columns: 2fr 1fr; min-width: 600px;">
-                                
-                                <!-- LEFT COLUMN (2/3 width): Sprite with overlaid name/type -->
-                                <div class="relative bg-white/30 rounded-xl flex items-center justify-center ${typeBgClass}" style="height: 400px;">                                    <!-- Sprite fills container -->
-                                    <img src="${spriteUrl}" alt="${p.name}" class="w-1/2 h-1/2 object-contain mx-auto">
-                                    
-                                    <!-- Name/Type overlaid at BOTTOM -->
-                                    <div class="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-white/90 to-transparent">
-                                        <div class="text-gray-500 text-xs mb-1">#${String(p.dexNumber).padStart(4, '0')}</div>
-                                        
-                                        <div class="flex items-end gap-3">
-                                            <h1 class="text-4xl font-bold text-gray-800 leading-none">${p.name.toUpperCase()}</h1>
-                                            <div class="flex gap-2 pb-1">
-                                                ${p.types.map(type => 
-                                                    `<span class="type-badge px-4 py-2 rounded-full text-white font-semibold uppercase text-sm" style="background-color: ${TYPE_COLORS[type]}">${type}</span>`
-                                                ).join('')}
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- Form Selector -->
-                                        ${forms.length > 1 ? `
-                                            <select data-action="change-form" class="mt-2 px-3 py-1 text-xs rounded-full bg-white border border-gray-300 shadow-sm w-fit">
-                                                ${forms.map(f => `<option value="${f.id}" ${f.id === p.id ? 'selected' : ''}>${f.form || 'Base Form'}</option>`).join('')}
-                                            </select>
-                                        ` : ''}
-                                    </div>
-                                </div>
-                                
-                                <!-- RIGHT COLUMN (1/3 width): Evolution Chain -->
-                                <div class="bg-white rounded-xl p-4 shadow flex flex-col" style="height: 400px;">
-                                    <div class="text-sm font-semibold text-gray-600 mb-3">Evolution</div>
-                                    <div class="flex-1 overflow-y-auto">
-                                        ${chain ? await this.renderEvolutionChain(chain) : ''}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- ROW 2: Base Stats | Max CP/Costs | Placeholder | IV Buttons -->
-                            <div class="grid gap-6 mb-6" style="grid-template-columns: 1fr 1fr 1fr 2fr; min-width: 700px;">
-                                
-                                <!-- Base Stats -->
-                                <div class="bg-white rounded-xl p-4 shadow">
-                                    <div class="text-sm font-semibold text-gray-600 mb-3">Base Stats</div>
-                                    <div class="space-y-2 text-sm">
-                                        <div class="flex justify-between">
-                                            <span class="text-gray-600">ATK</span>
-                                            <span class="text-red-500 font-bold">${p.stats.attack}</span>
-                                        </div>
-                                        <div class="flex justify-between">
-                                            <span class="text-gray-600">DEF</span>
-                                            <span class="text-blue-500 font-bold">${p.stats.defense}</span>
-                                        </div>
-                                        <div class="flex justify-between">
-                                            <span class="text-gray-600">HP</span>
-                                            <span class="text-green-500 font-bold">${p.stats.hp}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <!-- Max CP / Costs -->
-                                <div class="bg-white rounded-xl p-4 shadow">
-                                    <div class="text-sm font-semibold text-gray-600 mb-3">max cp</div>
-                                    <div class="text-2xl font-bold mb-4">${p.maxCP || 'TBD'}</div>
-                                    
-                                    ${p.thirdMoveCost ? `
-                                        <div class="mb-3">
-                                            <div class="text-xs text-gray-500 mb-1">2nd Charge Move</div>
-                                            <div class="text-sm">${p.thirdMoveCost.candy} 🍬 + ${(p.thirdMoveCost.stardust / 1000).toFixed(0)}k ⭐</div>
-                                        </div>
-                                    ` : ''}
-                                    
-                                    ${p.shadowInfo ? `
-                                        <div>
-                                            <div class="text-xs text-gray-500 mb-1">Purification</div>
-                                            <div class="text-sm">${p.shadowInfo.purificationCandy} 🍬 + ${(p.shadowInfo.purificationStardust / 1000).toFixed(0)}k ⭐</div>
-                                        </div>
-                                    ` : ''}
-                                </div>
-                                
-                                <!-- Placeholder -->
-                                <div class="bg-white rounded-xl p-4 shadow flex items-center justify-center text-gray-400 text-sm border-2 border-dashed border-gray-300">
-                                    Future data
-                                </div>
-                                
-                                <!-- IV Buttons for all Pokemon in chain -->
-                                <div class="bg-white rounded-xl p-4 shadow overflow-hidden flex flex-col">
-                                    <div class="flex-1 overflow-y-auto space-y-3" style="max-height: 200px;">
-                                        ${chainPokemon.map(mon => `
-                                            <div class="flex items-center justify-between">
-                                                <span class="text-sm text-gray-700 font-medium">${mon.name}</span>
-                                                <div class="flex gap-2">
-                                                    <button class="px-3 py-1 rounded-full bg-yellow-300 text-yellow-900 font-semibold hover:bg-yellow-400 transition text-xs" data-action="iv-spread" data-league="little" data-pokemon="${mon.id}">Little</button>
-                                                    <button class="px-3 py-1 rounded-full bg-cyan-400 text-cyan-900 font-semibold hover:bg-cyan-500 transition text-xs" data-action="iv-spread" data-league="great" data-pokemon="${mon.id}">Great</button>
-                                                    <button class="px-3 py-1 rounded-full bg-purple-500 text-white font-semibold hover:bg-purple-600 transition text-xs" data-action="iv-spread" data-league="ultra" data-pokemon="${mon.id}">Ultra</button>
-                                                </div>
-                                            </div>
-                                        `).join('')}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Moves Section -->
-                            ${this.renderMovesSection(p)}
-
-                            <!-- Tags -->
-                            <div class="mt-6">
-                                <div class="flex items-center gap-3 mb-2 flex-wrap">
-                                    ${tags.length > 0 ? tags.map(tag => 
-                                        `<span class="px-3 py-1 rounded-full bg-purple-500 text-white text-sm flex items-center gap-2">
-                                            ${tag}
-                                            <button data-action="remove-tag" data-tag="${tag}" class="hover:text-red-200">
-                                                <i class="fa-solid fa-xmark text-xs"></i>
-                                            </button>
-                                        </span>`
-                                    ).join('') : ''}
-                                    
-                                    <button data-action="show-tag-input" class="text-purple-500 hover:text-purple-600">
-                                        <i class="fa-solid fa-tag text-xl"></i>
-                                    </button>
-                                </div>
-                                
-                                ${this.showTagInput ? `
-                                    <div class="flex gap-2">
-                                        <input
-                                            type="text"
-                                            data-action="tag-input"
-                                            placeholder="Add a tag..."
-                                            class="flex-1 px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                        />
-                                        <button
-                                            data-action="add-tag"
-                                            class="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition"
-                                        >
-                                            Add
-                                        </button>
-                                    </div>
-                                ` : ''}
-                            </div>
-                        </div>
-
-                        <!-- Close FAB -->
-                        <button class="fab-button fab-center bg-gray-600 text-white" data-action="close-detail">
-                            <i class="fa-solid fa-xmark text-xl"></i>
-                        </button>
-                    </div>
-                `;
-            }     
-
-            renderMovesSection(p) {
-                const fastExpanded = this.expandedSections.fast;
-                const chargeExpanded = this.expandedSections.charge;
-
-                return `
-                    <div class="mb-6">
-                        <div class="flex items-center justify-between mb-3">
-                            <h3 class="font-semibold text-gray-800 text-lg cursor-pointer" data-action="toggle-section" data-section="fast">Fast Moves</h3>
-                            <div class="flex items-center gap-2">
-                                <div class="text-xs text-gray-600">${this.moveMode === 'pvp' ? 'PvP' : 'PvE'}</div>
-                                <div class="ios-toggle ${this.moveMode === 'pvp' ? 'active' : ''}" data-action="toggle-mode"></div>
-                            </div>
-                        </div>
-                        <div class="horizontal-scroll flex gap-3 pb-2">
-                            ${[...p.moves.fast, ...p.moves.fastElite].map(moveName => {
-                                const isElite = p.moves.fastElite.includes(moveName);
-                                return this.renderMoveCard(moveName, 'fast', isElite, fastExpanded);
-                            }).join('')}
-                        </div>
-                    </div>
-
-                    <div class="mb-6">
-                        <h3 class="font-semibold text-gray-800 text-lg mb-3 cursor-pointer" data-action="toggle-section" data-section="charge">Charge Moves</h3>
-                        <div class="horizontal-scroll flex gap-3 pb-2">
-                            ${[...p.moves.charge, ...p.moves.chargeElite].map(moveName => {
-                                const isElite = p.moves.chargeElite.includes(moveName);
-                                return this.renderMoveCard(moveName, 'charge', isElite, chargeExpanded);
-                            }).join('')}
-                        </div>
-                    </div>
-                `;
-            }
-
-            renderMoveCard(moveName, category, isElite, isExpanded) {
-                const moveData = this.getMoveDetails(moveName, category, this.moveMode);
-                if (!moveData) return '';
-
-                const eliteClass = isElite ? 'elite-move' : '';
-                const borderColor = TYPE_COLORS[moveData.type];
-
-                return `
-                    <div class="move-card ${eliteClass} rounded-xl p-3 shadow-md ${isExpanded ? 'expanded' : ''}" 
-                         style="border: 2px solid ${borderColor}"
-                         data-move-name="${moveName}"
-                         data-move-category="${category}">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="font-semibold text-gray-800 text-sm">${moveName}</span>
-                            ${isElite ? '<span class="text-xs bg-purple-600 text-white px-2 py-1 rounded font-bold">ELITE</span>' : ''}
-                        </div>
-                        
-                        <div class="text-xs mb-2">
-                            <span class="type-badge" style="background-color: ${TYPE_COLORS[moveData.type]}">${moveData.type}</span>
-                        </div>
-                        
-                        ${!isExpanded ? `
-                            <div class="text-xs space-y-1">
-                                ${category === 'fast' ? `
-                                    <div class="flex justify-between">
-                                        <span class="text-gray-600">DPT / EPT:</span>
-                                        <span class="font-medium">${formatNumber(moveData.dpt)} / ${formatNumber(moveData.ept)}</span>
-                                    </div>
-                                ` : `
-                                    <div class="flex justify-between">
-                                        <span class="text-gray-600">DPE:</span>
-                                        <span class="font-medium">${formatNumber(moveData.dpe)}</span>
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <span class="text-gray-600">Energy:</span>
-                                        <span class="font-medium">${moveData.energy}</span>
-                                    </div>
-                                `}
-                            </div>
-                        ` : `
-                            <div class="space-y-1 text-xs">
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">Power:</span>
-                                    <span class="font-medium">${moveData.power}</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">Energy:</span>
-                                    <span class="font-medium">${category === 'fast' ? '+' : ''}${moveData.energy}</span>
-                                </div>
-                                ${this.moveMode === 'pve' || category === 'fast' ? `
-                                    <div class="flex justify-between">
-                                        <span class="text-gray-600">Duration:</span>
-                                        <span class="font-medium">${moveData.duration}${this.moveMode === 'pve' ? 's' : 't'}</span>
-                                    </div>
-                                ` : ''}
-                                ${moveData.dpt !== undefined ? `
-                                    <div class="flex justify-between">
-                                        <span class="text-gray-600">DPT:</span>
-                                        <span class="font-medium">${formatNumber(moveData.dpt)}</span>
-                                    </div>
-                                ` : ''}
-                                ${moveData.ept !== undefined ? `
-                                    <div class="flex justify-between">
-                                        <span class="text-gray-600">EPT:</span>
-                                        <span class="font-medium">${formatNumber(moveData.ept)}</span>
-                                    </div>
-                                ` : ''}
-                                ${moveData.dpe !== undefined ? `
-                                    <div class="flex justify-between">
-                                        <span class="text-gray-600">DPE:</span>
-                                        <span class="font-medium">${formatNumber(moveData.dpe)}</span>
-                                    </div>
-                                ` : ''}
-                                ${moveData.dps !== undefined ? `
-                                    <div class="flex justify-between">
-                                        <span class="text-gray-600">DPS:</span>
-                                        <span class="font-medium">${formatNumber(moveData.dps)}</span>
-                                    </div>
-                                ` : ''}
-                                ${moveData.eps !== undefined ? `
-                                    <div class="flex justify-between">
-                                        <span class="text-gray-600">EPS:</span>
-                                        <span class="font-medium">${formatNumber(moveData.eps)}</span>
-                                    </div>
-                                ` : ''}
-                                ${moveData.buffs?.activationChance > 0 ? `
-                                    <div class="mt-2 pt-2 border-t border-gray-300">
-                                        <div class="font-medium mb-1">Buffs (${formatNumber(moveData.buffs.activationChance * 100)}%)</div>
-                                        ${moveData.buffs.attackerAttackPercent !== 0 ? `<div>Atk: ${moveData.buffs.attackerAttackPercent > 0 ? '+' : ''}${moveData.buffs.attackerAttackPercent}</div>` : ''}
-                                        ${moveData.buffs.attackerDefensePercent !== 0 ? `<div>Def: ${moveData.buffs.attackerDefensePercent > 0 ? '+' : ''}${moveData.buffs.attackerDefensePercent}</div>` : ''}
-                                        ${moveData.buffs.targetAttackPercent !== 0 ? `<div>Opp Atk: ${moveData.buffs.targetAttackPercent > 0 ? '+' : ''}${moveData.buffs.targetAttackPercent}</div>` : ''}
-                                        ${moveData.buffs.targetDefensePercent !== 0 ? `<div>Opp Def: ${moveData.buffs.targetDefensePercent > 0 ? '+' : ''}${moveData.buffs.targetDefensePercent}</div>` : ''}
-                                    </div>
-                                ` : ''}
-                            </div>
-                        `}
-                    </div>
-                `;
-            }
-
-            renderMoveDetail() {
-                const m = this.selectedMove;
-                const learners = this.getPokemonThatLearnMove(m.name, m.category);
-                const tags = this.moveTags[m.id] || [];
-
-                return `
-                    <div class="min-h-screen pokedex-bg p-4 py-8">
-                        <div class="card-hover rounded-3xl p-6 shadow-2xl max-w-4xl mx-auto">
-                            <div class="flex justify-between items-start mb-4">
-                                <div>
-                                    <h2 class="text-3xl font-bold text-gray-800">${m.name}</h2>
-                                    <div class="text-sm mt-1">
-                                        <span class="type-badge" style="background-color: ${TYPE_COLORS[m.type]}">${m.type}</span>
-                                        <span class="ml-2 text-gray-600">${m.category.toUpperCase()}</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-                                ${m.category === 'charge' ? `
-                                    <div class="bg-gray-50 rounded-xl p-3">
-                                        <div class="text-xs text-gray-600">DPE</div>
-                                        <div class="text-2xl font-bold text-gray-800">${formatNumber(m.dpe)}</div>
-                                    </div>
-                                    <div class="bg-gray-50 rounded-xl p-3">
-                                        <div class="text-xs text-gray-600">Energy</div>
-                                        <div class="text-2xl font-bold text-gray-800">${m.energy}</div>
-                                    </div>
-                                ` : `
-                                    <div class="bg-gray-50 rounded-xl p-3">
-                                        <div class="text-xs text-gray-600">DPT</div>
-                                        <div class="text-2xl font-bold text-gray-800">${formatNumber(m.dpt)}</div>
-                                    </div>
-                                    <div class="bg-gray-50 rounded-xl p-3">
-                                        <div class="text-xs text-gray-600">EPT</div>
-                                        <div class="text-2xl font-bold text-gray-800">${formatNumber(m.ept)}</div>
-                                    </div>
-                                `}
-                                <div class="bg-gray-50 rounded-xl p-3">
-                                    <div class="text-xs text-gray-600">Power</div>
-                                    <div class="text-2xl font-bold text-gray-800">${m.power}</div>
-                                </div>
-                                <div class="bg-gray-50 rounded-xl p-3">
-                                    <div class="text-xs text-gray-600">Duration</div>
-                                    <div class="text-2xl font-bold text-gray-800">${m.duration}${this.moveMode === 'pve' ? 's' : 't'}</div>
-                                </div>
-                            </div>
-
-                            <div class="mb-6">
-                                <h3 class="font-semibold text-gray-800 text-lg mb-3">Pokémon that can learn this move</h3>
-                                <div class="grid grid-cols-3 md:grid-cols-6 gap-3">
-                                    ${learners.map(p => {
-                                        const isElite = p.moves[`${m.category}Elite`].includes(m.name);
-                                        const spriteUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.dexNumber}.png`;
-                                        return `
-                                            <div class="card-hover rounded-xl p-2 text-center ${isElite ? 'elite-move' : ''}" data-pokemon-id="${p.id}">
-                                                <img src="${spriteUrl}" class="pokemon-sprite w-16 h-16 mx-auto">
-                                                <div class="text-xs font-medium mt-1">${p.name}</div>
-                                                ${isElite ? '<div class="text-xs text-purple-600 font-bold">ELITE</div>' : ''}
-                                            </div>
-                                        `;
-                                    }).join('')}
-                                </div>
-                            </div>
-
-                            <!-- Tags -->
-                            <div class="mt-6">
-                                <div class="flex items-center gap-3 mb-2">
-                                    ${tags.length > 0 ? tags.map(tag => 
-                                        `<span class="px-3 py-1 rounded-full bg-purple-500 text-white text-sm flex items-center gap-2">
-                                            ${tag}
-                                            <button data-action="remove-tag" data-tag="${tag}" data-is-move="true" class="hover:text-red-200">
-                                                <i class="fa-solid fa-xmark text-xs"></i>
-                                            </button>
-                                        </span>`
-                                    ).join('') : ''}
-                                    
-                                    <button data-action="show-tag-input" class="text-purple-500 hover:text-purple-600">
-                                        <i class="fa-solid fa-tag text-xl"></i>
-                                    </button>
-                                </div>
-                                
-                                ${this.showTagInput ? `
-                                    <div class="flex gap-2">
-                                        <input
-                                            type="text"
-                                            data-action="tag-input"
-                                            placeholder="Add a tag..."
-                                            class="flex-1 px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                        />
-                                        <button
-                                            data-action="add-tag"
-                                            data-is-move="true"
-                                            class="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition"
-                                        >
-                                            Add
-                                        </button>
-                                    </div>
-                                ` : ''}
-                            </div>
-                        </div>
-
-                        <button class="fab-button fab-center bg-gray-600 text-white" data-action="close-move-detail">
-                            <i class="fa-solid fa-xmark text-xl"></i>
-                        </button>
-                    </div>
-                `;
-            }
-
-            attachEventListeners() {
-                document.querySelectorAll('[data-view]').forEach(btn => {
-                    btn.addEventListener('click', () => this.setView(btn.dataset.view));
-                });
-
-                const backBtn = document.querySelector('[data-action="back"]');
-                if (backBtn) {
-                    backBtn.addEventListener('click', () => this.setView('menu'));
-                }
-
-                const searchInput = document.querySelector('[data-action="search"]');
-                if (searchInput) {
-                    searchInput.addEventListener('input', (e) => this.setSearchTerm(e.target.value));
-                }
-
-                document.querySelectorAll('[data-action="set-list"]').forEach(btn => {
-                    btn.addEventListener('click', () => this.setList(btn.dataset.list));
-                });
-
-                document.querySelectorAll('[data-action="advanced-filters"]').forEach(btn => {
-                    btn.addEventListener('click', () => alert('Advanced Filters - Under Construction'));
-                });
-
-                this.attachListListeners();
-
-                const closeBtn = document.querySelector('[data-action="close-detail"]');
-                if (closeBtn) {
-                    closeBtn.addEventListener('click', () => {
-                        this.selectedPokemon = null;
-                        this.selectedForm = null;
-                        this.render();
-                    });
-                }
-
-                const closeMoveBtn = document.querySelector('[data-action="close-move-detail"]');
-                if (closeMoveBtn) {
-                    closeMoveBtn.addEventListener('click', () => {
-                        this.selectedMove = null;
-                        this.render();
-                    });
-                }
-
-                const changeFormSelect = document.querySelector('[data-action="change-form"]');
-                if (changeFormSelect) {
-                    changeFormSelect.addEventListener('change', (e) => {
-                        this.selectForm(e.target.value);
-                    });
-                }
-
-                document.querySelectorAll('[data-action="toggle-section"]').forEach(btn => {
-                    btn.addEventListener('click', () => this.toggleMoveSection(btn.dataset.section));
-                });
-
-                const toggleMode = document.querySelector('[data-action="toggle-mode"]');
-                if (toggleMode) {
-                    toggleMode.addEventListener('click', () => {
-                        this.moveMode = this.moveMode === 'pvp' ? 'pve' : 'pvp';
-                        this.render();
-                    });
-                }
-
-                // Move cards with long press
-                document.querySelectorAll('.move-card').forEach(card => {
-                    card.addEventListener('touchstart', (e) => this.handleTouchStart(e, 'move'), false);
-                    card.addEventListener('touchend', (e) => this.handleTouchEnd(e, 'move'), false);
-                    
-                    card.addEventListener('mousedown', () => {
-                        this.longPressTimer = setTimeout(() => {
-                            const moveName = card.dataset.moveName;
-                            const category = card.dataset.moveCategory;
-                            const moveData = this.getMoveDetails(moveName, category, this.moveMode);
-                            if (moveData) this.selectMove(moveData);
-                        }, 500);
-                    });
-                    
-                    card.addEventListener('mouseup', () => clearTimeout(this.longPressTimer));
-                    card.addEventListener('mouseleave', () => clearTimeout(this.longPressTimer));
-                });
-
-                // Swipe gestures for detail view
-                const detailContainer = document.querySelector('[data-detail-container]');
-                if (detailContainer) {
-                    detailContainer.addEventListener('touchstart', (e) => this.handleTouchStart(e, 'detail'), false);
-                    detailContainer.addEventListener('touchend', (e) => this.handleTouchEnd(e, 'detail'), false);
-                }
-
-                // Tags
-                const showTagInput = document.querySelector('[data-action="show-tag-input"]');
-                if (showTagInput) {
-                    showTagInput.addEventListener('click', () => {
-                        this.showTagInput = true;
-                        this.render();
-                    });
-                }
-
-                const addTagBtn = document.querySelector('[data-action="add-tag"]');
-                const tagInput = document.querySelector('[data-action="tag-input"]');
-                if (addTagBtn && tagInput) {
-                    const addTag = () => {
-                        const tag = tagInput.value.trim();
-                        const isMove = addTagBtn.dataset.isMove === 'true';
-                        const currentItem = isMove ? this.selectedMove : (this.selectedForm || this.selectedPokemon);
-                        if (tag && currentItem) {
-                            this.addTag(currentItem.id, tag, isMove);
-                        }
-                    };
-                    addTagBtn.addEventListener('click', addTag);
-                    tagInput.addEventListener('keypress', (e) => {
-                        if (e.key === 'Enter') addTag();
-                    });
-                }
-
-                document.querySelectorAll('[data-action="remove-tag"]').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        const isMove = btn.dataset.isMove === 'true';
-                        const currentItem = isMove ? this.selectedMove : (this.selectedForm || this.selectedPokemon);
-                        if (currentItem) {
-                            this.removeTag(currentItem.id, btn.dataset.tag, isMove);
-                        }
-                    });
-                });
-
-                // FAB buttons
-                const addPokemonBtn = document.querySelector('[data-action="add-pokemon"]');
-                if (addPokemonBtn) {
-                    addPokemonBtn.addEventListener('click', () => alert('Add Pokemon feature coming soon!'));
-                }
-
-                const teamBuilderBtn = document.querySelector('[data-action="team-builder"]');
-                if (teamBuilderBtn) {
-                    teamBuilderBtn.addEventListener('click', () => alert('Team Builder feature coming soon!'));
-                }
-
-                // Evolution sprites click
-                document.querySelectorAll('[data-pokemon-dex]').forEach(sprite => {
-                    sprite.addEventListener('click', () => {
-                        const dexNumber = parseInt(sprite.dataset.pokemonDex);
-                        const pokemon = this.pokemon.find(p => p.dexNumber === dexNumber);
-                        if (pokemon) this.selectPokemon(pokemon);
-                    });
-                });
-
-                // IV spread buttons
-                document.querySelectorAll('[data-action="iv-spread"]').forEach(btn => {
-                    btn.addEventListener('click', () => alert('IV Spreads - Under Construction'));
-                });
-            }
-
-            attachListListeners() {
-                document.querySelectorAll('[data-pokemon-id]').forEach(card => {
-                    card.addEventListener('click', () => {
-                        const pokemon = this.pokemon.find(p => p.id === card.dataset.pokemonId);
-                        if (pokemon) this.selectPokemon(pokemon);
-                    });
-                });
-
-                document.querySelectorAll('[data-toggle-move]').forEach(toggle => {
-                    toggle.addEventListener('click', () => {
-                        const moveId = toggle.dataset.toggleMove;
-                        this.expandedMoves[moveId] = !this.expandedMoves[moveId];
-                        this.render();
-                    });
-                });
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            initializeDatabase();
-            new PokeApp();
-        });
-    </script>
+    <!-- Load scripts in order: helpers, then features, then main -->
+    <script src="main.js"></script>
+    <script src="pokedex.js"></script>
 </body>
 </html>
