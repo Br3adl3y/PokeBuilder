@@ -208,7 +208,7 @@ async function renderPokemonDetail() {
 
     return `
         <div class="min-h-screen pokedex-bg p-4 py-8" data-detail-container>
-            <div class="detail-container card-hover rounded-3xl shadow-2xl mx-auto bg-gradient-to-br from-cyan-50 to-blue-100" style="max-width: 1400px; padding: clamp(0.5rem, 3vw, 1.5rem);">
+            <div class="detail-container rounded-3xl shadow-2xl mx-auto bg-gradient-to-br from-cyan-50 to-blue-100"
                 
                 <!-- ROW 1: 2/3 sprite + 1/3 evolution -->
                 <div class="detail-row-1 mb-4">
