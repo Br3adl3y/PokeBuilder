@@ -351,12 +351,11 @@ async function renderPokemonDetail() {
                     ` : ''}
                 </div>
             </div>
-
+        </div>
             <!-- Close FAB -->
             <button class="fab-button fab-center bg-gray-600 text-white" data-action="close-detail">
                 <i class="fa-solid fa-xmark text-xl"></i>
             </button>
-        </div>
     `;
 }
 
