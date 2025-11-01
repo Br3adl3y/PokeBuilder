@@ -738,3 +738,512 @@
     z-index: 1;
     filter: blur(0);
 }
+
+/* ============================================
+   FIGHTING TYPE - Blurry Dojo
+   ============================================ */
+.type-bg-fighting {
+    background: linear-gradient(180deg, #8B4513 0%, #D2B48C 100%) !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.type-bg-fighting::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 50%;
+    background: 
+        repeating-linear-gradient(0deg, 
+            transparent, transparent 19px, 
+            rgba(101, 67, 33, 0.7) 19px, rgba(101, 67, 33, 0.7) 21px),
+        repeating-linear-gradient(90deg, 
+            transparent, transparent 19px, 
+            rgba(101, 67, 33, 0.7) 19px, rgba(101, 67, 33, 0.7) 21px),
+        #D2B48C;
+    clip-path: polygon(
+        0% 0%, 
+        35% 0%, 
+        35% 35%, 
+        40% 40%, 
+        40% 100%, 
+        60% 100%, 
+        60% 40%, 
+        65% 35%, 
+        65% 0%, 
+        100% 0%, 
+        100% 100%, 
+        0% 100%
+    );
+    filter: blur(3px);
+    z-index: 0;
+}
+
+.type-bg-fighting::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 35%;
+    width: 30%;
+    height: 50%;
+    background: linear-gradient(180deg, 
+        rgba(255, 255, 255, 0.8) 0%, 
+        rgba(173, 255, 47, 0.7) 40%, 
+        rgba(124, 252, 0, 0.6) 100%);
+    clip-path: polygon(
+        0% 0%, 
+        17% 70%, 
+        33% 80%, 
+        50% 100%, 
+        67% 80%, 
+        83% 70%, 
+        100% 0%
+    );
+    filter: blur(4px);
+    z-index: 0;
+}
+
+.type-bg-fighting img {
+    position: relative;
+    z-index: 1;
+}
+
+/* ============================================
+   WATER TYPE - Underwater Bubbles
+   ============================================ */
+@keyframes bubble-rise-1 {
+    0% {
+        transform: translate(0, 0);
+        opacity: 0;
+    }
+    10% {
+        opacity: 0.8;
+    }
+    100% {
+        transform: translate(30px, -400px);
+        opacity: 0;
+    }
+}
+
+@keyframes bubble-rise-2 {
+    0% {
+        transform: translate(0, 0);
+        opacity: 0;
+    }
+    10% {
+        opacity: 0.7;
+    }
+    100% {
+        transform: translate(-20px, -400px);
+        opacity: 0;
+    }
+}
+
+@keyframes bubble-rise-3 {
+    0% {
+        transform: translate(0, 0);
+        opacity: 0;
+    }
+    10% {
+        opacity: 0.75;
+    }
+    100% {
+        transform: translate(15px, -400px);
+        opacity: 0;
+    }
+}
+
+@keyframes bubble-rise-4 {
+    0% {
+        transform: translate(0, 0);
+        opacity: 0;
+    }
+    10% {
+        opacity: 0.65;
+    }
+    100% {
+        transform: translate(-35px, -400px);
+        opacity: 0;
+    }
+}
+
+.type-bg-water {
+    background: radial-gradient(ellipse at center, #4A90A4 0%, #2F6B7C 50%, #1E4D5C 100%) !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.type-bg-water::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 15%;
+    width: 18px;
+    height: 18px;
+    background: radial-gradient(circle, 
+        rgba(255, 255, 255, 0.8) 0%, 
+        rgba(173, 216, 230, 0.6) 50%, 
+        transparent 80%);
+    border-radius: 50%;
+    animation: bubble-rise-1 7s ease-in infinite;
+    z-index: 0;
+}
+
+.type-bg-water::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 65%;
+    width: 22px;
+    height: 22px;
+    background: radial-gradient(circle, 
+        rgba(255, 255, 255, 0.75) 0%, 
+        rgba(173, 216, 230, 0.55) 50%, 
+        transparent 80%);
+    border-radius: 50%;
+    animation: bubble-rise-2 8s ease-in infinite 2s;
+    z-index: 0;
+}
+
+/* Additional bubbles using a different approach with background-image */
+.type-bg-water {
+    background-image:
+        radial-gradient(circle 15px at 40% 100%, 
+            rgba(255, 255, 255, 0.7) 0%, 
+            rgba(173, 216, 230, 0.5) 50%, 
+            transparent 70%),
+        radial-gradient(circle 20px at 80% 100%, 
+            rgba(255, 255, 255, 0.65) 0%, 
+            rgba(173, 216, 230, 0.45) 50%, 
+            transparent 70%),
+        radial-gradient(ellipse at center, #4A90A4 0%, #2F6B7C 50%, #1E4D5C 100%);
+    animation: water-bubbles 9s ease-in infinite;
+}
+
+@keyframes water-bubbles {
+    0% {
+        background-position: 40% 100%, 80% 100%, center;
+    }
+    100% {
+        background-position: 50% -50%, 70% -50%, center;
+    }
+}
+
+.type-bg-water img {
+    position: relative;
+    z-index: 1;
+}
+
+/* ============================================
+   NORMAL TYPE - Sunset Behind Trees
+   ============================================ */
+.type-bg-normal {
+    background: linear-gradient(180deg, 
+        #FFD4A3 0%, 
+        #FFDAB9 70%, 
+        #90EE90 75%, 
+        #B4E7B4 100%) !important;
+    position: relative;
+    overflow: hidden;
+    filter: blur(3px);
+}
+
+.type-bg-normal::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 40%;
+    height: 35%;
+    background: #CD853F;
+    clip-path: polygon(
+        0% 100%,
+        0% 40%,
+        5% 35%,
+        10% 50%,
+        15% 30%,
+        20% 45%,
+        25% 25%,
+        30% 40%,
+        35% 20%,
+        40% 35%,
+        45% 15%,
+        50% 30%,
+        55% 10%,
+        60% 25%,
+        65% 5%,
+        70% 20%,
+        75% 8%,
+        80% 25%,
+        85% 15%,
+        90% 30%,
+        95% 20%,
+        100% 35%,
+        100% 100%
+    );
+    filter: blur(0);
+    z-index: 0;
+}
+
+.type-bg-normal::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 40%;
+    height: 35%;
+    background: #CD853F;
+    clip-path: polygon(
+        0% 35%,
+        5% 20%,
+        10% 30%,
+        15% 15%,
+        20% 25%,
+        25% 8%,
+        30% 20%,
+        35% 5%,
+        40% 25%,
+        45% 10%,
+        50% 30%,
+        55% 15%,
+        60% 35%,
+        65% 20%,
+        70% 40%,
+        75% 25%,
+        80% 45%,
+        85% 30%,
+        90% 50%,
+        95% 35%,
+        100% 40%,
+        100% 100%,
+        0% 100%
+    );
+    filter: blur(0);
+    z-index: 0;
+}
+
+.type-bg-normal img {
+    position: relative;
+    z-index: 1;
+    filter: blur(0);
+}
+
+/* ============================================
+   STEEL TYPE - Polished Metal Surface
+   ============================================ */
+@keyframes steel-glint {
+    0% {
+        transform: translateX(-150%) translateY(-150%) rotate(45deg);
+        opacity: 0;
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        transform: translateX(150%) translateY(150%) rotate(45deg);
+        opacity: 0;
+    }
+}
+
+.type-bg-steel {
+    background: 
+        radial-gradient(ellipse at center, 
+            #B0C4DE 0%, 
+            #8FA5C0 40%, 
+            #6E8CA0 100%) !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.type-bg-steel::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(45deg,
+        transparent 0%,
+        transparent 45%,
+        rgba(255, 255, 255, 0.8) 48%,
+        rgba(255, 255, 255, 1) 50%,
+        rgba(255, 255, 255, 0.8) 52%,
+        transparent 55%,
+        transparent 100%);
+    animation: steel-glint 4s ease-in-out infinite;
+    z-index: 0;
+}
+
+.type-bg-steel img {
+    position: relative;
+    z-index: 1;
+}
+
+/* ============================================
+   ELECTRIC TYPE - Storm Clouds with Lightning
+   ============================================ */
+@keyframes lightning-flash {
+    0%, 90%, 100% {
+        opacity: 0;
+    }
+    92%, 94% {
+        opacity: 1;
+    }
+}
+
+@keyframes intercloud-flash {
+    0%, 85%, 100% {
+        opacity: 0;
+    }
+    87%, 89% {
+        opacity: 0.8;
+    }
+}
+
+.type-bg-electric {
+    background: radial-gradient(ellipse at 40% 30%, 
+        #3D4A5C 0%, 
+        #2C3544 40%, 
+        #1A1F2E 100%) !important;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Intercloud lightning glow */
+.type-bg-electric::before {
+    content: '';
+    position: absolute;
+    top: 25%;
+    left: 60%;
+    width: 80px;
+    height: 80px;
+    background: radial-gradient(circle, 
+        rgba(255, 255, 150, 1) 0%, 
+        rgba(255, 255, 200, 0.6) 40%, 
+        transparent 70%);
+    border-radius: 50%;
+    filter: blur(25px);
+    animation: intercloud-flash 7s ease-in-out infinite;
+    z-index: 0;
+}
+
+/* Lightning bolt */
+.type-bg-electric::after {
+    content: '';
+    position: absolute;
+    top: 15%;
+    left: 45%;
+    width: 60px;
+    height: 120px;
+    background: linear-gradient(180deg, 
+        rgba(255, 255, 255, 1) 0%, 
+        rgba(255, 255, 200, 0.9) 50%, 
+        rgba(255, 255, 150, 0.8) 100%);
+    clip-path: polygon(
+        40% 0%,
+        50% 0%,
+        45% 35%,
+        70% 35%,
+        30% 100%,
+        45% 55%,
+        25% 55%
+    );
+    filter: blur(2px) drop-shadow(0 0 10px rgba(255, 255, 255, 0.8));
+    animation: lightning-flash 5s ease-in-out infinite;
+    z-index: 1;
+}
+
+.type-bg-electric img {
+    position: relative;
+    z-index: 2;
+}
+
+/* ============================================
+   ROCK TYPE - Blue Sky + Blurry Mountains
+   ============================================ */
+.type-bg-rock {
+    background: linear-gradient(180deg, #87CEEB 0%, #B0C4DE 100%) !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.type-bg-rock::before {
+    content: '';
+    position: absolute;
+    bottom: -5%;
+    left: -5%;
+    width: 110%;
+    height: 65%;
+    background: linear-gradient(to top, 
+        #8B7355 0%, 
+        #A0826D 25%, 
+        #B39A7F 50%, 
+        transparent 100%);
+    clip-path: polygon(
+        0% 100%,
+        0% 70%,
+        5% 55%,
+        10% 62%,
+        15% 48%,
+        20% 58%,
+        25% 42%,
+        30% 54%,
+        35% 38%,
+        40% 52%,
+        45% 35%,
+        50% 48%,
+        55% 32%,
+        60% 50%,
+        65% 40%,
+        70% 55%,
+        75% 45%,
+        80% 60%,
+        85% 50%,
+        90% 65%,
+        95% 58%,
+        100% 68%,
+        100% 100%
+    );
+    filter: blur(35px);
+    z-index: 0;
+}
+
+.type-bg-rock img {
+    position: relative;
+    z-index: 1;
+}
+
+/* ============================================
+   MOBILE OPTIMIZATIONS
+   ============================================ */
+@media (max-width: 768px) {
+    .type-bg-water::before {
+        width: 15px;
+        height: 15px;
+    }
+    
+    .type-bg-water::after {
+        width: 18px;
+        height: 18px;
+    }
+    
+    .type-bg-electric::before {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .type-bg-electric::after {
+        width: 45px;
+        height: 90px;
+    }
+    
+    .type-bg-fighting::before {
+        filter: blur(2px);
+    }
+    
+    .type-bg-rock::before {
+        filter: blur(25px);
+    }
+}
