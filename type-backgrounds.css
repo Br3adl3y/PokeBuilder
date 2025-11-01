@@ -2,12 +2,20 @@
    STEEL TYPE - Polished Metal + Slow Glint
    ============================================ */
 @keyframes metal-glint {
-    0%, 92%, 100% {
+    0%, 85%, 100% {
         opacity: 0;
-        transform: translateX(-150%) translateY(150%) rotate(-45deg);
+        transform: translateX(-200%) translateY(200%) rotate(-45deg);
     }
-    94%, 96%, 98% {
-        opacity: 0.8;
+    90% {
+        opacity: 0.3;
+        transform: translateX(-50%) translateY(50%) rotate(-45deg);
+    }
+    95% {
+        opacity: 0.9;
+        transform: translateX(50%) translateY(-50%) rotate(-45deg);
+    }
+    98% {
+        opacity: 0.3;
         transform: translateX(150%) translateY(-150%) rotate(-45deg);
     }
 }
@@ -28,12 +36,12 @@
     background: linear-gradient(135deg, 
         transparent 0%,
         transparent 45%,
-        rgba(255, 255, 255, 0.6) 48%,
-        rgba(255, 255, 255, 0.9) 50%,
-        rgba(255, 255, 255, 0.6) 52%,
+        rgba(255, 255, 255, 0.4) 48%,
+        rgba(255, 255, 255, 0.8) 50%,
+        rgba(255, 255, 255, 0.4) 52%,
         transparent 55%,
         transparent 100%);
-    animation: metal-glint 12s ease-in-out infinite;
+    animation: metal-glint 15s ease-in-out infinite;
     z-index: 0;
 }
 
@@ -58,11 +66,11 @@
     left: 0;
     width: 100%;
     height: 35%;
-    background-image:
-        linear-gradient(to top, 
-            rgba(70, 140, 50, 0.8) 0%,
-            rgba(100, 180, 70, 0.6) 30%,
-            transparent 100%);
+    background: linear-gradient(to top, 
+        rgba(70, 140, 50, 1) 0%,
+        rgba(100, 180, 70, 0.9) 20%,
+        rgba(120, 200, 80, 0.3) 50%,
+        transparent 100%);
     clip-path: polygon(
         0% 100%,
         0% 85%,
@@ -197,10 +205,8 @@
     .type-bg-grass::after {
         background-size: 35px 65px, 45px 75px, 40px 55px;
     }
-}
-/*  ============================================
-    WATER TYPE - Underwater with Rising Bubbles
-    ============================================ */
+}WATER TYPE - Underwater with Rising Bubbles
+   ============================================ */
 @keyframes bubble-rise {
     0% {
         transform: translateY(0) scale(0);
@@ -386,23 +392,31 @@
 }
 
 /* ============================================
-   ELECTRIC TYPE - Dark Storm Clouds + Lightning
+   ELECTRIC TYPE - Dark Storm Clouds + Electric Glow
    ============================================ */
-@keyframes lightning-strike {
+@keyframes electric-spark {
     0%, 70%, 100% {
         opacity: 0;
+        box-shadow: 0 0 0 rgba(255, 255, 150, 0);
     }
-    72% {
+    75%, 78% {
         opacity: 1;
+        box-shadow: 0 0 30px rgba(255, 255, 150, 0.9), 0 0 60px rgba(255, 220, 0, 0.6);
     }
-    73% {
-        opacity: 0.3;
+    76%, 77% {
+        opacity: 0.5;
+        box-shadow: 0 0 15px rgba(255, 255, 150, 0.5), 0 0 30px rgba(255, 220, 0, 0.3);
     }
-    74% {
-        opacity: 1;
+}
+
+@keyframes electric-aura {
+    0%, 100% {
+        opacity: 0.2;
+        transform: scale(0.9);
     }
-    75% {
-        opacity: 0;
+    50% {
+        opacity: 0.5;
+        transform: scale(1.1);
     }
 }
 
@@ -415,43 +429,35 @@
 .type-bg-electric::before {
     content: '';
     position: absolute;
-    top: 5%;
-    left: 35%;
-    width: 4px;
-    height: 180px;
-    background: linear-gradient(180deg, 
-        rgba(255, 255, 220, 1) 0%,
-        rgba(255, 255, 180, 1) 20%,
-        rgba(255, 255, 120, 0.95) 40%,
-        rgba(255, 240, 80, 0.9) 60%,
-        rgba(255, 220, 0, 0.85) 80%,
+    top: 30%;
+    left: 40%;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: radial-gradient(circle, 
+        rgba(255, 255, 200, 1) 0%,
+        rgba(255, 255, 150, 0.8) 30%,
+        rgba(255, 240, 100, 0.4) 60%,
         transparent 100%);
-    clip-path: polygon(
-        40% 0%,
-        60% 0%,
-        55% 20%,
-        70% 20%,
-        45% 35%,
-        60% 35%,
-        40% 50%,
-        55% 50%,
-        35% 65%,
-        50% 65%,
-        30% 80%,
-        45% 80%,
-        50% 90%,
-        40% 90%,
-        55% 70%,
-        35% 70%,
-        50% 55%,
-        30% 55%,
-        45% 40%,
-        25% 40%,
-        40% 25%,
-        30% 25%
-    );
-    animation: lightning-strike 3s ease-in-out infinite;
-    filter: blur(0.5px) drop-shadow(0 0 4px rgba(255, 255, 150, 0.9));
+    animation: electric-spark 3s ease-in-out infinite;
+    filter: blur(3px);
+    z-index: 0;
+}
+
+.type-bg-electric::after {
+    content: '';
+    position: absolute;
+    top: 30%;
+    left: 40%;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: radial-gradient(circle, 
+        rgba(255, 255, 200, 0.3) 0%,
+        rgba(255, 240, 100, 0.15) 50%,
+        transparent 70%);
+    animation: electric-aura 2s ease-in-out infinite;
+    filter: blur(10px);
     z-index: 0;
 }
 
@@ -998,26 +1004,30 @@
 .type-bg-rock::before {
     content: '';
     position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 60%;
-    background-image:
-        linear-gradient(to top, #A0826D 0%, #8B7355 30%, transparent 100%);
+    bottom: -5%;
+    left: -5%;
+    width: 110%;
+    height: 70%;
+    background: linear-gradient(to top, #A0826D 0%, #8B7355 30%, transparent 100%);
     clip-path: polygon(
         0% 100%,
-        0% 70%,
-        10% 50%,
-        20% 65%,
-        35% 40%,
-        45% 55%,
-        60% 35%,
-        70% 50%,
-        85% 45%,
-        100% 60%,
+        0% 65%,
+        8% 48%,
+        15% 58%,
+        23% 42%,
+        32% 52%,
+        40% 38%,
+        48% 50%,
+        56% 36%,
+        64% 48%,
+        72% 40%,
+        80% 54%,
+        88% 44%,
+        95% 58%,
+        100% 62%,
         100% 100%
     );
-    filter: blur(25px);
+    filter: blur(40px);
     z-index: 0;
 }
 
@@ -1025,5 +1035,3 @@
     position: relative;
     z-index: 1;
 }
-
-/* ============================================
