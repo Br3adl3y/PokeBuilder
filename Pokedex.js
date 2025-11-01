@@ -302,9 +302,9 @@ async function renderPokemonDetail() {
                                 <div class="iv-row">
                                     <span class="iv-name text-xs md:text-sm text-gray-700 font-medium truncate">${mon.name}</span>
                                     <div class="iv-buttons">
-                                        <button class="iv-btn px-2 py-1 rounded-full bg-yellow-300 text-yellow-900 font-semibold hover:bg-yellow-400 transition text-xs" data-action="iv-spread" data-league="little" data-pokemon="${mon.id}" data-full="Little" data-short="">Little</button>
-                                        <button class="iv-btn px-2 py-1 rounded-full bg-cyan-400 text-cyan-900 font-semibold hover:bg-cyan-500 transition text-xs" data-action="iv-spread" data-league="great" data-pokemon="${mon.id}" data-full="Great" data-short="">Great</button>
-                                        <button class="iv-btn px-2 py-1 rounded-full bg-purple-500 text-white font-semibold hover:bg-purple-600 transition text-xs" data-action="iv-spread" data-league="ultra" data-pokemon="${mon.id}" data-full="Ultra" data-short="">Ultra</button>
+                                        <button class="iv-btn px-2 py-1 rounded-full bg-yellow-300 text-yellow-900 font-semibold hover:bg-yellow-400 transition text-xs" data-action="iv-spread" data-league="little" data-pokemon="${mon.id}" data-full="Little" data-short="L">Little</button>
+                                        <button class="iv-btn px-2 py-1 rounded-full bg-cyan-400 text-cyan-900 font-semibold hover:bg-cyan-500 transition text-xs" data-action="iv-spread" data-league="great" data-pokemon="${mon.id}" data-full="Great" data-short="G">Great</button>
+                                        <button class="iv-btn px-2 py-1 rounded-full bg-purple-500 text-white font-semibold hover:bg-purple-600 transition text-xs" data-action="iv-spread" data-league="ultra" data-pokemon="${mon.id}" data-full="Ultra" data-short="U">Ultra</button>
                                     </div>
                                 </div>
                             `).join('')}
