@@ -182,7 +182,7 @@ async function renderPokemonDetail() {
     const spriteUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/${spriteId}.gif`;                
     const chain = getEvolutionChain.call(this, p);
     const isSingleType = p.types.length === 1;
-    const typeBgClass = isSingleType ? `type-bg-${p.types[0].toLowerCase()}` : '';
+    const typeBgClass = `type-bg-${p.types[0].toLowerCase()}`;
 
     // Get all Pokemon in evolution chain for IV buttons (deduplicated)
     const getAllChainPokemon = (tree) => {
