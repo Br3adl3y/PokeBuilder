@@ -427,18 +427,11 @@
                 height: 150px;
             }
             
-            /* Use abbreviated button text on very small screens */
-            .iv-btn,
-            .iv-btn * {
-                font-size: 0 !important;
-                padding: 0.2rem 0.4rem !important;
-                min-width: 24px !important;
+            .xs\:inline {
+                display: inline;
             }
-            
-            .iv-btn::before {
-                content: attr(data-short);
-                font-size: 0.625rem;
-                font-weight: 700;
+            .xs\:hidden {
+                display: none;
             }
             
             .iv-row {
