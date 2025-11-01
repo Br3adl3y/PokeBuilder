@@ -2,11 +2,11 @@
    STEEL TYPE - Polished Metal + Slow Glint
    ============================================ */
 @keyframes metal-glint {
-    0%, 85%, 100% {
+    0%, 92%, 100% {
         opacity: 0;
         transform: translateX(-150%) translateY(150%) rotate(-45deg);
     }
-    90%, 95% {
+    94%, 96%, 98% {
         opacity: 0.8;
         transform: translateX(150%) translateY(-150%) rotate(-45deg);
     }
@@ -33,7 +33,7 @@
         rgba(255, 255, 255, 0.6) 52%,
         transparent 55%,
         transparent 100%);
-    animation: metal-glint 8s ease-in-out infinite;
+    animation: metal-glint 12s ease-in-out infinite;
     z-index: 0;
 }
 
@@ -46,7 +46,7 @@
    NORMAL TYPE - Dawn Sky over Trees
    ============================================ */
 .type-bg-normal {
-    background: linear-gradient(180deg, #FFE5B4 0%, #FFDAB9 40%, #FFA07A 100%) !important;
+    background: linear-gradient(180deg, #FFE5B4 0%, #FFDAB9 40%, #90EE90 100%) !important;
     position: relative;
     overflow: hidden;
 }
@@ -57,13 +57,39 @@
     bottom: 0;
     left: 0;
     width: 100%;
-    height: 30%;
+    height: 35%;
     background-image:
         linear-gradient(to top, 
-            rgba(255, 140, 0, 0.6) 0%,
-            rgba(255, 165, 0, 0.5) 40%,
+            rgba(70, 140, 50, 0.8) 0%,
+            rgba(100, 180, 70, 0.6) 30%,
             transparent 100%);
-    filter: blur(10px);
+    clip-path: polygon(
+        0% 100%,
+        0% 85%,
+        5% 75%,
+        8% 80%,
+        12% 70%,
+        15% 78%,
+        20% 72%,
+        25% 85%,
+        30% 75%,
+        35% 82%,
+        40% 70%,
+        45% 80%,
+        50% 68%,
+        55% 78%,
+        60% 73%,
+        65% 82%,
+        70% 76%,
+        75% 84%,
+        80% 72%,
+        85% 80%,
+        90% 74%,
+        95% 82%,
+        100% 78%,
+        100% 100%
+    );
+    filter: blur(12px);
     z-index: 0;
 }
 
@@ -172,9 +198,9 @@
         background-size: 35px 65px, 45px 75px, 40px 55px;
     }
 }
-/* ============================================
-   WATER TYPE - Underwater with Rising Bubbles
-   ============================================ */
+/*  ============================================
+    WATER TYPE - Underwater with Rising Bubbles
+    ============================================ */
 @keyframes bubble-rise {
     0% {
         transform: translateY(0) scale(0);
@@ -280,16 +306,44 @@
 /* ============================================
    GRASS TYPE - Green Gradient to Sky Blue + Falling Leaves
    ============================================ */
-@keyframes leaf-fall {
+@keyframes leaf-fall-1 {
     0% {
-        transform: translateY(-50px) rotate(0deg);
+        transform: translate(0, -50px) rotate(0deg);
         opacity: 0;
     }
     10% {
         opacity: 0.8;
     }
     100% {
-        transform: translateY(400px) rotate(360deg);
+        transform: translate(80px, 450px) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+@keyframes leaf-fall-2 {
+    0% {
+        transform: translate(0, -50px) rotate(0deg);
+        opacity: 0;
+    }
+    10% {
+        opacity: 0.7;
+    }
+    100% {
+        transform: translate(120px, 450px) rotate(-360deg);
+        opacity: 0;
+    }
+}
+
+@keyframes leaf-fall-3 {
+    0% {
+        transform: translate(0, -50px) rotate(0deg);
+        opacity: 0;
+    }
+    10% {
+        opacity: 0.75;
+    }
+    100% {
+        transform: translate(60px, 450px) rotate(360deg);
         opacity: 0;
     }
 }
@@ -300,27 +354,30 @@
     overflow: hidden;
 }
 
-.type-bg-grass::before,
-.type-bg-grass::after {
+.type-bg-grass::before {
     content: '';
     position: absolute;
-    top: -50px;
-    width: 100%;
-    height: 100%;
-    background-image:
-        radial-gradient(ellipse 8px 15px, rgba(100, 200, 50, 0.7) 0%, transparent 70%),
-        radial-gradient(ellipse 10px 18px, rgba(120, 220, 70, 0.6) 0%, transparent 70%),
-        radial-gradient(ellipse 7px 13px, rgba(90, 180, 40, 0.7) 0%, transparent 70%);
-    background-size: 47px 83px, 61px 97px, 53px 71px;
-    background-position: 19% 0, 53% 37px, 83% 19px;
-    animation: leaf-fall 10s linear infinite;
+    top: -30px;
+    left: 20%;
+    width: 12px;
+    height: 20px;
+    background: radial-gradient(ellipse, rgba(100, 200, 50, 0.8) 0%, transparent 70%);
+    border-radius: 50%;
+    animation: leaf-fall-1 8s ease-in infinite;
     z-index: 0;
 }
 
 .type-bg-grass::after {
-    animation-delay: 5s;
-    background-position: 73% 11px, 31% 59px, 89% 43px;
-    opacity: 0.7;
+    content: '';
+    position: absolute;
+    top: -30px;
+    left: 60%;
+    width: 14px;
+    height: 22px;
+    background: radial-gradient(ellipse, rgba(120, 220, 70, 0.75) 0%, transparent 70%);
+    border-radius: 50%;
+    animation: leaf-fall-2 10s ease-in infinite 3s;
+    z-index: 0;
 }
 
 .type-bg-grass img {
@@ -332,19 +389,19 @@
    ELECTRIC TYPE - Dark Storm Clouds + Lightning
    ============================================ */
 @keyframes lightning-strike {
-    0%, 90%, 100% {
+    0%, 70%, 100% {
         opacity: 0;
     }
-    92% {
+    72% {
         opacity: 1;
     }
-    93% {
+    73% {
         opacity: 0.3;
     }
-    94% {
+    74% {
         opacity: 1;
     }
-    95% {
+    75% {
         opacity: 0;
     }
 }
@@ -358,38 +415,43 @@
 .type-bg-electric::before {
     content: '';
     position: absolute;
-    top: 15%;
+    top: 5%;
     left: 35%;
-    width: 3px;
-    height: 120px;
+    width: 4px;
+    height: 180px;
     background: linear-gradient(180deg, 
-        rgba(255, 255, 200, 1) 0%,
-        rgba(255, 255, 150, 1) 20%,
-        rgba(255, 255, 100, 0.9) 40%,
-        rgba(255, 220, 0, 0.8) 60%,
+        rgba(255, 255, 220, 1) 0%,
+        rgba(255, 255, 180, 1) 20%,
+        rgba(255, 255, 120, 0.95) 40%,
+        rgba(255, 240, 80, 0.9) 60%,
+        rgba(255, 220, 0, 0.85) 80%,
         transparent 100%);
     clip-path: polygon(
         40% 0%,
         60% 0%,
-        55% 25%,
-        70% 25%,
-        45% 45%,
-        60% 45%,
-        40% 60%,
-        55% 60%,
-        35% 80%,
-        50% 80%,
-        30% 100%,
-        45% 100%,
-        50% 70%,
-        40% 70%,
+        55% 20%,
+        70% 20%,
+        45% 35%,
+        60% 35%,
+        40% 50%,
         55% 50%,
-        35% 50%,
-        50% 30%,
-        35% 30%
+        35% 65%,
+        50% 65%,
+        30% 80%,
+        45% 80%,
+        50% 90%,
+        40% 90%,
+        55% 70%,
+        35% 70%,
+        50% 55%,
+        30% 55%,
+        45% 40%,
+        25% 40%,
+        40% 25%,
+        30% 25%
     );
-    animation: lightning-strike 5s ease-in-out infinite;
-    filter: blur(0.5px) drop-shadow(0 0 3px rgba(255, 255, 150, 0.8));
+    animation: lightning-strike 3s ease-in-out infinite;
+    filter: blur(0.5px) drop-shadow(0 0 4px rgba(255, 255, 150, 0.9));
     z-index: 0;
 }
 
@@ -479,9 +541,9 @@
     width: 100%;
     height: 100%;
     background-image:
-        radial-gradient(circle, rgba(255, 255, 255, 0.9) 1px, transparent 1px),
-        radial-gradient(circle, rgba(200, 230, 255, 0.7) 1.5px, transparent 1.5px),
-        radial-gradient(circle, rgba(220, 240, 255, 0.8) 1px, transparent 1px);
+        radial-gradient(circle, rgba(255, 255, 255, 1) 2.5px, transparent 2.5px),
+        radial-gradient(circle, rgba(230, 245, 255, 0.9) 3px, transparent 3px),
+        radial-gradient(circle, rgba(240, 250, 255, 0.95) 2px, transparent 2px);
     background-size: 67px 127px, 89px 157px, 59px 109px;
     background-position: 13% 0, 57% 37px, 87% 13px;
     animation: snow-fall 12s linear infinite;
@@ -499,21 +561,21 @@
 }
 
 /* ============================================
-   DRAGON TYPE - Yellow Scales on Green/Yellow
+   DRAGON TYPE - Yellow Scales on Green Background
    ============================================ */
 @keyframes scale-pulse {
     0%, 100% {
-        opacity: 0.3;
+        opacity: 0.4;
         transform: scale(0.95);
     }
     50% {
-        opacity: 0.6;
+        opacity: 0.7;
         transform: scale(1);
     }
 }
 
 .type-bg-dragon {
-    background: radial-gradient(ellipse at center, #8b9d3f 0%, #6b7d2f 50%, #4b5d1f 100%) !important;
+    background: radial-gradient(ellipse at center, #6b7d2f 0%, #5b6d1f 50%, #4b5d1f 100%) !important;
     position: relative;
     overflow: hidden;
 }
@@ -526,19 +588,16 @@
     width: 100%;
     height: 100%;
     background-image:
-        radial-gradient(ellipse 35px 55px at 15% 20%, rgba(220, 200, 80, 0.5) 0%, transparent 50%),
-        radial-gradient(ellipse 40px 60px at 45% 15%, rgba(240, 220, 100, 0.4) 0%, transparent 50%),
-        radial-gradient(ellipse 30px 50px at 75% 25%, rgba(230, 210, 90, 0.5) 0%, transparent 50%),
-        radial-gradient(ellipse 45px 65px at 25% 50%, rgba(210, 190, 70, 0.4) 0%, transparent 50%),
-        radial-gradient(ellipse 38px 58px at 60% 45%, rgba(250, 230, 110, 0.5) 0%, transparent 50%),
-        radial-gradient(ellipse 32px 52px at 85% 55%, rgba(225, 205, 85, 0.4) 0%, transparent 50%),
-        radial-gradient(ellipse 42px 62px at 20% 75%, rgba(235, 215, 95, 0.5) 0%, transparent 50%),
-        radial-gradient(ellipse 36px 56px at 50% 80%, rgba(245, 225, 105, 0.4) 0%, transparent 50%),
-        radial-gradient(ellipse 40px 60px at 80% 70%, rgba(220, 200, 80, 0.5) 0%, transparent 50%),
-        radial-gradient(ellipse 34px 54px at 35% 35%, rgba(230, 210, 90, 0.4) 0%, transparent 50%),
-        radial-gradient(ellipse 38px 58px at 65% 65%, rgba(240, 220, 100, 0.5) 0%, transparent 50%),
-        radial-gradient(ellipse 32px 52px at 90% 40%, rgba(215, 195, 75, 0.4) 0%, transparent 50%);
-    filter: blur(12px);
+        radial-gradient(ellipse 52px 82px at 15% 20%, rgba(240, 220, 80, 0.7) 0%, transparent 50%),
+        radial-gradient(ellipse 60px 90px at 45% 15%, rgba(255, 240, 100, 0.65) 0%, transparent 50%),
+        radial-gradient(ellipse 45px 75px at 75% 25%, rgba(250, 230, 90, 0.7) 0%, transparent 50%),
+        radial-gradient(ellipse 68px 98px at 25% 50%, rgba(235, 215, 70, 0.65) 0%, transparent 50%),
+        radial-gradient(ellipse 57px 87px at 60% 45%, rgba(255, 245, 110, 0.7) 0%, transparent 50%),
+        radial-gradient(ellipse 48px 78px at 85% 55%, rgba(245, 225, 85, 0.65) 0%, transparent 50%),
+        radial-gradient(ellipse 63px 93px at 20% 75%, rgba(250, 235, 95, 0.7) 0%, transparent 50%),
+        radial-gradient(ellipse 54px 84px at 50% 80%, rgba(255, 250, 105, 0.65) 0%, transparent 50%),
+        radial-gradient(ellipse 60px 90px at 80% 70%, rgba(240, 220, 80, 0.7) 0%, transparent 50%);
+    filter: blur(6px);
     animation: scale-pulse 8s ease-in-out infinite;
     z-index: 0;
 }
@@ -551,13 +610,13 @@
     width: 100%;
     height: 100%;
     background-image:
-        radial-gradient(ellipse 40px 60px at 30% 60%, rgba(225, 205, 85, 0.4) 0%, transparent 50%),
-        radial-gradient(ellipse 35px 55px at 55% 30%, rgba(235, 215, 95, 0.5) 0%, transparent 50%),
-        radial-gradient(ellipse 42px 62px at 70% 85%, rgba(245, 225, 105, 0.4) 0%, transparent 50%),
-        radial-gradient(ellipse 36px 56px at 10% 45%, rgba(220, 200, 80, 0.5) 0%, transparent 50%),
-        radial-gradient(ellipse 38px 58px at 40% 90%, rgba(230, 210, 90, 0.4) 0%, transparent 50%),
-        radial-gradient(ellipse 34px 54px at 95% 75%, rgba(240, 220, 100, 0.5) 0%, transparent 50%);
-    filter: blur(12px);
+        radial-gradient(ellipse 60px 90px at 30% 60%, rgba(245, 225, 85, 0.65) 0%, transparent 50%),
+        radial-gradient(ellipse 52px 82px at 55% 30%, rgba(250, 235, 95, 0.7) 0%, transparent 50%),
+        radial-gradient(ellipse 63px 93px at 70% 85%, rgba(255, 245, 105, 0.65) 0%, transparent 50%),
+        radial-gradient(ellipse 54px 84px at 10% 45%, rgba(240, 220, 80, 0.7) 0%, transparent 50%),
+        radial-gradient(ellipse 57px 87px at 40% 90%, rgba(250, 230, 90, 0.65) 0%, transparent 50%),
+        radial-gradient(ellipse 51px 81px at 95% 75%, rgba(255, 240, 100, 0.7) 0%, transparent 50%);
+    filter: blur(6px);
     animation: scale-pulse 8s ease-in-out infinite;
     animation-delay: 4s;
     z-index: 0;
@@ -958,7 +1017,7 @@
         100% 60%,
         100% 100%
     );
-    filter: blur(15px);
+    filter: blur(25px);
     z-index: 0;
 }
 
