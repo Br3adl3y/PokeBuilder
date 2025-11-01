@@ -40,12 +40,6 @@
         }
         
         @media (max-width: 768px) {
-            /* Scale the main container */
-            [data-detail-container] > .card-hover {
-                transform: scale(0.75);
-                transform-origin: top center;
-                margin-bottom: -25%; /* Compensate for scale */
-            }
             
             /* Reduce font sizes */
             html { font-size: 10px; }
@@ -77,19 +71,8 @@
             -webkit-overflow-scrolling: touch;
             overscroll-behavior: none;
         }
-        
-        /* Card styles */
-        .card-hover {
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            cursor: pointer;
-            background: rgba(255, 255, 255, 0.6);
-            backdrop-filter: blur(10px);
-        }
-        .card-hover:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
-        }
-        
+
+        /* Card styles */    
         .menu-item {
             transition: all 0.2s;
         }
@@ -461,11 +444,6 @@
             
             .iv-buttons {
                 gap: 0.2rem;
-            }
-
-            [data-detail-container] > .card-hover {
-                transform: scale(0.6);
-                margin-bottom: -40%;
             }
             
             html { font-size: 8px; }
