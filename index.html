@@ -57,6 +57,27 @@
             .card-hover { padding: 1rem !important; }
         }
 
+        html, body {
+            position: fixed;
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            overscroll-behavior: none;
+            -webkit-overflow-scrolling: auto;
+        }
+
+        #app {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: none;
+        }
+        
         /* Card styles */
         .card-hover {
             transition: transform 0.3s ease, box-shadow 0.3s ease;
