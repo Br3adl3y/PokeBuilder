@@ -505,7 +505,7 @@ class PokeApp {
     renderPokemonGrid() {
         const filtered = this.getFilteredPokemonGroups();
         return `
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div class="grid grid-cols-4 gap-3">
                 ${filtered.map(forms => renderPokemonCard.call(this, forms)).join('')}
             </div>
         `;
