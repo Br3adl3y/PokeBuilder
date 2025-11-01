@@ -67,10 +67,6 @@
    MOBILE OPTIMIZATIONS
    ============================================ */
 @media (max-width: 768px) {
-    .type-bg-water::before,
-    .type-bg-water::after {
-        background-size: 50px 100px, 80px 130px, 40px 120px, 70px 150px, 60px 110px;
-    }
     
     .type-bg-psychic::before,
     .type-bg-psychic::after {
@@ -789,9 +785,10 @@
     width: 30%;
     height: 50%;
     background: linear-gradient(180deg, 
-        rgba(255, 255, 255, 0.8) 0%, 
-        rgba(173, 255, 47, 0.7) 40%, 
-        rgba(124, 252, 0, 0.6) 100%);
+        rgba(255, 255, 255, 0.9) 0%, 
+        rgba(200, 255, 150, 0.8) 30%, 
+        rgba(150, 220, 100, 0.7) 60%,
+        rgba(173, 255, 47, 0.6) 100%);
     clip-path: polygon(
         0% 0%, 
         17% 70%, 
@@ -801,7 +798,7 @@
         83% 70%, 
         100% 0%
     );
-    filter: blur(4px);
+    filter: blur(8px);
     z-index: 0;
 }
 
@@ -811,7 +808,7 @@
 }
 
 /* ============================================
-   WATER TYPE - Underwater Bubbles
+   WATER TYPE - Underwater Bubbles (5 bubbles)
    ============================================ */
 @keyframes bubble-rise-1 {
     0% {
@@ -822,7 +819,7 @@
         opacity: 0.8;
     }
     100% {
-        transform: translate(30px, -400px);
+        transform: translate(25px, -420px);
         opacity: 0;
     }
 }
@@ -833,10 +830,10 @@
         opacity: 0;
     }
     10% {
-        opacity: 0.7;
+        opacity: 0.75;
     }
     100% {
-        transform: translate(-20px, -400px);
+        transform: translate(-30px, -450px);
         opacity: 0;
     }
 }
@@ -847,10 +844,10 @@
         opacity: 0;
     }
     10% {
-        opacity: 0.75;
+        opacity: 0.7;
     }
     100% {
-        transform: translate(15px, -400px);
+        transform: translate(40px, -400px);
         opacity: 0;
     }
 }
@@ -864,7 +861,21 @@
         opacity: 0.65;
     }
     100% {
-        transform: translate(-35px, -400px);
+        transform: translate(-15px, -435px);
+        opacity: 0;
+    }
+}
+
+@keyframes bubble-rise-5 {
+    0% {
+        transform: translate(0, 0);
+        opacity: 0;
+    }
+    10% {
+        opacity: 0.8;
+    }
+    100% {
+        transform: translate(20px, -410px);
         opacity: 0;
     }
 }
@@ -875,59 +886,85 @@
     overflow: hidden;
 }
 
+/* Bubble 1 */
 .type-bg-water::before {
     content: '';
     position: absolute;
     bottom: 0;
-    left: 15%;
-    width: 18px;
-    height: 18px;
+    left: 18%;
+    width: 16px;
+    height: 16px;
     background: radial-gradient(circle, 
-        rgba(255, 255, 255, 0.8) 0%, 
+        rgba(255, 255, 255, 0.85) 0%, 
         rgba(173, 216, 230, 0.6) 50%, 
         transparent 80%);
     border-radius: 50%;
-    animation: bubble-rise-1 7s ease-in infinite;
+    animation: bubble-rise-1 8.5s ease-in infinite;
     z-index: 0;
 }
 
+/* Bubble 2 */
 .type-bg-water::after {
     content: '';
     position: absolute;
     bottom: 0;
-    left: 65%;
-    width: 22px;
-    height: 22px;
+    left: 52%;
+    width: 20px;
+    height: 20px;
     background: radial-gradient(circle, 
-        rgba(255, 255, 255, 0.75) 0%, 
+        rgba(255, 255, 255, 0.8) 0%, 
         rgba(173, 216, 230, 0.55) 50%, 
         transparent 80%);
     border-radius: 50%;
-    animation: bubble-rise-2 8s ease-in infinite 2s;
+    animation: bubble-rise-2 10s ease-in infinite 2.3s;
     z-index: 0;
 }
 
-/* Additional bubbles using a different approach with background-image */
+/* Bubble 3, 4, 5 - using background-image trick */
 .type-bg-water {
     background-image:
-        radial-gradient(circle 15px at 40% 100%, 
-            rgba(255, 255, 255, 0.7) 0%, 
+        radial-gradient(circle 18px at 73% 100%, 
+            rgba(255, 255, 255, 0.75) 0%, 
             rgba(173, 216, 230, 0.5) 50%, 
             transparent 70%),
-        radial-gradient(circle 20px at 80% 100%, 
-            rgba(255, 255, 255, 0.65) 0%, 
+        radial-gradient(circle 14px at 35% 100%, 
+            rgba(255, 255, 255, 0.7) 0%, 
             rgba(173, 216, 230, 0.45) 50%, 
             transparent 70%),
+        radial-gradient(circle 17px at 88% 100%, 
+            rgba(255, 255, 255, 0.8) 0%, 
+            rgba(173, 216, 230, 0.6) 50%, 
+            transparent 70%),
         radial-gradient(ellipse at center, #4A90A4 0%, #2F6B7C 50%, #1E4D5C 100%);
-    animation: water-bubbles 9s ease-in infinite;
+    animation: water-bubble-3 7.2s ease-in infinite 4.1s,
+               water-bubble-4 9.3s ease-in infinite 1.5s,
+               water-bubble-5 8.8s ease-in infinite 5.7s;
 }
 
-@keyframes water-bubbles {
+@keyframes water-bubble-3 {
     0% {
-        background-position: 40% 100%, 80% 100%, center;
+        background-position: 73% 100%, 35% 100%, 88% 100%, center;
     }
     100% {
-        background-position: 50% -50%, 70% -50%, center;
+        background-position: 83% -50%, 35% 100%, 88% 100%, center;
+    }
+}
+
+@keyframes water-bubble-4 {
+    0% {
+        background-position: 73% 100%, 35% 100%, 88% 100%, center;
+    }
+    100% {
+        background-position: 73% 100%, 30% -50%, 88% 100%, center;
+    }
+}
+
+@keyframes water-bubble-5 {
+    0% {
+        background-position: 73% 100%, 35% 100%, 88% 100%, center;
+    }
+    100% {
+        background-position: 73% 100%, 35% 100%, 92% -50%, center;
     }
 }
 
@@ -947,7 +984,6 @@
         #B4E7B4 100%) !important;
     position: relative;
     overflow: hidden;
-    filter: blur(3px);
 }
 
 .type-bg-normal::before {
@@ -955,35 +991,29 @@
     position: absolute;
     bottom: 0;
     left: 0;
-    width: 40%;
-    height: 35%;
-    background: #CD853F;
+    width: 35%;
+    height: 25%;
+    background: #D2691E;
     clip-path: polygon(
         0% 100%,
-        0% 40%,
-        5% 35%,
-        10% 50%,
-        15% 30%,
-        20% 45%,
-        25% 25%,
-        30% 40%,
-        35% 20%,
-        40% 35%,
+        0% 15%,
+        8% 25%,
+        12% 10%,
+        18% 30%,
+        25% 5%,
+        32% 20%,
+        38% 0%,
         45% 15%,
-        50% 30%,
-        55% 10%,
+        52% 8%,
         60% 25%,
-        65% 5%,
-        70% 20%,
-        75% 8%,
-        80% 25%,
-        85% 15%,
-        90% 30%,
-        95% 20%,
-        100% 35%,
+        68% 12%,
+        75% 30%,
+        82% 18%,
+        90% 35%,
+        100% 20%,
         100% 100%
     );
-    filter: blur(0);
+    filter: blur(4px);
     z-index: 0;
 }
 
@@ -992,42 +1022,35 @@
     position: absolute;
     bottom: 0;
     right: 0;
-    width: 40%;
-    height: 35%;
-    background: #CD853F;
+    width: 35%;
+    height: 25%;
+    background: #D2691E;
     clip-path: polygon(
-        0% 35%,
-        5% 20%,
-        10% 30%,
-        15% 15%,
-        20% 25%,
-        25% 8%,
-        30% 20%,
-        35% 5%,
+        0% 20%,
+        10% 35%,
+        18% 18%,
+        25% 30%,
+        32% 12%,
         40% 25%,
-        45% 10%,
-        50% 30%,
+        48% 8%,
         55% 15%,
-        60% 35%,
-        65% 20%,
-        70% 40%,
-        75% 25%,
-        80% 45%,
-        85% 30%,
-        90% 50%,
-        95% 35%,
-        100% 40%,
+        62% 0%,
+        68% 20%,
+        75% 5%,
+        82% 30%,
+        88% 10%,
+        92% 25%,
+        100% 15%,
         100% 100%,
         0% 100%
     );
-    filter: blur(0);
+    filter: blur(4px);
     z-index: 0;
 }
 
 .type-bg-normal img {
     position: relative;
     z-index: 1;
-    filter: blur(0);
 }
 
 /* ============================================
@@ -1035,14 +1058,14 @@
    ============================================ */
 @keyframes steel-glint {
     0% {
-        transform: translateX(-150%) translateY(-150%) rotate(45deg);
+        transform: translateX(-150%) translateY(-150%);
         opacity: 0;
     }
     50% {
         opacity: 1;
     }
     100% {
-        transform: translateX(150%) translateY(150%) rotate(45deg);
+        transform: translateX(150%) translateY(150%);
         opacity: 0;
     }
 }
@@ -1064,7 +1087,7 @@
     left: -50%;
     width: 200%;
     height: 200%;
-    background: linear-gradient(45deg,
+    background: linear-gradient(135deg,
         transparent 0%,
         transparent 45%,
         rgba(255, 255, 255, 0.8) 48%,
@@ -1088,17 +1111,26 @@
     0%, 90%, 100% {
         opacity: 0;
     }
-    92%, 94% {
+    92%, 94%, 96% {
         opacity: 1;
     }
 }
 
-@keyframes intercloud-flash {
+@keyframes intercloud-flash-1 {
     0%, 85%, 100% {
         opacity: 0;
     }
     87%, 89% {
         opacity: 0.8;
+    }
+}
+
+@keyframes intercloud-flash-2 {
+    0%, 80%, 100% {
+        opacity: 0;
+    }
+    82%, 84% {
+        opacity: 0.7;
     }
 }
 
@@ -1111,7 +1143,7 @@
     overflow: hidden;
 }
 
-/* Intercloud lightning glow */
+/* First intercloud lightning glow - right side */
 .type-bg-electric::before {
     content: '';
     position: absolute;
@@ -1125,34 +1157,82 @@
         transparent 70%);
     border-radius: 50%;
     filter: blur(25px);
-    animation: intercloud-flash 7s ease-in-out infinite;
+    animation: intercloud-flash-1 7s ease-in-out infinite;
     z-index: 0;
 }
 
-/* Lightning bolt */
+/* Lightning bolt - diagonal across screen */
 .type-bg-electric::after {
     content: '';
     position: absolute;
-    top: 15%;
-    left: 45%;
-    width: 60px;
-    height: 120px;
-    background: linear-gradient(180deg, 
-        rgba(255, 255, 255, 1) 0%, 
-        rgba(255, 255, 200, 0.9) 50%, 
-        rgba(255, 255, 150, 0.8) 100%);
+    top: -10%;
+    left: 10%;
+    width: 100%;
+    height: 140%;
+    background: linear-gradient(135deg, 
+        transparent 0%,
+        transparent 48%,
+        rgba(255, 255, 255, 1) 49%,
+        rgba(255, 255, 255, 1) 49.3%,
+        rgba(255, 255, 200, 0.9) 49.5%,
+        rgba(255, 255, 200, 0.9) 49.8%,
+        rgba(255, 255, 255, 1) 50%,
+        rgba(255, 255, 255, 1) 50.3%,
+        transparent 51%,
+        transparent 100%);
     clip-path: polygon(
-        40% 0%,
-        50% 0%,
-        45% 35%,
-        70% 35%,
-        30% 100%,
-        45% 55%,
-        25% 55%
+        0% 0%,
+        60% 0%,
+        55% 30%,
+        65% 30%,
+        45% 100%,
+        52% 55%,
+        40% 55%,
+        0% 100%
     );
-    filter: blur(2px) drop-shadow(0 0 10px rgba(255, 255, 255, 0.8));
-    animation: lightning-flash 5s ease-in-out infinite;
+    filter: blur(2px) drop-shadow(0 0 15px rgba(255, 255, 255, 0.9));
+    animation: lightning-flash 6s ease-in-out infinite;
     z-index: 1;
+}
+
+/* Second intercloud lightning - create with a separate div approach would be better, 
+   but working within ::before/::after constraints */
+.type-bg-electric {
+    background-image: 
+        radial-gradient(circle 70px at 25% 20%, 
+            rgba(255, 255, 150, 0) 0%, 
+            rgba(255, 255, 150, 0) 40%, 
+            transparent 70%),
+        radial-gradient(ellipse at 40% 30%, 
+            #3D4A5C 0%, 
+            #2C3544 40%, 
+            #1A1F2E 100%);
+    animation: second-intercloud 8s ease-in-out infinite;
+}
+
+@keyframes second-intercloud {
+    0%, 75%, 100% {
+        background-image: 
+            radial-gradient(circle 70px at 25% 20%, 
+                rgba(255, 255, 150, 0) 0%, 
+                rgba(255, 255, 150, 0) 40%, 
+                transparent 70%),
+            radial-gradient(ellipse at 40% 30%, 
+                #3D4A5C 0%, 
+                #2C3544 40%, 
+                #1A1F2E 100%);
+    }
+    77%, 79% {
+        background-image: 
+            radial-gradient(circle 70px at 25% 20%, 
+                rgba(255, 255, 150, 0.7) 0%, 
+                rgba(255, 255, 200, 0.5) 40%, 
+                transparent 70%),
+            radial-gradient(ellipse at 40% 30%, 
+                #3D4A5C 0%, 
+                #2C3544 40%, 
+                #1A1F2E 100%);
+    }
 }
 
 .type-bg-electric img {
@@ -1172,41 +1252,54 @@
 .type-bg-rock::before {
     content: '';
     position: absolute;
-    bottom: -5%;
-    left: -5%;
-    width: 110%;
-    height: 65%;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     background: linear-gradient(to top, 
         #8B7355 0%, 
-        #A0826D 25%, 
-        #B39A7F 50%, 
-        transparent 100%);
+        #A0826D 20%, 
+        #B39A7F 35%, 
+        transparent 50%);
     clip-path: polygon(
         0% 100%,
-        0% 70%,
-        5% 55%,
-        10% 62%,
-        15% 48%,
-        20% 58%,
-        25% 42%,
-        30% 54%,
-        35% 38%,
-        40% 52%,
-        45% 35%,
-        50% 48%,
-        55% 32%,
-        60% 50%,
-        65% 40%,
-        70% 55%,
-        75% 45%,
-        80% 60%,
-        85% 50%,
-        90% 65%,
-        95% 58%,
-        100% 68%,
+        0% 45%,
+        3% 38%,
+        6% 42%,
+        9% 35%,
+        12% 40%,
+        15% 32%,
+        18% 37%,
+        21% 30%,
+        24% 36%,
+        27% 28%,
+        30% 33%,
+        33% 26%,
+        36% 31%,
+        39% 24%,
+        42% 29%,
+        45% 22%,
+        48% 27%,
+        51% 20%,
+        54% 26%,
+        57% 23%,
+        60% 29%,
+        63% 25%,
+        66% 32%,
+        69% 27%,
+        72% 34%,
+        75% 30%,
+        78% 37%,
+        81% 33%,
+        84% 40%,
+        87% 35%,
+        90% 42%,
+        93% 38%,
+        96% 45%,
+        100% 48%,
         100% 100%
     );
-    filter: blur(35px);
+    filter: blur(40px);
     z-index: 0;
 }
 
@@ -1219,31 +1312,25 @@
    MOBILE OPTIMIZATIONS
    ============================================ */
 @media (max-width: 768px) {
-    .type-bg-water::before {
-        width: 15px;
-        height: 15px;
-    }
-    
-    .type-bg-water::after {
-        width: 18px;
-        height: 18px;
-    }
-    
-    .type-bg-electric::before {
-        width: 60px;
-        height: 60px;
-    }
-    
     .type-bg-electric::after {
-        width: 45px;
-        height: 90px;
+        width: 80%;
+        height: 120%;
     }
     
     .type-bg-fighting::before {
         filter: blur(2px);
     }
     
+    .type-bg-fighting::after {
+        filter: blur(6px);
+    }
+    
     .type-bg-rock::before {
-        filter: blur(25px);
+        filter: blur(30px);
+    }
+    
+    .type-bg-normal::before,
+    .type-bg-normal::after {
+        filter: blur(3px);
     }
 }
