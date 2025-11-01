@@ -133,17 +133,7 @@
         .fab-center:hover {
             transform: translateX(-50%) scale(1.1);
         }
-
-        /* Force FAB to stay fixed on detail page */
-        [data-detail-container] ~ .fab-center,
-        [data-detail-container] .fab-center {
-            position: fixed !important;
-            bottom: 20px !important;
-            left: 50% !important;
-            transform: translateX(-50%) !important;
-            z-index: 9999 !important;
-        }
-
+        
         .fab-button.hidden {
             transform: translateY(100px);
             opacity: 0;
