@@ -171,7 +171,9 @@
     .type-bg-grass::after {
         background-size: 35px 65px, 45px 75px, 40px 55px;
     }
-}WATER TYPE - Underwater with Rising Bubbles
+}
+/* ============================================
+   WATER TYPE - Underwater with Rising Bubbles
    ============================================ */
 @keyframes bubble-rise {
     0% {
