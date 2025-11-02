@@ -214,12 +214,11 @@ async function renderPokemonDetail() {
                 <div class="detail-row-1 mb-4">
                     
                     <!-- LEFT: Sprite (2/3 width) -->
-                    <div class="sprite-container relative bg-white/30 rounded-xl flex items-center justify-center" style="height: clamp(250px, 50vw, 400px);">
-                        <div class="sprite-background ${typeBgClass}"></div>
-                        <img src="${spriteUrl}" alt="${p.name}" class="w-1/2 h-1/2 object-contain mx-auto relative z-[2]">
+                    <div class="sprite-container relative bg-white/30 rounded-xl flex items-center justify-center ${typeBgClass}" style="height: clamp(250px, 50vw, 400px);">
+                        <img src="${spriteUrl}" alt="${p.name}" class="w-1/2 h-1/2 object-contain mx-auto">
                         
                         <!-- Name/Type overlaid at BOTTOM -->
-                        <div class="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-white/90 to-transparent z-[2]">
+                        <div class="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-white/90 to-transparent">
                             <div class="text-gray-500 text-xs mb-1">#${String(p.dexNumber).padStart(4, '0')}</div>
                             
                             <div class="flex items-end gap-2 flex-wrap">
