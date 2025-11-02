@@ -1224,7 +1224,6 @@
     background: linear-gradient(180deg, #FFE5CC 0%, #FFDAB9 63%, #e2a269 70%, #5fd15f 75%, #cdfb98c0 100%) !important;
     position: relative;
     overflow: hidden;
-    filter: blur(20px);
 }
 
 /* Tree canopy layer with blur */
