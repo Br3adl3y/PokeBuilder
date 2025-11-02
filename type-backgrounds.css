@@ -1259,7 +1259,7 @@
     z-index: 0;
 }
 
-/* Darker tree layer for depth */
+/* Darker tree layer for depth 
 .type-bg-normal::after {
     content: '';
     position: absolute;
@@ -1292,7 +1292,7 @@
 .type-bg-normal img {
     position: relative;
     z-index: 1;
-}
+}*/
 
 /* Mobile optimization */
 @media (max-width: 768px) {
