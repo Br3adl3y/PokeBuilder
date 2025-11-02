@@ -907,10 +907,14 @@
    ============================================ */
 @keyframes bubble-group-1 {
     0% {
+        transform: translateY(-100px) rotate(0deg);
+        opacity: 0;
+    }
+    10% {
         transform: translateY(0) rotate(0deg);
         opacity: 0;
     }
-    5% {
+    15% {
         opacity: 0.8;
     }
     95% {
@@ -924,10 +928,14 @@
 
 @keyframes bubble-group-2 {
     0%, 30% {
+        transform: translateY(-100px) rotate(0deg);
+        opacity: 0;
+    }
+    40% {
         transform: translateY(0) rotate(0deg);
         opacity: 0;
     }
-    35% {
+    45% {
         opacity: 0.75;
     }
     95% {
@@ -1103,8 +1111,15 @@
 @keyframes intercloud-lightning {
     0%, 1.5% {
         opacity: 1;
+        top: 8%;
+        left: 15%;
     }
     2%, 47% {
+        opacity: 0;
+        top: 8%;
+        left: 15%;
+    }
+    47.5% {
         opacity: 0;
         top: 18%;
         right: 25%;
@@ -1112,14 +1127,29 @@
     }
     48%, 49.5% {
         opacity: 1;
+        top: 18%;
+        right: 25%;
+        left: auto;
     }
     50%, 50.5% {
         opacity: 0;
+        top: 18%;
+        right: 25%;
+        left: auto;
     }
     51%, 52.5% {
         opacity: 1;
+        top: 18%;
+        right: 25%;
+        left: auto;
     }
     53%, 97% {
+        opacity: 0;
+        top: 18%;
+        right: 25%;
+        left: auto;
+    }
+    97.5% {
         opacity: 0;
         top: 12%;
         left: 70%;
@@ -1127,42 +1157,62 @@
     }
     98%, 99.5% {
         opacity: 1;
+        top: 12%;
+        left: 70%;
+        right: auto;
     }
     100% {
         opacity: 0;
-        top: 8%;
-        left: 15%;
+        top: 12%;
+        left: 70%;
+        right: auto;
     }
 }
 
 @keyframes lightning-bolt-flash {
     0%, 2% {
         opacity: 0.9;
+        transform: translate(-50%, -50%) rotate(-8deg);
     }
     2.5%, 29% {
+        opacity: 0;
+        transform: translate(-50%, -50%) rotate(-8deg);
+    }
+    29.5% {
         opacity: 0;
         transform: translate(-50%, -50%) rotate(5deg);
     }
     30%, 32% {
         opacity: 0.9;
+        transform: translate(-50%, -50%) rotate(5deg);
     }
     32.5%, 59% {
+        opacity: 0;
+        transform: translate(-50%, -50%) rotate(5deg);
+    }
+    59.5% {
         opacity: 0;
         transform: translate(-50%, -50%) rotate(-15deg);
     }
     60%, 62% {
         opacity: 0.9;
+        transform: translate(-50%, -50%) rotate(-15deg);
     }
     62.5%, 63% {
+        opacity: 0;
+        transform: translate(-50%, -50%) rotate(-15deg);
+    }
+    63.25% {
         opacity: 0;
         transform: translate(-50%, -50%) rotate(3deg);
     }
     63.5%, 65.5% {
         opacity: 0.9;
+        transform: translate(-50%, -50%) rotate(3deg);
     }
     66%, 100% {
         opacity: 0;
-        transform: translate(-50%, -50%) rotate(-8deg);
+        transform: translate(-50%, -50%) rotate(3deg);
     }
 }
 
@@ -1195,70 +1245,82 @@
     left: 50%;
     transform: translate(-50%, -50%) rotate(-8deg);
     width: 100%;
-    height: 200%;
-    background: transparent;
-    clip-path: polygon(
-        8% 5%,
-        9% 5%,
-        15% 18%,
-        14% 18%,
-        19% 28%,
-        18% 28%,
-        23% 38%,
-        22% 38%,
-        28% 48%,
-        27% 48%,
-        33% 58%,
-        32% 58%,
-        38% 68%,
-        37% 68%,
-        43% 78%,
-        42% 78%,
-        48% 88%,
-        49% 88%,
-        44% 80%,
-        45% 80%,
-        39% 70%,
-        40% 70%,
-        34% 60%,
-        35% 60%,
-        29% 50%,
-        30% 50%,
-        24% 40%,
-        25% 40%,
-        20% 30%,
-        21% 30%,
-        16% 20%,
-        17% 20%,
-        10% 8%,
-        9% 8%
-    );
-    opacity: 0;
-    background: linear-gradient(165deg, 
+    height: 150%;
+    background: linear-gradient(155deg, 
         transparent 0%,
-        transparent 3%,
-        #FFEB3B 4%,
-        #FFF9C4 8%,
-        #FFEB3B 12%,
-        #FFF9C4 18%,
-        #FFEB3B 22%,
-        #FFF9C4 28%,
-        #FFEB3B 32%,
-        #FFF9C4 38%,
+        transparent 1%,
+        #FFEB3B 2%,
+        #FFF9C4 4%,
+        #FFEB3B 8%,
+        #FFF9C4 12%,
+        #FFEB3B 18%,
+        #FFF9C4 24%,
+        #FFEB3B 30%,
+        #FFF9C4 36%,
         #FFEB3B 42%,
         #FFF9C4 48%,
-        #FFEB3B 52%,
-        #FFF9C4 58%,
-        #FFEB3B 62%,
-        #FFF9C4 68%,
-        #FFEB3B 72%,
-        #FFF9C4 78%,
-        #FFEB3B 82%,
-        #FFF9C4 88%,
-        #FFEB3B 92%,
-        transparent 96%,
+        #FFEB3B 54%,
+        #FFF9C4 60%,
+        #FFEB3B 66%,
+        #FFF9C4 72%,
+        #FFEB3B 78%,
+        #FFF9C4 84%,
+        #FFEB3B 90%,
+        #FFF9C4 95%,
+        transparent 98%,
         transparent 100%
     );
+    clip-path: polygon(
+        0% 0%,
+        1% 0%,
+        10% 15%,
+        11% 15%,
+        25% 10%,
+        26% 10%,
+        35% 17%,
+        36% 17%,
+        37% 45%,
+        38% 45%,
+        50% 50%,
+        51% 50%,
+        55% 48%,
+        56% 48%,
+        55% 55%,
+        56% 55%,
+        70% 60%,
+        71% 60%,
+        68% 75%,
+        69% 75%,
+        83% 73%,
+        84% 73%,
+        87% 90%,
+        88% 90%,
+        100% 100%,
+        99% 100%,
+        86% 91%,
+        85% 91%,
+        82% 74%,
+        81% 74%,
+        67% 76%,
+        66% 76%,
+        69% 61%,
+        68% 61%,
+        54% 56%,
+        53% 56%,
+        54% 49%,
+        53% 49%,
+        49% 51%,
+        48% 51%,
+        36% 46%,
+        35% 46%,
+        34% 18%,
+        33% 18%,
+        24% 11%,
+        23% 11%,
+        9% 16%,
+        8% 16%
+    );
+    opacity: 0;
     filter: drop-shadow(0 0 8px rgba(255, 235, 59, 0.9)) drop-shadow(0 0 12px rgba(255, 235, 59, 0.6));
     animation: lightning-bolt-flash 20s ease-in-out infinite;
     z-index: 2;
