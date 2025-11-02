@@ -1221,7 +1221,7 @@
    NORMAL TYPE - Tree Canopy Silhouette
    ============================================ */
 .type-bg-normal {
-    background: linear-gradient(180deg, #FFE5CC 0%, #FFDAB9 70%, #90EE90 75%, #98FB98 100%) !important;
+    background: linear-gradient(180deg, #FFE5CC 0%, #FFDAB9 20%, #90EE90 25%, #98FB98 100%) !important;
     position: relative;
     overflow: hidden;
 }
@@ -1238,40 +1238,20 @@
     clip-path: polygon(
         0% 100%,
         0% 10%,
-        /* GAP 1: (0,10) to (38,30) - proper recursive subdivision */
-        /* Step 1: 2 points at 1/3 and 2/3, wiggled big (±5%) */
-        13% 17%, 25% 26%,
-        /* Step 2: 4 NEW points between existing (medium wiggle ±2.5%) */
-        6% 12%, 19% 24%, 32% 27%, 35% 31%,
-        /* Step 3: 8 NEW points between all existing (small wiggle ±1.25%) */
-        3% 11%, 10% 15%, 16% 19%, 22% 25%, 28% 26%, 30% 28%, 33% 29%, 36% 30%,
+        /* GAP 1: (0,10) to (38,30) - points in SPATIAL order left to right */
+        3% 11%, 6% 12%, 10% 15%, 13% 17%, 16% 19%, 19% 24%, 22% 25%, 25% 26%, 28% 26%, 30% 28%, 32% 27%, 33% 29%, 35% 31%, 36% 30%,
         38% 30%,
-        /* GAP 2: (38,30) to (0,62) - proper subdivision */
-        /* 2 points big wiggle */
-        25% 45%, 13% 54%,
-        /* 4 NEW points medium wiggle */
-        32% 35%, 19% 50%, 6% 60%, 3% 61%,
-        /* 8 NEW points small wiggle */
-        35% 33%, 28% 39%, 22% 47%, 16% 52%, 9% 57%, 5% 60%, 2% 61%, 1% 62%,
+        /* GAP 2: (38,30) to (0,62) - points in SPATIAL order right to left */
+        35% 33%, 32% 35%, 28% 39%, 25% 45%, 22% 47%, 19% 50%, 16% 52%, 13% 54%, 9% 57%, 6% 60%, 5% 60%, 3% 61%, 2% 61%, 1% 62%,
         0% 62%,
         0% 100%,
         100% 100%,
         100% 47%,
-        /* GAP 3: (100,47) to (66,28) - proper subdivision */
-        /* 2 points big wiggle */
-        89% 41%, 77% 34%,
-        /* 4 NEW points medium wiggle */
-        94% 45%, 83% 39%, 72% 32%, 69% 29%,
-        /* 8 NEW points small wiggle */
-        97% 46%, 91% 43%, 86% 40%, 80% 36%, 74% 33%, 70% 31%, 68% 29%, 67% 28%,
+        /* GAP 3: (100,47) to (66,28) - points in SPATIAL order right to left */
+        97% 46%, 94% 45%, 91% 43%, 89% 41%, 86% 40%, 83% 39%, 80% 36%, 77% 34%, 74% 33%, 72% 32%, 70% 31%, 69% 29%, 68% 29%, 67% 28%,
         66% 28%,
-        /* GAP 4: (66,28) to (100,0) - proper subdivision */
-        /* 2 points big wiggle */
-        77% 22%, 88% 11%,
-        /* 4 NEW points medium wiggle */
-        71% 26%, 82% 18%, 94% 7%, 97% 3%,
-        /* 8 NEW points small wiggle */
-        68% 27%, 74% 24%, 80% 20%, 85% 14%, 91% 9%, 95% 5%, 98% 2%, 99% 1%,
+        /* GAP 4: (66,28) to (100,0) - points in SPATIAL order left to right */
+        68% 27%, 71% 26%, 74% 24%, 77% 22%, 80% 20%, 82% 18%, 85% 14%, 88% 11%, 91% 9%, 94% 7%, 95% 5%, 97% 3%, 98% 2%, 99% 1%,
         100% 0%,
         100% 100%
     );
