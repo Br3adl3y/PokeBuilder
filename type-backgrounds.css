@@ -1221,13 +1221,13 @@
    NORMAL TYPE - Tree Canopy Silhouette
    ============================================ */
 .type-bg-normal {
-    background: linear-gradient(180deg, #FFE5CC 0%, #FFDAB9 20%, #90EE90 25%, #98FB98 100%) !important;
+    background: linear-gradient(180deg, #FFE5CC 0%, #FFDAB9 70%, #5fd15f 75%, #cdfb98c0 100%) !important;
     position: relative;
     overflow: hidden;
 }
 
 /* Tree canopy layer with blur */
-.type-bg-normal::before {
+.type-bg-normal::after {
     content: '';
     position: absolute;
     top: 0;
@@ -1260,7 +1260,7 @@
 }
 
 /* Tree canopy layer with blur */
-.type-bg-normal::after {
+.type-bg-normal::before {
     content: '';
     position: absolute;
     top: 0;
