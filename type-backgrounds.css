@@ -1234,7 +1234,7 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background: #5A8B4A;
+    background: #796303;
     clip-path: polygon(
         0% 100%,
         0% 10%,
@@ -1255,7 +1255,41 @@
         100% 0%,
         100% 100%
     );
-    filter: blur(3px);
+    filter: blur(20px);
+    z-index: 0;
+}
+
+/* Tree canopy layer with blur */
+.type-bg-normal::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #4A7A3A;
+    clip-path: polygon(
+        0% 100%,
+        0% 10%,
+        /* GAP 1: (0,10) to (38,30) - points in SPATIAL order left to right */
+        4% 10%, 7% 13%, 11% 14%, 14% 18%, 15% 18%, 20% 25%, 23% 24%, 26% 27%, 29% 25%, 31% 29%, 33% 28%, 34% 28%, 36% 32%, 37% 29%,
+        38% 30%,
+        /* GAP 2: (38,30) to (0,62) - points in SPATIAL order right to left */
+        34% 34%, 33% 34%, 29% 40%, 24% 44%, 21% 46%, 20% 51%, 17% 51%, 14% 53%, 8% 56%, 5% 61%, 4% 61%, 2% 62%, 3% 62%, 0% 63%,
+        0% 62%,
+        0% 100%,
+        100% 100%,
+        100% 47%,
+        /* GAP 3: (100,47) to (66,28) - points in SPATIAL order right to left */
+        98% 47%, 95% 46%, 92% 42%, 90% 40%, 87% 39%, 84% 38%, 79% 37%, 78% 33%, 75% 34%, 73% 31%, 69% 30%, 68% 28%, 67% 28%, 68% 29%,
+        66% 28%,
+        /* GAP 4: (66,28) to (100,0) - points in SPATIAL order left to right */
+        67% 26%, 70% 25%, 73% 25%, 76% 21%, 81% 19%, 83% 19%, 84% 15%, 87% 12%, 90% 8%, 95% 8%, 96% 6%, 96% 2%, 97% 3%, 100% 2%,
+        100% 0%,
+        100% 100%
+    );
+    filter: blur(20px);
+    opacity: 0.7;
     z-index: 0;
 }
 
