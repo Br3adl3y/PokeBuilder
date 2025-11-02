@@ -961,8 +961,8 @@
     width: 100%;
     height: 100%;
     background-image:
-        radial-gradient(circle 8px at 18% 100%, rgba(255, 255, 255, 0.8) 0%, rgba(173, 216, 230, 0.6) 50%, transparent 80%),
-        radial-gradient(circle 10px at 52% 100%, rgba(255, 255, 255, 0.75) 0%, rgba(173, 216, 230, 0.55) 50%, transparent 80%);
+        radial-gradient(circle 8px at 18% 92%, rgba(255, 255, 255, 0.8) 0%, rgba(173, 216, 230, 0.6) 50%, transparent 80%),
+        radial-gradient(circle 10px at 52% 90%, rgba(255, 255, 255, 0.75) 0%, rgba(173, 216, 230, 0.55) 50%, transparent 80%);
     animation: bubble-group-1 8s ease-in infinite;
     z-index: 2;
     pointer-events: none;
@@ -976,9 +976,9 @@
     width: 100%;
     height: 100%;
     background-image:
-        radial-gradient(circle 7px at 30% 100%, rgba(255, 255, 255, 0.7) 0%, rgba(173, 216, 230, 0.5) 50%, transparent 80%),
-        radial-gradient(circle 9px at 75% 100%, rgba(255, 255, 255, 0.75) 0%, rgba(173, 216, 230, 0.55) 50%, transparent 80%),
-        radial-gradient(circle 8.5px at 88% 100%, rgba(255, 255, 255, 0.8) 0%, rgba(173, 216, 230, 0.6) 50%, transparent 80%);
+        radial-gradient(circle 7px at 30% 93%, rgba(255, 255, 255, 0.7) 0%, rgba(173, 216, 230, 0.5) 50%, transparent 80%),
+        radial-gradient(circle 9px at 75% 91%, rgba(255, 255, 255, 0.75) 0%, rgba(173, 216, 230, 0.55) 50%, transparent 80%),
+        radial-gradient(circle 8.5px at 88% 92%, rgba(255, 255, 255, 0.8) 0%, rgba(173, 216, 230, 0.6) 50%, transparent 80%);
     animation: bubble-group-2 13s ease-in infinite;
     z-index: 2;
     pointer-events: none;
@@ -1249,24 +1249,24 @@
     background: linear-gradient(155deg, 
         transparent 0%,
         transparent 1%,
-        #FFEB3B 2%,
-        #FFF9C4 4%,
-        #FFEB3B 8%,
-        #FFF9C4 12%,
-        #FFEB3B 18%,
-        #FFF9C4 24%,
-        #FFEB3B 30%,
-        #FFF9C4 36%,
-        #FFEB3B 42%,
-        #FFF9C4 48%,
-        #FFEB3B 54%,
-        #FFF9C4 60%,
-        #FFEB3B 66%,
-        #FFF9C4 72%,
-        #FFEB3B 78%,
-        #FFF9C4 84%,
-        #FFEB3B 90%,
-        #FFF9C4 95%,
+        #E0F0FF 2%,
+        #FFFFFF 4%,
+        #D6EBFF 8%,
+        #FFFFFF 12%,
+        #E0F0FF 18%,
+        #FFFFFF 24%,
+        #D6EBFF 30%,
+        #FFFFFF 36%,
+        #E0F0FF 42%,
+        #FFFFFF 48%,
+        #D6EBFF 54%,
+        #FFFFFF 60%,
+        #E0F0FF 66%,
+        #FFFFFF 72%,
+        #D6EBFF 78%,
+        #FFFFFF 84%,
+        #E0F0FF 90%,
+        #FFFFFF 95%,
         transparent 98%,
         transparent 100%
     );
