@@ -226,12 +226,13 @@
                 <div>
                     <label>Scenario:</label>
                     <select id="scenario">
-                        <option value="leads">Leads (Even)</option>
-                        <option value="closers">Closers (0v0)</option>
-                        <option value="baited">Baited</option>
-                        <option value="baitor">Baitor</option>
-                        <option value="switches">Switches</option>
-                        <option value="attackers">Attackers (0v2)</option>
+                        <option value="leads">Leads (2v2 Even)</option>
+                        <option value="leads-baited">Leads Baited (P1 Disadvantage)</option>
+                        <option value="switches">Switches (P2 Energy Advantage)</option>
+                        <option value="switches-baited">Switches Baited (P2 Energy + P1 Baited)</option>
+                        <option value="closers">Closers (0v0 Shields)</option>
+                        <option value="attackers">Attackers (0v2 Shields)</option>
+                        <option value="attackers-baited">Attackers Baited (0v2 + P1 Baited)</option>
                     </select>
                 </div>
             </div>
@@ -312,8 +313,8 @@
                 // Convert matrix to object format
                 typeChart = {};
                 const matrix = damageMatrixData.matrix;
-                const attackerTypes = damageMatrixData.attackerTypes;  // 18 types
-                const defenderTypes = damageMatrixData.defenderTypes; // ← CHANGED FROM typeOrder
+                const attackerTypes = damageMatrixData.attackerTypes;
+                const defenderTypes = damageMatrixData.defenderTypes;
                 attackerTypes.forEach((attackType, i) => {
                     typeChart[attackType] = {};
                     defenderTypes.forEach((defType, j) => {
@@ -515,7 +516,7 @@
         loadData();
     </script>
     
-    <!-- Battle Simulator Core (embedded from pogo_battle_sim artifact) -->
+    <!-- Battle Simulator Core -->
     <script>
         class BattleSimulator {
             constructor(pokemon1, pokemon2, shields1, shields2, scenario, typeChart) {
@@ -555,9 +556,15 @@
             }
 
             applyScenarioConditions() {
-                if (this.scenario === 'switches') {
+                const baseScenario = this.scenario.replace('-baited', '');
+                
+                if (baseScenario === 'switches') {
                     this.energy[1] = this.p2.fastMove.energy * 6;
                 }
+            }
+            
+            isP1Baited() {
+                return this.scenario.includes('-baited');
             }
 
             processTurn() {
@@ -657,60 +664,101 @@
             selectChargedMove(attackerIndex, defenderIndex) {
                 const attacker = attackerIndex === 0 ? this.p1 : this.p2;
                 const defender = defenderIndex === 0 ? this.p1 : this.p2;
-
-                console.log(`\n=== P${attackerIndex + 1} (${attacker.speciesName}) has ${this.energy[attackerIndex]} energy ===`);
-                console.log(`All charged moves:`, attacker.chargedMoves.map(m => `${m.name} (${m.energy} energy)`));
-
-                const moves = attacker.chargedMoves.filter(m => 
-                    this.energy[attackerIndex] >= m.energy
-                );
                 
-                if (moves.length === 0) return null;
-                if (moves.length === 1) return moves[0];
+                if (attacker.chargedMoves.length === 0) return null;
                 
+                const currentEnergy = this.energy[attackerIndex];
                 const defenderHasShields = this.shields[defenderIndex] > 0;
                 
-                // Baited scenario: throw cheapest when shields are up
-                if (this.scenario === 'baited' && defenderHasShields) {
-                    return moves.sort((a, b) => a.energy - b.energy)[0];
+                // Check urgency: Can any opponent move KO us?
+                const urgencyMode = this.checkUrgency(attackerIndex, defenderIndex);
+                
+                if (urgencyMode) {
+                    // Throw cheapest affordable move immediately
+                    const affordable = attacker.chargedMoves
+                        .filter(m => currentEnergy >= m.energy)
+                        .sort((a, b) => a.energy - b.energy);
+                    return affordable.length > 0 ? affordable[0] : null;
                 }
                 
-                // Baitor scenario OR default: always pick optimal DPE move
-                // This matches PVPoke's "optimal moveset for every matchup"
-                return moves.sort((a, b) => {
-                    const effA = this.getTypeEffectiveness(a.type, defender.types);
-                    const effB = this.getTypeEffectiveness(b.type, defender.types);
-                    const dpeA = (a.power / a.energy) * effA;
-                    const dpeB = (b.power / b.energy) * effB;
-                    return dpeB - dpeA;
-                })[0];
+                // Determine if this player should use shield-aware DPE
+                // P1 in baited scenarios ignores shields (gets baited)
+                const useShieldAwareDPE = !(attackerIndex === 0 && this.isP1Baited());
+                
+                // Calculate DPE for ALL moves
+                const moveScores = attacker.chargedMoves.map(move => {
+                    const effectiveness = this.getTypeEffectiveness(move.type, defender.types);
+                    let damage = move.power * effectiveness;
+                    
+                    // Apply STAB
+                    if (attacker.types.includes(move.type)) {
+                        damage *= 1.2;
+                    }
+                    
+                    // If using shield-aware DPE and defender has shields, cap damage at 1
+                    if (useShieldAwareDPE && defenderHasShields) {
+                        damage = Math.min(damage, 1);
+                    }
+                    
+                    const dpe = damage / move.energy;
+                    return { move, dpe, effectiveness };
+                });
+                
+                // Sort by DPE (best first)
+                moveScores.sort((a, b) => b.dpe - a.dpe);
+                
+                const bestMove = moveScores[0];
+                const bestAffordable = moveScores.find(ms => currentEnergy >= ms.move.energy);
+                
+                if (!bestAffordable) return null;
+                
+                // If best move is affordable, use it
+                if (currentEnergy >= bestMove.move.energy) {
+                    return bestMove.move;
+                }
+                
+                // Check if it's worth waiting for the best move
+                const energyNeeded = bestMove.move.energy - currentEnergy;
+                const fastMoveEnergy = attacker.fastMove.energy;
+                const turnsToWait = Math.ceil(energyNeeded / fastMoveEnergy);
+                
+                // Wait if: (1) within 2 fast moves AND (2) best move is significantly better (>20% DPE improvement)
+                const dpeImprovement = (bestMove.dpe - bestAffordable.dpe) / bestAffordable.dpe;
+                if (turnsToWait <= 2 && dpeImprovement > 0.2) {
+                    return null; // Wait for better move
+                }
+                
+                // Otherwise use best affordable move
+                return bestAffordable.move;
+            }
+            
+            checkUrgency(myIndex, oppIndex) {
+                const opponent = oppIndex === 0 ? this.p1 : this.p2;
+                const myHP = this.hp[myIndex];
+                
+                // Check if any opponent charged move could KO us
+                for (const move of opponent.chargedMoves) {
+                    const potentialDamage = this.calculateDamage(
+                        opponent, 
+                        myIndex === 0 ? this.p1 : this.p2, 
+                        move, 
+                        oppIndex, 
+                        myIndex
+                    );
+                    
+                    if (potentialDamage >= myHP) {
+                        return true; // Urgency! They could KO us
+                    }
+                }
+                
+                return false;
             }
 
             shouldUseShield(defenderIndex, move) {
                 if (this.shields[defenderIndex] === 0) return false;
                 
-                const attacker = defenderIndex === 0 ? this.p2 : this.p1;
-                const attackerMoves = attacker.chargedMoves;
-                
-                switch (this.scenario) {
-                    case 'baited':
-                        return true;
-                        
-                    case 'baitor':
-                        if (attackerMoves.length === 1) return true;
-                        
-                        const sorted = [...attackerMoves].sort((a, b) => {
-                            if (a.energy !== b.energy) return a.energy - b.energy;
-                            return a.power - b.power;
-                        });
-                        
-                        const cheapestMove = sorted[0];
-                        return move.energy > cheapestMove.energy || 
-                               (move.energy === cheapestMove.energy && move.power > cheapestMove.power);
-                        
-                    default:
-                        return true;
-                }
+                // All scenarios: always shield when shields are available
+                return true;
             }
 
             calculateDamage(attacker, defender, move, attackerIndex, defenderIndex) {
@@ -770,16 +818,26 @@
             getTypeEffectiveness(attackType, defenderTypes) {
                 if (!this.typeChart) return 1.0;
                 
-                let effectiveness = 1.0;
                 const types = Array.isArray(defenderTypes) ? defenderTypes : [defenderTypes];
                 
-                types.forEach(defType => {
-                    if (this.typeChart[attackType] && this.typeChart[attackType][defType] !== undefined) {
-                        effectiveness *= this.typeChart[attackType][defType];
+                // If dual type, join with "/" and look up combined column
+                if (types.length === 2) {
+                    const combinedType = types.join('/');
+                    if (this.typeChart[attackType] && this.typeChart[attackType][combinedType] !== undefined) {
+                        return this.typeChart[attackType][combinedType];
                     }
-                });
+                }
                 
-                return effectiveness;
+                // If mono type or fallback, look up single type
+                if (types.length === 1) {
+                    const singleType = types[0];
+                    if (this.typeChart[attackType] && this.typeChart[attackType][singleType] !== undefined) {
+                        return this.typeChart[attackType][singleType];
+                    }
+                }
+                
+                // Fallback to neutral
+                return 1.0;
             }
 
             calculateBattleRating() {

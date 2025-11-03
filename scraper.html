@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pokemon GO - Data Scraper</title>
+    <title>Pokemon GO - Data Scraper with Battle Simulation</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -125,7 +125,7 @@
     </style>
 </head>
 <body>
-    <h1>🔬 Pokemon GO - Data Scraper</h1>
+    <h1>🔬 Pokemon GO - Data Scraper with Battle Simulation</h1>
     
     <div class="warning-box">
         <strong>⚠️ SCRAPER TOOL</strong><br>
@@ -134,7 +134,7 @@
         • First time setup<br>
         • New Pokemon/moves are released<br>
         • Game Master structure changes<br><br>
-        <strong>Your main app will load data from IndexedDB (instant, offline-ready).</strong>
+        <strong>Battle simulation will take 10-30 minutes depending on your device.</strong>
     </div>
 
     <div id="status">Ready to scrape. Click "Start Scraping" to fetch latest data.</div>
@@ -190,7 +190,7 @@
     <script>
         const GAME_MASTER_URL = 'https://raw.githubusercontent.com/PokeMiners/game_masters/master/latest/latest.json';
         const DB_NAME = 'PokemonGoDB';
-        const DB_VERSION = 2;
+        const DB_VERSION = 5;
         let db = null;
         let spreadsheetData = null;
 
@@ -254,35 +254,6 @@
                     const defType2Idx = TYPES.indexOf(defType2);
                     const mult = BASE_CHART[attacker][defType1Idx] * BASE_CHART[attacker][defType2Idx];
                     row.push(mult);
-                }
-                
-                matrix.push(row);
-            }
-            
-            for (const dualAttacker of dualTypes) {
-                const row = [];
-                const [atkType1, atkType2] = dualAttacker.split('/');
-                
-                for (let defenderIdx = 0; defenderIdx < TYPES.length; defenderIdx++) {
-                    const mult1 = BASE_CHART[atkType1][defenderIdx];
-                    const mult2 = BASE_CHART[atkType2][defenderIdx];
-                    row.push(Math.max(mult1, mult2));
-                }
-                
-                for (const dualDefender of dualTypes) {
-                    const [defType1, defType2] = dualDefender.split('/');
-                    const defType1Idx = TYPES.indexOf(defType1);
-                    const defType2Idx = TYPES.indexOf(defType2);
-                    
-                    const atk1_vs_def1 = BASE_CHART[atkType1][defType1Idx];
-                    const atk1_vs_def2 = BASE_CHART[atkType1][defType2Idx];
-                    const atk2_vs_def1 = BASE_CHART[atkType2][defType1Idx];
-                    const atk2_vs_def2 = BASE_CHART[atkType2][defType2Idx];
-                    
-                    const mult1 = atk1_vs_def1 * atk1_vs_def2;
-                    const mult2 = atk2_vs_def1 * atk2_vs_def2;
-                    
-                    row.push(Math.max(mult1, mult2));
                 }
                 
                 matrix.push(row);
@@ -398,10 +369,8 @@
         async function calculateTypeEffectiveness() {
             updateStatus('⏳ Calculating type effectiveness rankings...');
             
-            // Build damage matrix
             const { matrix, allDefenders } = buildExpandedMatrix();
             
-            // Calculate defensive rankings (171 types)
             updateStatus('⏳ Running defensive PageRank (171 types)...');
             const dualScores = calculateDualPageRank(matrix, 30, 0.85);
             const maxDefScore = Math.max(...dualScores.defensive);
@@ -412,7 +381,6 @@
                 isDual: type.includes('/')
             })).sort((a, b) => b.score - a.score);
             
-            // Calculate offensive rankings (18 mono types)
             updateStatus('⏳ Running offensive PageRank (18 types)...');
             const monoMatrix = [];
             for (let i = 0; i < TYPES.length; i++) {
@@ -430,7 +398,6 @@
                 score: (offScores[idx] / maxOffScore) * 100
             })).sort((a, b) => b.score - a.score);
             
-            // Save to database
             updateStatus('⏳ Saving type effectiveness data...');
             await saveToDatabase('typeEffectiveness', [
                 {
@@ -458,12 +425,7 @@
             updateStatus('✅ Type effectiveness calculations complete!');
         }
 
-        // CPM array for IV calculations (Level 1.0 to 50.0)
         const cpm = [0.0939999967813491, 0.135137430784308, 0.166397869586944, 0.192650914456886, 0.215732470154762, 0.236572655026622, 0.255720049142837, 0.273530381100769, 0.29024988412857, 0.306057381335773, 0.321087598800659, 0.335445032295077, 0.349212676286697, 0.36245774877879, 0.375235587358474, 0.387592411085168, 0.399567276239395, 0.41119354951725, 0.422500014305114, 0.432926413410414, 0.443107545375824, 0.453059953871985, 0.46279838681221, 0.472336077786704, 0.481684952974319, 0.490855810259008, 0.499858438968658, 0.508701756943992, 0.517393946647644, 0.525942508771329, 0.534354329109191, 0.542635762230353, 0.550792694091796, 0.558830599438087, 0.566754519939422, 0.574569148039264, 0.582278907299041, 0.589887911977272, 0.59740000963211, 0.604823657502073, 0.61215728521347, 0.61940411056605, 0.626567125320434, 0.633649181622743, 0.640652954578399, 0.647580963301656, 0.654435634613037, 0.661219263506722, 0.667934000492096, 0.674581899290818, 0.681164920330047, 0.687684905887771, 0.694143652915954, 0.700542893277978, 0.706884205341339, 0.713169102333341, 0.719399094581604, 0.725575616972598, 0.731700003147125, 0.734741011137376, 0.737769484519958, 0.740785574597326, 0.743789434432983, 0.746781208702482, 0.749761044979095, 0.752729105305821, 0.75568550825119, 0.758630366519684, 0.761563837528228, 0.764486065255226, 0.767397165298461, 0.77029727397159, 0.77318650484085, 0.776064945942412, 0.778932750225067, 0.781790064808426, 0.784636974334716, 0.787473583646825, 0.790300011634826, 0.792803950958807, 0.795300006866455, 0.79780392148697, 0.800300002098083, 0.802803892322847, 0.805299997329711, 0.807803863460723, 0.81029999256134, 0.812803834895026, 0.815299987792968, 0.817803806620319, 0.820299983024597, 0.822803778631297, 0.825299978256225, 0.827803750922782, 0.830299973487854, 0.832803753381377, 0.835300028324127, 0.837803755931569, 0.840300023555755, 0.842803729034748, 0.845300018787384, 0.847803702398935, 0.850300014019012, 0.852803676019539, 0.85530000925064, 0.857803649892077, 0.860300004482269, 0.862803624012168, 0.865299999713897];
-
-        // ============================================================
-        // IV CALCULATION FUNCTIONS  
-        // ============================================================
 
         function calculate(baseatk, basedef, basesta, floor, minLvl, maxLvl, invalid, league) {
             const ranks = {};
@@ -562,7 +524,9 @@
                 return {
                     iv: { atk: rank1.IVs.A, def: rank1.IVs.D, sta: rank1.IVs.S },
                     maxSP: maxSP,
-                    minSP: minSP
+                    minSP: minSP,
+                    level: rank1.L,
+                    cp: rank1.CP
                 };
             }
             
@@ -574,25 +538,29 @@
                 return {
                     iv: { atk: 15, def: 15, sta: 15 },
                     maxSP: maxSP,
-                    minSP: maxSP
+                    minSP: maxSP,
+                    level: 50,
+                    cp: maxCP
                 };
             }
 
             return {
                 iv: { atk: 0, def: 0, sta: 0 },
                 maxSP: 0,
-                minSP: 0
+                minSP: 0,
+                level: 1,
+                cp: 0
             };
         }
 
-        function updateProgress(current, total) {
+        function updateProgress(current, total, message = '') {
             const progressContainer = document.getElementById('progress-container');
             const progressBar = document.getElementById('progress-bar');
             
             progressContainer.style.display = 'block';
             const percent = Math.round((current / total) * 100);
             progressBar.style.width = percent + '%';
-            progressBar.textContent = `${percent}% (${current}/${total})`;
+            progressBar.textContent = message || `${percent}% (${current}/${total})`;
         }
 
         // ============================================================
@@ -624,6 +592,9 @@
                     if (db.objectStoreNames.contains('typeEffectiveness')) {
                         db.deleteObjectStore('typeEffectiveness');
                     }
+                    if (db.objectStoreNames.contains('rankings')) {
+                        db.deleteObjectStore('rankings');
+                    }
 
                     const pokemonStore = db.createObjectStore('pokemon', { keyPath: 'id' });
                     pokemonStore.createIndex('dexNumber', 'dexNumber', { unique: false });
@@ -631,6 +602,9 @@
                     db.createObjectStore('moves', { keyPath: 'id' });
                     db.createObjectStore('metadata', { keyPath: 'key' });
                     db.createObjectStore('typeEffectiveness', { keyPath: 'id' });
+                    
+                    const rankingsStore = db.createObjectStore('rankings', { keyPath: 'id' });
+                    rankingsStore.createIndex('league', 'league', { unique: false });
                 };
             });
         }
@@ -663,10 +637,11 @@
         async function clearDatabase() {
             if (!confirm('This will delete ALL scraped data. Continue?')) return;
             
-            const transaction = db.transaction(['pokemon', 'moves', 'metadata'], 'readwrite');
+            const transaction = db.transaction(['pokemon', 'moves', 'metadata', 'rankings'], 'readwrite');
             transaction.objectStore('pokemon').clear();
             transaction.objectStore('moves').clear();
             transaction.objectStore('metadata').clear();
+            transaction.objectStore('rankings').clear();
             
             return new Promise((resolve, reject) => {
                 transaction.oncomplete = () => {
@@ -676,6 +651,691 @@
                 };
                 transaction.onerror = () => reject(transaction.error);
             });
+        }
+
+        // ============================================================
+        // BATTLE SIMULATOR
+        // ============================================================
+
+        class BattleSimulator {
+            constructor(pokemon1, pokemon2, shields1, shields2, scenario, typeChart, typeOrder) {
+                this.p1 = pokemon1;
+                this.p2 = pokemon2;
+                this.shields = [shields1, shields2];
+                this.energy = [0, 0];
+                this.hp = [
+                    this.calculateHP(pokemon1.stats, pokemon1.ivs),
+                    this.calculateHP(pokemon2.stats, pokemon2.ivs)
+                ];
+                this.maxHP = [...this.hp];
+                this.attackStage = [0, 0];
+                this.defenseStage = [0, 0];
+                this.turn = 0;
+                this.fastMoveCountdown = [0, 0];
+                this.scenario = scenario;
+                this.typeChart = typeChart;
+                this.typeOrder = typeOrder;
+            }
+
+            simulate() {
+                this.applyScenarioConditions();
+                
+                while (this.hp[0] > 0 && this.hp[1] > 0) {
+                    this.processTurn();
+                    this.turn++;
+                    if (this.turn > 600) break;
+                }
+                
+                return this.calculateBattleRating();
+            }
+
+            applyScenarioConditions() {
+                const baseScenario = this.scenario.replace('-baited', '');
+                
+                if (baseScenario === 'switches' || baseScenario === 'underdog') {
+                    this.energy[1] = this.p2.fastMove.energy * 6;
+                }
+            }
+            
+            isP1Baited() {
+                return this.scenario.includes('-baited');
+            }
+
+            processTurn() {
+                this.fastMoveCountdown[0]--;
+                this.fastMoveCountdown[1]--;
+                
+                if (this.fastMoveCountdown[0] <= 0) {
+                    this.useFastMove(0);
+                    this.fastMoveCountdown[0] = this.p1.fastMove.duration;
+                }
+                
+                if (this.fastMoveCountdown[1] <= 0) {
+                    this.useFastMove(1);
+                    this.fastMoveCountdown[1] = this.p2.fastMove.duration;
+                }
+                
+                this.checkChargedMoves();
+            }
+
+            useFastMove(attackerIndex) {
+                const attacker = attackerIndex === 0 ? this.p1 : this.p2;
+                const defenderIndex = 1 - attackerIndex;
+                const defender = attackerIndex === 0 ? this.p2 : this.p1;
+                
+                const move = attacker.fastMove;
+                const damage = this.calculateDamage(attacker, defender, move, attackerIndex, defenderIndex);
+                
+                this.hp[defenderIndex] -= damage;
+                this.hp[defenderIndex] = Math.max(0, this.hp[defenderIndex]);
+                
+                this.energy[attackerIndex] += move.energy;
+                this.energy[attackerIndex] = Math.min(100, this.energy[attackerIndex]);
+            }
+
+            checkChargedMoves() {
+                const p1Ready = this.canUseChargedMove(0);
+                const p2Ready = this.canUseChargedMove(1);
+                
+                if (p1Ready && p2Ready) {
+                    const p1Attack = this.getEffectiveAttack(0);
+                    const p2Attack = this.getEffectiveAttack(1);
+                    
+                    if (p1Attack >= p2Attack) {
+                        this.useChargedMove(0);
+                        if (this.hp[1] > 0) this.useChargedMove(1);
+                    } else {
+                        this.useChargedMove(1);
+                        if (this.hp[0] > 0) this.useChargedMove(0);
+                    }
+                } else if (p1Ready) {
+                    this.useChargedMove(0);
+                } else if (p2Ready) {
+                    this.useChargedMove(1);
+                }
+            }
+
+            canUseChargedMove(playerIndex) {
+                const pokemon = playerIndex === 0 ? this.p1 : this.p2;
+                if (pokemon.chargedMoves.length === 0) return false;
+                
+                const cheapestMove = pokemon.chargedMoves.reduce((min, move) => 
+                    move.energy < min.energy ? move : min
+                );
+                
+                return this.energy[playerIndex] >= cheapestMove.energy;
+            }
+
+            useChargedMove(attackerIndex) {
+                const attacker = attackerIndex === 0 ? this.p1 : this.p2;
+                const defenderIndex = 1 - attackerIndex;
+                const defender = attackerIndex === 0 ? this.p2 : this.p1;
+                
+                const move = this.selectChargedMove(attackerIndex, defenderIndex);
+                if (!move) return;
+                
+                this.energy[attackerIndex] -= move.energy;
+                this.energy[attackerIndex] = Math.max(0, this.energy[attackerIndex]);
+                
+                let damage = this.calculateDamage(attacker, defender, move, attackerIndex, defenderIndex);
+                
+                const shouldShield = this.shouldUseShield(defenderIndex, move);
+                
+                if (shouldShield) {
+                    this.shields[defenderIndex]--;
+                    damage = 1;
+                }
+                
+                this.hp[defenderIndex] -= damage;
+                this.hp[defenderIndex] = Math.max(0, this.hp[defenderIndex]);
+            }
+
+            selectChargedMove(attackerIndex, defenderIndex) {
+                const attacker = attackerIndex === 0 ? this.p1 : this.p2;
+                const defender = defenderIndex === 0 ? this.p1 : this.p2;
+                
+                if (attacker.chargedMoves.length === 0) return null;
+                
+                const currentEnergy = this.energy[attackerIndex];
+                const defenderHasShields = this.shields[defenderIndex] > 0;
+                
+                const urgencyMode = this.checkUrgency(attackerIndex, defenderIndex);
+                
+                if (urgencyMode) {
+                    const affordable = attacker.chargedMoves
+                        .filter(m => currentEnergy >= m.energy)
+                        .sort((a, b) => a.energy - b.energy);
+                    return affordable.length > 0 ? affordable[0] : null;
+                }
+                
+                const useShieldAwareDPE = !(attackerIndex === 0 && this.isP1Baited());
+                
+                const moveScores = attacker.chargedMoves.map(move => {
+                    const effectiveness = this.getTypeEffectiveness(move.type, defender.types);
+                    let damage = move.power * effectiveness;
+                    
+                    if (attacker.types.includes(move.type)) {
+                        damage *= 1.2;
+                    }
+                    
+                    if (useShieldAwareDPE && defenderHasShields) {
+                        damage = Math.min(damage, 1);
+                    }
+                    
+                    const dpe = damage / move.energy;
+                    return { move, dpe, effectiveness };
+                });
+                
+                moveScores.sort((a, b) => b.dpe - a.dpe);
+                
+                const bestMove = moveScores[0];
+                const bestAffordable = moveScores.find(ms => currentEnergy >= ms.move.energy);
+                
+                if (!bestAffordable) return null;
+                
+                if (currentEnergy >= bestMove.move.energy) {
+                    return bestMove.move;
+                }
+                
+                return bestAffordable.move;
+            }
+            
+            checkUrgency(myIndex, oppIndex) {
+                const opponent = oppIndex === 0 ? this.p1 : this.p2;
+                const myHP = this.hp[myIndex];
+                
+                for (const move of opponent.chargedMoves) {
+                    const potentialDamage = this.calculateDamage(
+                        opponent, 
+                        myIndex === 0 ? this.p1 : this.p2, 
+                        move, 
+                        oppIndex, 
+                        myIndex
+                    );
+                    
+                    if (potentialDamage >= myHP) {
+                        return true;
+                    }
+                }
+                
+                return false;
+            }
+
+            shouldUseShield(defenderIndex, move) {
+                if (this.shields[defenderIndex] === 0) return false;
+                return true;
+            }
+
+            calculateDamage(attacker, defender, move, attackerIndex, defenderIndex) {
+                const attackStat = this.getEffectiveAttack(attackerIndex);
+                const defenseStat = this.getEffectiveDefense(defenderIndex);
+                const effectiveness = this.getTypeEffectiveness(move.type, defender.types);
+                const stabMultiplier = attacker.types.includes(move.type) ? 1.2 : 1.0;
+                
+                const baseDamage = 0.5 * move.power * (attackStat / defenseStat) * effectiveness * stabMultiplier;
+                const damage = Math.max(1, Math.floor(baseDamage));
+                
+                return damage;
+            }
+
+            getEffectiveAttack(playerIndex) {
+                const pokemon = playerIndex === 0 ? this.p1 : this.p2;
+                const baseAttack = this.calculateAttack(pokemon.stats, pokemon.ivs);
+                const shadowMultiplier = pokemon.isShadow ? 1.2 : 1.0;
+                const stageMultiplier = this.getStageMultiplier(this.attackStage[playerIndex]);
+                
+                return baseAttack * shadowMultiplier * stageMultiplier;
+            }
+
+            getEffectiveDefense(playerIndex) {
+                const pokemon = playerIndex === 0 ? this.p1 : this.p2;
+                const baseDefense = this.calculateDefense(pokemon.stats, pokemon.ivs);
+                const shadowMultiplier = pokemon.isShadow ? 0.833 : 1.0;
+                const stageMultiplier = this.getStageMultiplier(this.defenseStage[playerIndex]);
+                
+                return baseDefense * shadowMultiplier * stageMultiplier;
+            }
+
+            getStageMultiplier(stage) {
+                const multipliers = {
+                    '-4': 0.5, '-3': 0.5714, '-2': 0.6667, '-1': 0.8,
+                    '0': 1.0,
+                    '1': 1.25, '2': 1.5, '3': 1.75, '4': 2.0
+                };
+                return multipliers[stage.toString()] || 1.0;
+            }
+
+            calculateAttack(stats, ivs) {
+                const cpmValue = ivs.cpm || 0.84030001;
+                return (stats.attack + ivs.atk) * cpmValue;
+            }
+
+            calculateDefense(stats, ivs) {
+                const cpmValue = ivs.cpm || 0.84030001;
+                return (stats.defense + ivs.def) * cpmValue;
+            }
+
+            calculateHP(stats, ivs) {
+                const cpmValue = ivs.cpm || 0.84030001;
+                return Math.max(10, Math.floor((stats.hp + ivs.sta) * cpmValue));
+            }
+
+            getTypeEffectiveness(attackType, defenderTypes) {
+                if (!this.typeChart || !this.typeOrder) return 1.0;
+                
+                const types = Array.isArray(defenderTypes) ? defenderTypes : [defenderTypes];
+                
+                if (types.length === 2) {
+                    const sortedTypes = types.sort((a, b) => 
+                        this.typeOrder.indexOf(a) - this.typeOrder.indexOf(b)
+                    );
+                    const combinedType = sortedTypes.join('/');
+                    
+                    const attackIdx = this.typeOrder.indexOf(attackType);
+                    const defenseIdx = this.typeOrder.indexOf(combinedType);
+                    
+                    if (attackIdx !== -1 && defenseIdx !== -1 && this.typeChart[attackIdx]) {
+                        return this.typeChart[attackIdx][defenseIdx] || 1.0;
+                    }
+                }
+                
+                if (types.length === 1) {
+                    const attackIdx = this.typeOrder.indexOf(attackType);
+                    const defenseIdx = this.typeOrder.indexOf(types[0]);
+                    
+                    if (attackIdx !== -1 && defenseIdx !== -1 && this.typeChart[attackIdx]) {
+                        return this.typeChart[attackIdx][defenseIdx] || 1.0;
+                    }
+                }
+                
+                return 1.0;
+            }
+
+            calculateBattleRating() {
+                if (this.hp[0] <= 0 && this.hp[1] <= 0) return 500;
+                
+                const p1RemainingPercent = Math.max(0, this.hp[0]) / this.maxHP[0];
+                const p2RemainingPercent = Math.max(0, this.hp[1]) / this.maxHP[1];
+                const differential = p1RemainingPercent - p2RemainingPercent;
+                const rating = 500 + (differential * 500);
+                
+                return Math.max(0, Math.min(1000, rating));
+            }
+        }
+
+        // ============================================================
+        // RANKING CALCULATOR
+        // ============================================================
+
+        async function calculateRankings(allPokemon, allMoves, typeChart, typeOrder) {
+            updateStatus('⚔️ Starting battle simulations...');
+            
+            const leagues = [
+                { name: 'little', cpLimit: 500, cpPrune: 500 },
+                { name: 'great', cpLimit: 1500, cpPrune: 1500 },
+                { name: 'ultra', cpLimit: 2500, cpPrune: 2500 },
+                { name: 'master', cpLimit: null, cpPrune: 2500 }
+            ];
+            
+            const scenarios = [
+                'leads', 'leads-baited', 'switches', 'switches-baited', 
+                'closers', 'attackers', 'attackers-baited', 'underdog'
+            ];
+            
+            for (const league of leagues) {
+                updateStatus(`⚔️ Simulating ${league.name} league...`);
+                
+                const eligiblePokemon = getEligiblePokemon(allPokemon, league, allMoves);
+                
+                if (eligiblePokemon.length === 0) {
+                    updateStatus(`⚠️ No eligible Pokemon for ${league.name} league`);
+                    continue;
+                }
+                
+                const rankings = await simulateLeague(
+                    eligiblePokemon, 
+                    league, 
+                    scenarios, 
+                    typeChart, 
+                    typeOrder,
+                    allMoves
+                );
+                
+                await saveToDatabase('rankings', [{
+                    id: `${league.name}-${new Date().toISOString().split('T')[0]}`,
+                    league: league.name,
+                    cpLimit: league.cpLimit,
+                    calculatedAt: new Date().toISOString(),
+                    rankings: rankings
+                }]);
+                
+                updateStatus(`✅ ${league.name} league complete! (${rankings.length} Pokemon ranked)`);
+            }
+            
+            updateStatus('✅ All battle simulations complete!');
+        }
+
+        function getEligiblePokemon(allPokemon, league, allMoves) {
+            const eligible = [];
+            
+            for (const p of allPokemon) {
+                const leagueData = p[league.name];
+                if (!leagueData) continue;
+                
+                if (league.name === 'master') {
+                    const cp = calculateCP(p.stats, { atk: 15, def: 15, sta: 15 }, cpm[99]);
+                    
+                    if (cp < league.cpPrune - 100) continue;
+                    
+                    const variants = [{ ...p, isShadow: false, variantId: `${p.id}` }];
+                    if (p.shadowInfo) {
+                        variants.push({ ...p, isShadow: true, variantId: `${p.id}-shadow` });
+                    }
+                    eligible.push(...variants);
+                } else {
+                    const ivs = leagueData.iv;
+                    const cp = leagueData.cp || calculateCP(p.stats, ivs, cpm[Math.round((leagueData.level - 1) * 2)]);
+                    
+                    if (ivs.atk === 15 && ivs.def === 15 && ivs.sta === 15 && cp < league.cpLimit - 100) {
+                        continue;
+                    }
+                    
+                    const variants = [{ ...p, isShadow: false, variantId: `${p.id}` }];
+                    if (p.shadowInfo) {
+                        variants.push({ ...p, isShadow: true, variantId: `${p.id}-shadow` });
+                    }
+                    eligible.push(...variants);
+                }
+            }
+            
+            return eligible;
+        }
+
+        function calculateCP(stats, ivs, cpmValue) {
+            return Math.max(10, Math.floor(
+                (stats.attack + ivs.atk) * 
+                Math.sqrt(stats.defense + ivs.def) * 
+                Math.sqrt(stats.hp + ivs.sta) * 
+                cpmValue * cpmValue / 10
+            ));
+        }
+
+        async function simulateLeague(eligiblePokemon, league, scenarios, typeChart, typeOrder, allMoves) {
+            const results = new Map();
+            
+            for (const p of eligiblePokemon) {
+                results.set(p.variantId, {
+                    speciesId: p.id,
+                    name: p.name,
+                    form: p.form || null,
+                    isShadow: p.isShadow,
+                    movesetResults: new Map()
+                });
+            }
+            
+            const movesets = generateMovesets(eligiblePokemon, allMoves);
+            const totalBattles = calculateTotalBattles(movesets, scenarios);
+            let battlesCompleted = 0;
+            
+            for (let i = 0; i < movesets.length; i++) {
+                const moveset1 = movesets[i];
+                
+                for (let j = i; j < movesets.length; j++) {
+                    const moveset2 = movesets[j];
+                    
+                    if (i === j) continue;
+                    
+                    for (const scenario of scenarios) {
+                        const isSymmetric = isScenarioSymmetric(scenario);
+                        
+                        if (isSymmetric && i < j) {
+                            const rating = simulateBattle(moveset1, moveset2, scenario, league, typeChart, typeOrder);
+                            
+                            recordResult(results, moveset1, moveset2, scenario, rating);
+                            recordResult(results, moveset2, moveset1, scenario, 1000 - rating);
+                            
+                            battlesCompleted++;
+                        } else if (!isSymmetric) {
+                            const rating = simulateBattle(moveset1, moveset2, scenario, league, typeChart, typeOrder);
+                            recordResult(results, moveset1, moveset2, scenario, rating);
+                            
+                            battlesCompleted++;
+                        }
+                        
+                        if (battlesCompleted % 100 === 0) {
+                            updateProgress(battlesCompleted, totalBattles, 
+                                `${league.name}: ${battlesCompleted.toLocaleString()}/${totalBattles.toLocaleString()} battles`);
+                            await new Promise(resolve => setTimeout(resolve, 0));
+                        }
+                    }
+                }
+            }
+            
+            return aggregateResults(results, eligiblePokemon, league, allMoves);
+        }
+
+        function generateMovesets(eligiblePokemon, allMoves) {
+            const movesets = [];
+            const pvpMoves = allMoves.filter(m => m.mode === 'pvp');
+            
+            for (const p of eligiblePokemon) {
+                const fastMoves = p.moves.fast.map(name => 
+                    pvpMoves.find(m => m.name === name && m.category === 'fast')
+                ).filter(m => m);
+                
+                const chargedMoves = [...p.moves.charge, ...p.moves.chargeElite].map(name =>
+                    pvpMoves.find(m => m.name === name && m.category === 'charge')
+                ).filter(m => m);
+                
+                for (const fast of fastMoves) {
+                    if (chargedMoves.length >= 2) {
+                        for (let i = 0; i < chargedMoves.length; i++) {
+                            for (let j = i + 1; j < chargedMoves.length; j++) {
+                                movesets.push({
+                                    pokemon: p,
+                                    fast: fast,
+                                    charged: [chargedMoves[i], chargedMoves[j]]
+                                });
+                            }
+                        }
+                    } else if (chargedMoves.length === 1) {
+                        movesets.push({
+                            pokemon: p,
+                            fast: fast,
+                            charged: [chargedMoves[0]]
+                        });
+                    }
+                }
+            }
+            
+            return movesets;
+        }
+
+        function calculateTotalBattles(movesets, scenarios) {
+            const n = movesets.length;
+            const symmetricScenarios = scenarios.filter(s => isScenarioSymmetric(s)).length;
+            const asymmetricScenarios = scenarios.length - symmetricScenarios;
+            
+            const symmetricBattles = (n * (n - 1)) / 2 * symmetricScenarios;
+            const asymmetricBattles = n * (n - 1) * asymmetricScenarios;
+            
+            return symmetricBattles + asymmetricBattles;
+        }
+
+        function isScenarioSymmetric(scenario) {
+            return scenario === 'leads' || scenario === 'closers';
+        }
+
+        function simulateBattle(moveset1, moveset2, scenario, league, typeChart, typeOrder) {
+            const shields = getShieldsForScenario(scenario);
+            
+            const pokemon1 = buildPokemonForSim(moveset1, league);
+            const pokemon2 = buildPokemonForSim(moveset2, league);
+            
+            const sim = new BattleSimulator(
+                pokemon1,
+                pokemon2,
+                shields.p1,
+                shields.p2,
+                scenario,
+                typeChart,
+                typeOrder
+            );
+            
+            return sim.simulate();
+        }
+
+        function getShieldsForScenario(scenario) {
+            const base = scenario.replace('-baited', '');
+            
+            switch (base) {
+                case 'leads':
+                case 'switches':
+                    return { p1: 2, p2: 2 };
+                case 'closers':
+                case 'underdog':
+                    return { p1: 0, p2: 0 };
+                case 'attackers':
+                    return { p1: 0, p2: 2 };
+                default:
+                    return { p1: 2, p2: 2 };
+            }
+        }
+
+        function buildPokemonForSim(moveset, league) {
+            const p = moveset.pokemon;
+            const leagueData = league.name === 'master' ? 
+                { iv: { atk: 15, def: 15, sta: 15 }, level: 50 } : 
+                p[league.name];
+            
+            const levelIndex = Math.round((leagueData.level - 1) * 2);
+            const cpmValue = cpm[levelIndex];
+            
+            return {
+                name: p.name,
+                types: p.types,
+                stats: p.stats,
+                ivs: { ...leagueData.iv, cpm: cpmValue },
+                fastMove: moveset.fast,
+                chargedMoves: moveset.charged,
+                isShadow: p.isShadow
+            };
+        }
+
+        function recordResult(results, attackerMoveset, defenderMoveset, scenario, rating) {
+            const attackerData = results.get(attackerMoveset.pokemon.variantId);
+            const movesetKey = getMovesetKey(attackerMoveset);
+            
+            if (!attackerData.movesetResults.has(movesetKey)) {
+                attackerData.movesetResults.set(movesetKey, {
+                    fast: attackerMoveset.fast.rawId,
+                    charged: attackerMoveset.charged.map(m => m.rawId),
+                    scenarioRatings: {},
+                    opponentResults: new Map()
+                });
+            }
+            
+            const movesetData = attackerData.movesetResults.get(movesetKey);
+            
+            if (!movesetData.scenarioRatings[scenario]) {
+                movesetData.scenarioRatings[scenario] = [];
+            }
+            movesetData.scenarioRatings[scenario].push(rating);
+            
+            const oppKey = `${defenderMoveset.pokemon.variantId}-${getMovesetKey(defenderMoveset)}`;
+            if (!movesetData.opponentResults.has(oppKey)) {
+                movesetData.opponentResults.set(oppKey, {});
+            }
+            movesetData.opponentResults.get(oppKey)[scenario] = rating;
+        }
+
+        function getMovesetKey(moveset) {
+            return `${moveset.fast.rawId}|${moveset.charged.map(m => m.rawId).sort().join('|')}`;
+        }
+
+        function aggregateResults(results, eligiblePokemon, league, allMoves) {
+            const rankings = [];
+            
+            for (const [variantId, data] of results.entries()) {
+                let bestMoveset = null;
+                let bestScore = -Infinity;
+                let bestScenarioScores = {};
+                let bestRole = '';
+                let bestMoveUsage = {};
+                
+                for (const [movesetKey, movesetData] of data.movesetResults.entries()) {
+                    const scenarioScores = {};
+                    const scenarioTally = {};
+                    
+                    for (const [scenario, ratings] of Object.entries(movesetData.scenarioRatings)) {
+                        const avgRating = ratings.reduce((a, b) => a + b, 0) / ratings.length;
+                        scenarioScores[scenario] = avgRating;
+                        
+                        let bestInScenario = 0;
+                        for (const [oppKey, oppRatings] of movesetData.opponentResults.entries()) {
+                            if (oppRatings[scenario] && oppRatings[scenario] > 500) {
+                                bestInScenario++;
+                            }
+                        }
+                        scenarioTally[scenario] = bestInScenario;
+                    }
+                    
+                    const allRatings = Object.values(scenarioScores);
+                    const geometricMean = Math.pow(
+                        allRatings.reduce((a, b) => a * b, 1),
+                        1 / allRatings.length
+                    );
+                    
+                    if (geometricMean > bestScore) {
+                        bestScore = geometricMean;
+                        bestMoveset = movesetData;
+                        bestScenarioScores = scenarioScores;
+                        
+                        const sortedScenarios = Object.entries(scenarioTally)
+                            .sort((a, b) => b[1] - a[1]);
+                        bestRole = sortedScenarios[0][0];
+                        
+                        const moveUsage = {};
+                        moveUsage[movesetData.fast] = Object.values(scenarioTally).reduce((a, b) => a + b, 0);
+                        for (const chargedId of movesetData.charged) {
+                            moveUsage[chargedId] = Object.values(scenarioTally).reduce((a, b) => a + b, 0);
+                        }
+                        bestMoveUsage = moveUsage;
+                    }
+                }
+                
+                if (bestMoveset) {
+                    rankings.push({
+                        speciesId: data.speciesId,
+                        name: data.name,
+                        form: data.form,
+                        isShadow: data.isShadow,
+                        recommendedMoveset: {
+                            fast: bestMoveset.fast,
+                            charged: bestMoveset.charged
+                        },
+                        role: bestRole,
+                        rawScore: bestScore,
+                        displayRank: 0,
+                        scenarioScores: bestScenarioScores,
+                        moveUsage: bestMoveUsage
+                    });
+                }
+            }
+            
+            const maxScore = Math.max(...rankings.map(r => r.rawScore));
+            const minScore = Math.min(...rankings.map(r => r.rawScore));
+            const scoreRange = maxScore - minScore;
+            
+            for (const ranking of rankings) {
+                ranking.displayRank = scoreRange > 0 ? 
+                    ((ranking.rawScore - minScore) / scoreRange) * 100 : 
+                    50;
+            }
+            
+            rankings.sort((a, b) => b.displayRank - a.displayRank);
+            
+            return rankings;
         }
 
         // ============================================================
@@ -732,6 +1392,13 @@
                     chargePvE: moves.filter(m => m.category === 'charge' && m.mode === 'pve').length
                 });
                 
+                const typeEffData = await loadFromDatabase('typeEffectiveness');
+                const damageMatrixData = typeEffData.find(d => d.id === 'damageMatrix');
+                
+                if (damageMatrixData) {
+                    await calculateRankings(pokemon, moves, damageMatrixData.matrix, damageMatrixData.defenderTypes);
+                }
+                
                 document.getElementById('view-btn').disabled = false;
                 document.getElementById('download-btn').disabled = false;
                 
@@ -757,7 +1424,6 @@
 
             const { pvpMoves, pveMoves } = buildMoveMaps(gameMaster);
             
-            // First pass: parse all Pokemon
             for (const item of gameMaster) {
                 if (!item.templateId?.startsWith('V') || !item.data?.pokemonSettings) continue;
                 if (processedPokemon.has(item.templateId)) continue;
@@ -773,7 +1439,6 @@
                 }
             }
 
-            // Second pass: calculate IVs
             updateStatus('⏳ Calculating PvP IVs (this may take a minute)...');
             const sortedPokemon = pokemon.sort((a, b) => a.dexNumber - b.dexNumber);
             
@@ -796,6 +1461,8 @@
                     iv: littleWild.iv,
                     maxSP: littleWild.maxSP,
                     minSP: littleWild.minSP,
+                    level: littleWild.level,
+                    cp: littleWild.cp,
                     ivHatch: littleHatch.iv,
                     maxSPHatch: littleHatch.maxSP,
                     minSPHatch: littleHatch.minSP
@@ -805,6 +1472,8 @@
                     iv: greatWild.iv,
                     maxSP: greatWild.maxSP,
                     minSP: greatWild.minSP,
+                    level: greatWild.level,
+                    cp: greatWild.cp,
                     ivHatch: greatHatch.iv,
                     maxSPHatch: greatHatch.maxSP,
                     minSPHatch: greatHatch.minSP
@@ -814,9 +1483,27 @@
                     iv: ultraWild.iv,
                     maxSP: ultraWild.maxSP,
                     minSP: ultraWild.minSP,
+                    level: ultraWild.level,
+                    cp: ultraWild.cp,
                     ivHatch: ultraHatch.iv,
                     maxSPHatch: ultraHatch.maxSP,
                     minSPHatch: ultraHatch.minSP
+                };
+                
+                p.master = {
+                    iv: { atk: 15, def: 15, sta: 15 },
+                    maxSP: Math.floor(
+                        ((p.stats.attack + 15) * cpm[99]) * 
+                        ((p.stats.defense + 15) * cpm[99]) * 
+                        Math.max(10, Math.floor((p.stats.hp + 15) * cpm[99]))
+                    ),
+                    minSP: Math.floor(
+                        ((p.stats.attack + 15) * cpm[99]) * 
+                        ((p.stats.defense + 15) * cpm[99]) * 
+                        Math.max(10, Math.floor((p.stats.hp + 15) * cpm[99]))
+                    ),
+                    level: 50,
+                    cp: calculateMaxCP(p.stats.attack, p.stats.defense, p.stats.hp)
                 };
             }
             
@@ -1003,7 +1690,6 @@
             const baseDefense = stats.baseDefense || 0;
             const baseStamina = stats.baseStamina || 0;
 
-            // Calculate charge move type coverage
             const allChargeMoves = [...moves.charge, ...moves.chargeElite];
             const chargeMoveTypes = new Set();
             
@@ -1042,7 +1728,6 @@
         }
 
         function getMoveId(moveName, moveMap) {
-            // Find the move ID by searching through the map for matching name
             for (const [id, move] of moveMap.entries()) {
                 if (move.name === moveName) {
                     return id;
@@ -1629,12 +2314,14 @@
                 const moves = await loadFromDatabase('moves');
                 const metadata = await loadFromDatabase('metadata');
                 const typeEffectiveness = await loadFromDatabase('typeEffectiveness');
+                const rankings = await loadFromDatabase('rankings');
                 
                 const exportData = {
                     metadata: metadata[0] || {},
                     pokemon: pokemon,
                     moves: moves,
-                    typeEffectiveness: typeEffectiveness
+                    typeEffectiveness: typeEffectiveness,
+                    rankings: rankings
                 };
                 
                 const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
