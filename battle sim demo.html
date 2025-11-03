@@ -720,7 +720,7 @@
                 const stabMultiplier = attacker.types.includes(move.type) ? 1.2 : 1.0;
                 
                 const baseDamage = 0.5 * move.power * (attackStat / defenseStat) * effectiveness * stabMultiplier;
-                const damage = Math.floor(baseDamage) + 1;
+                const damage = Math.max(1, Math.floor(baseDamage));
                 
                 return damage;
             }

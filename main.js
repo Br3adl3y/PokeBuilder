@@ -445,7 +445,7 @@ class PokeApp {
 
                 <div class="max-w-6xl mx-auto p-4" data-content-grid>
                     ${this.loading ? 
-                        '<div class="text-white text-center py-12">Loading...</div>' :
+                        '<div class="text-black text-center py-20">Loading...</div>' :
                         this.searchTerm ? this.renderSearchResults() :
                         this.currentList === 'pokemon' ? this.renderPokemonGrid() :
                         this.currentList === 'fast' ? renderMoveList.call(this, 'fast') :
