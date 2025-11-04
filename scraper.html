@@ -1138,9 +1138,8 @@
                         }
                     }
                     
-                    // After processing all scenarios for this opponent, clear temp data
-                    moveset2.pokemon = null;
-                    
+                    // After processing all scenarios for this opponent, clear temp data: moveset2.pokemon = null;
+                    console.log("Matchup complete:", i, j);
                     matchupsCompleted++;
                     
                     if (matchupsCompleted % 50 === 0) {
@@ -1150,8 +1149,7 @@
                     }
                 }
                 
-                // Clear this moveset's pokemon reference after it's done as attacker
-                moveset1.pokemon = null;
+                // Clear this moveset's pokemon reference after it's done as attacker: moveset1.pokemon = null;
             }
             
             updateProgress(totalMatchups, totalMatchups, 
