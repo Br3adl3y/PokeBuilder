@@ -170,6 +170,22 @@
         </div>
     </div>
 
+    <div style="margin-bottom: 20px; padding: 15px; background: white; border-radius: 8px;">
+        <h3 style="margin-top: 0;">Battle Simulation Settings</h3>
+        <label style="display: inline-block; margin-right: 20px;">
+            <input type="checkbox" id="sim-little" checked> Little League (500 CP)
+        </label>
+        <label style="display: inline-block; margin-right: 20px;">
+            <input type="checkbox" id="sim-great" checked> Great League (1500 CP)
+        </label>
+        <label style="display: inline-block; margin-right: 20px;">
+            <input type="checkbox" id="sim-ultra" checked> Ultra League (2500 CP)
+        </label>
+        <label style="display: inline-block; margin-right: 20px;">
+            <input type="checkbox" id="sim-master" checked> Master League
+        </label>
+    </div>
+
     <div>
         <button onclick="startScraping()" id="scrape-btn">🚀 Start Scraping</button>
         <button onclick="viewDatabase()" class="secondary-btn" id="view-btn" disabled>👁️ View Database</button>
@@ -970,11 +986,11 @@
         async function calculateRankings(allPokemon, allMoves, typeChart, typeOrder) {
             updateStatus('⚔️ Starting battle simulations...');
             
-            const leagues = [
-                { name: 'little', cpLimit: 500, cpPrune: 500 },
-                { name: 'great', cpLimit: 1500, cpPrune: 1500 },
-                { name: 'ultra', cpLimit: 2500, cpPrune: 2500 },
-                { name: 'master', cpLimit: null, cpPrune: 2500 }
+            const leagueConfigs = [
+                { name: 'little', cpLimit: 500, cpPrune: 500, enabled: document.getElementById('sim-little').checked },
+                { name: 'great', cpLimit: 1500, cpPrune: 1500, enabled: document.getElementById('sim-great').checked },
+                { name: 'ultra', cpLimit: 2500, cpPrune: 2500, enabled: document.getElementById('sim-ultra').checked },
+                { name: 'master', cpLimit: null, cpPrune: 2500, enabled: document.getElementById('sim-master').checked }
             ];
             
             const scenarios = [
@@ -982,7 +998,12 @@
                 'closers', 'attackers', 'attackers-baited', 'underdog'
             ];
             
-            for (const league of leagues) {
+            for (const league of leagueConfigs) {
+                if (!league.enabled) {
+                    updateStatus(`⏭️ Skipping ${league.name} league (disabled)`);
+                    continue;
+                }
+                
                 updateStatus(`⚔️ Simulating ${league.name} league...`);
                 
                 const eligiblePokemon = getEligiblePokemon(allPokemon, league, allMoves);
@@ -1008,6 +1029,11 @@
                     calculatedAt: new Date().toISOString(),
                     rankings: rankings
                 }]);
+                
+                // Clear memory after each league
+                eligiblePokemon.length = 0;
+                if (global.gc) global.gc();
+                await new Promise(resolve => setTimeout(resolve, 100));
                 
                 updateStatus(`✅ ${league.name} league complete! (${rankings.length} Pokemon ranked)`);
             }
@@ -1069,49 +1095,98 @@
                     name: p.name,
                     form: p.form || null,
                     isShadow: p.isShadow,
-                    movesetResults: new Map()
+                    bestScores: {},
+                    bestMovesets: {},
+                    moveTallies: {}
                 });
             }
             
             const movesets = generateMovesets(eligiblePokemon, allMoves);
-            const totalBattles = calculateTotalBattles(movesets, scenarios);
-            let battlesCompleted = 0;
+            const totalMatchups = movesets.length * (movesets.length - 1);
+            let matchupsCompleted = 0;
+            
+            updateProgress(0, totalMatchups, `${league.name}: 0 / ${totalMatchups.toLocaleString()} matchups`);
             
             for (let i = 0; i < movesets.length; i++) {
                 const moveset1 = movesets[i];
+                const p1Data = results.get(moveset1.pokemon.variantId);
                 
-                for (let j = i; j < movesets.length; j++) {
-                    const moveset2 = movesets[j];
-                    
+                for (let j = 0; j < movesets.length; j++) {
                     if (i === j) continue;
                     
+                    const moveset2 = movesets[j];
+                    
+                    // Run all scenarios for this matchup
                     for (const scenario of scenarios) {
                         const isSymmetric = isScenarioSymmetric(scenario);
                         
-                        if (isSymmetric && i < j) {
-                            const rating = simulateBattle(moveset1, moveset2, scenario, league, typeChart, typeOrder);
-                            
-                            recordResult(results, moveset1, moveset2, scenario, rating);
-                            recordResult(results, moveset2, moveset1, scenario, 1000 - rating);
-                            
-                            battlesCompleted++;
-                        } else if (!isSymmetric) {
-                            const rating = simulateBattle(moveset1, moveset2, scenario, league, typeChart, typeOrder);
-                            recordResult(results, moveset1, moveset2, scenario, rating);
-                            
-                            battlesCompleted++;
+                        if (isSymmetric && i > j) {
+                            // Already simulated when j was attacker
+                            continue;
                         }
                         
-                        if (battlesCompleted % 100 === 0) {
-                            updateProgress(battlesCompleted, totalBattles, 
-                                `${league.name}: ${battlesCompleted.toLocaleString()}/${totalBattles.toLocaleString()} battles`);
-                            await new Promise(resolve => setTimeout(resolve, 0));
+                        const rating = simulateBattle(moveset1, moveset2, scenario, league, typeChart, typeOrder);
+                        
+                        // Record for P1
+                        recordBestResult(p1Data, scenario, rating, moveset1);
+                        
+                        // For symmetric, also record reverse
+                        if (isSymmetric) {
+                            const p2Data = results.get(moveset2.pokemon.variantId);
+                            recordBestResult(p2Data, scenario, 1000 - rating, moveset2);
                         }
                     }
+                    
+                    // After processing all scenarios for this opponent, clear temp data
+                    moveset2.pokemon = null;
+                    
+                    matchupsCompleted++;
+                    
+                    if (matchupsCompleted % 50 === 0) {
+                        updateProgress(matchupsCompleted, totalMatchups, 
+                            `${league.name}: ${matchupsCompleted.toLocaleString()} / ${totalMatchups.toLocaleString()} matchups`);
+                        await new Promise(resolve => setTimeout(resolve, 0));
+                    }
                 }
+                
+                // Clear this moveset's pokemon reference after it's done as attacker
+                moveset1.pokemon = null;
             }
             
-            return aggregateResults(results, eligiblePokemon, league, allMoves);
+            updateProgress(totalMatchups, totalMatchups, 
+                `${league.name}: ${totalMatchups.toLocaleString()} / ${totalMatchups.toLocaleString()} matchups - Aggregating...`);
+            
+            const rankings = aggregateResults(results, eligiblePokemon, league);
+            
+            // Clear all temporary data
+            results.clear();
+            movesets.length = 0;
+            
+            return rankings;
+        }
+        
+        function recordBestResult(pokemonData, scenario, rating, moveset) {
+            // Track best score for this scenario
+            if (!pokemonData.bestScores[scenario] || rating > pokemonData.bestScores[scenario]) {
+                pokemonData.bestScores[scenario] = rating;
+                pokemonData.bestMovesets[scenario] = {
+                    fast: moveset.fast.rawId,
+                    charged: moveset.charged.map(m => m.rawId)
+                };
+            }
+            
+            // Tally moves if this was a winning matchup
+            if (rating > 500) {
+                const movesetKey = getMovesetKey(moveset);
+                if (!pokemonData.moveTallies[movesetKey]) {
+                    pokemonData.moveTallies[movesetKey] = {
+                        fast: moveset.fast.rawId,
+                        charged: moveset.charged.map(m => m.rawId),
+                        wins: 0
+                    };
+                }
+                pokemonData.moveTallies[movesetKey].wins++;
+            }
         }
 
         function generateMovesets(eligiblePokemon, allMoves) {
@@ -1151,6 +1226,19 @@
             return movesets;
         }
 
+        function getMovesetKey(moveset) {
+            return `${moveset.fast.rawId}|${moveset.charged.map(m => m.rawId).sort().join('|')}`;
+        }
+
+        function calculateTotalBattles(movesets, scenarios) {
+            // Not used anymore, but keeping for compatibility
+            return 0;
+        }
+
+        function isScenarioSymmetric(scenario) {
+            return scenario === 'leads' || scenario === 'closers';
+        }
+
         function calculateTotalBattles(movesets, scenarios) {
             const n = movesets.length;
             const symmetricScenarios = scenarios.filter(s => isScenarioSymmetric(s)).length;
@@ -1163,7 +1251,7 @@
         }
 
         function isScenarioSymmetric(scenario) {
-            return scenario === 'leads' || scenario === 'closers';
+            return scenario === 'leads' || scenario === 'leads-baited' || scenario === 'closers';
         }
 
         function simulateBattle(moveset1, moveset2, scenario, league, typeChart, typeOrder) {
@@ -1222,85 +1310,59 @@
             };
         }
 
-        function recordResult(results, attackerMoveset, defenderMoveset, scenario, rating) {
-            const attackerData = results.get(attackerMoveset.pokemon.variantId);
-            const movesetKey = getMovesetKey(attackerMoveset);
-            
-            if (!attackerData.movesetResults.has(movesetKey)) {
-                attackerData.movesetResults.set(movesetKey, {
-                    fast: attackerMoveset.fast.rawId,
-                    charged: attackerMoveset.charged.map(m => m.rawId),
-                    scenarioRatings: {},
-                    opponentResults: new Map()
-                });
-            }
-            
-            const movesetData = attackerData.movesetResults.get(movesetKey);
-            
-            if (!movesetData.scenarioRatings[scenario]) {
-                movesetData.scenarioRatings[scenario] = [];
-            }
-            movesetData.scenarioRatings[scenario].push(rating);
-            
-            const oppKey = `${defenderMoveset.pokemon.variantId}-${getMovesetKey(defenderMoveset)}`;
-            if (!movesetData.opponentResults.has(oppKey)) {
-                movesetData.opponentResults.set(oppKey, {});
-            }
-            movesetData.opponentResults.get(oppKey)[scenario] = rating;
-        }
-
-        function getMovesetKey(moveset) {
-            return `${moveset.fast.rawId}|${moveset.charged.map(m => m.rawId).sort().join('|')}`;
-        }
-
-        function aggregateResults(results, eligiblePokemon, league, allMoves) {
+        function aggregateResults(results, eligiblePokemon, league) {
             const rankings = [];
             
             for (const [variantId, data] of results.entries()) {
+                // Find the moveset with most wins
                 let bestMoveset = null;
-                let bestScore = -Infinity;
-                let bestScenarioScores = {};
-                let bestRole = '';
-                let bestMoveUsage = {};
+                let maxWins = 0;
                 
-                for (const [movesetKey, movesetData] of data.movesetResults.entries()) {
-                    const scenarioScores = {};
-                    const scenarioTally = {};
-                    
-                    for (const [scenario, ratings] of Object.entries(movesetData.scenarioRatings)) {
-                        const avgRating = ratings.reduce((a, b) => a + b, 0) / ratings.length;
-                        scenarioScores[scenario] = avgRating;
-                        
-                        let bestInScenario = 0;
-                        for (const [oppKey, oppRatings] of movesetData.opponentResults.entries()) {
-                            if (oppRatings[scenario] && oppRatings[scenario] > 500) {
-                                bestInScenario++;
-                            }
-                        }
-                        scenarioTally[scenario] = bestInScenario;
+                for (const [movesetKey, tallyData] of Object.entries(data.moveTallies)) {
+                    if (tallyData.wins > maxWins) {
+                        maxWins = tallyData.wins;
+                        bestMoveset = {
+                            fast: tallyData.fast,
+                            charged: tallyData.charged
+                        };
                     }
-                    
-                    const allRatings = Object.values(scenarioScores);
-                    const geometricMean = Math.pow(
-                        allRatings.reduce((a, b) => a * b, 1),
-                        1 / allRatings.length
-                    );
-                    
-                    if (geometricMean > bestScore) {
-                        bestScore = geometricMean;
-                        bestMoveset = movesetData;
-                        bestScenarioScores = scenarioScores;
-                        
-                        const sortedScenarios = Object.entries(scenarioTally)
-                            .sort((a, b) => b[1] - a[1]);
-                        bestRole = sortedScenarios[0][0];
-                        
-                        const moveUsage = {};
-                        moveUsage[movesetData.fast] = Object.values(scenarioTally).reduce((a, b) => a + b, 0);
-                        for (const chargedId of movesetData.charged) {
-                            moveUsage[chargedId] = Object.values(scenarioTally).reduce((a, b) => a + b, 0);
-                        }
-                        bestMoveUsage = moveUsage;
+                }
+                
+                // If no winning matchups, use the moveset from best scenario
+                if (!bestMoveset) {
+                    const bestScenario = Object.keys(data.bestScores)[0];
+                    if (bestScenario && data.bestMovesets[bestScenario]) {
+                        bestMoveset = data.bestMovesets[bestScenario];
+                    }
+                }
+                
+                // Calculate geometric mean of scenario scores
+                const scenarioScores = data.bestScores;
+                const scores = Object.values(scenarioScores);
+                
+                if (scores.length === 0) continue;
+                
+                const geometricMean = Math.pow(
+                    scores.reduce((a, b) => a * b, 1),
+                    1 / scores.length
+                );
+                
+                // Find primary role (best scenario)
+                let bestRole = '';
+                let bestScoreValue = 0;
+                for (const [scenario, score] of Object.entries(scenarioScores)) {
+                    if (score > bestScoreValue) {
+                        bestScoreValue = score;
+                        bestRole = scenario;
+                    }
+                }
+                
+                // Calculate move usage
+                const moveUsage = {};
+                for (const tallyData of Object.values(data.moveTallies)) {
+                    moveUsage[tallyData.fast] = (moveUsage[tallyData.fast] || 0) + tallyData.wins;
+                    for (const chargedId of tallyData.charged) {
+                        moveUsage[chargedId] = (moveUsage[chargedId] || 0) + tallyData.wins;
                     }
                 }
                 
@@ -1310,27 +1372,27 @@
                         name: data.name,
                         form: data.form,
                         isShadow: data.isShadow,
-                        recommendedMoveset: {
-                            fast: bestMoveset.fast,
-                            charged: bestMoveset.charged
-                        },
+                        recommendedMoveset: bestMoveset,
                         role: bestRole,
-                        rawScore: bestScore,
+                        rawScore: geometricMean,
                         displayRank: 0,
-                        scenarioScores: bestScenarioScores,
-                        moveUsage: bestMoveUsage
+                        scenarioScores: scenarioScores,
+                        moveUsage: moveUsage
                     });
                 }
             }
             
-            const maxScore = Math.max(...rankings.map(r => r.rawScore));
-            const minScore = Math.min(...rankings.map(r => r.rawScore));
-            const scoreRange = maxScore - minScore;
-            
-            for (const ranking of rankings) {
-                ranking.displayRank = scoreRange > 0 ? 
-                    ((ranking.rawScore - minScore) / scoreRange) * 100 : 
-                    50;
+            // Normalize scores to 0-100
+            if (rankings.length > 0) {
+                const maxScore = Math.max(...rankings.map(r => r.rawScore));
+                const minScore = Math.min(...rankings.map(r => r.rawScore));
+                const scoreRange = maxScore - minScore;
+                
+                for (const ranking of rankings) {
+                    ranking.displayRank = scoreRange > 0 ? 
+                        ((ranking.rawScore - minScore) / scoreRange) * 100 : 
+                        50;
+                }
             }
             
             rankings.sort((a, b) => b.displayRank - a.displayRank);
