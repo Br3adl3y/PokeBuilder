@@ -1,4 +1,293 @@
 /* ============================================
+   LENS FLARE PROTOCOL - Reusable Animation System
+   ============================================
+   Usage: Add .lens-flare class to any type background
+   The ::before and ::after will automatically get lens flares
+   Customize colors with CSS variables on each type
+   ============================================ */
+
+/* Lens flare protocol keyframes */
+@keyframes lens-flare-1 {
+    0% {
+        opacity: 0;
+        top: 15%;
+        right: 20%;
+    }
+    10% {
+        opacity: 0.6;
+        top: 15%;
+        right: 20%;
+    }
+    40% {
+        opacity: 0.6;
+        top: 15%;
+        right: 20%;
+    }
+    50% {
+        opacity: 0;
+        top: 15%;
+        right: 20%;
+    }
+    51% {
+        opacity: 0;
+        top: 25%;
+        right: 70%;
+    }
+    60% {
+        opacity: 0.5;
+        top: 25%;
+        right: 70%;
+    }
+    90% {
+        opacity: 0.5;
+        top: 25%;
+        right: 70%;
+    }
+    100% {
+        opacity: 0;
+        top: 25%;
+        right: 70%;
+    }
+}
+
+@keyframes lens-flare-2 {
+    0% {
+        opacity: 0;
+        bottom: 20%;
+        left: 15%;
+    }
+    15% {
+        opacity: 0.5;
+        bottom: 20%;
+        left: 15%;
+    }
+    45% {
+        opacity: 0.5;
+        bottom: 20%;
+        left: 15%;
+    }
+    50% {
+        opacity: 0;
+        bottom: 20%;
+        left: 15%;
+    }
+    51% {
+        opacity: 0;
+        bottom: 35%;
+        left: 65%;
+    }
+    65% {
+        opacity: 0.6;
+        bottom: 35%;
+        left: 65%;
+    }
+    95% {
+        opacity: 0.6;
+        bottom: 35%;
+        left: 65%;
+    }
+    100% {
+        opacity: 0;
+        bottom: 35%;
+        left: 65%;
+    }
+}
+
+/* Reusable lens flare system - add .lens-flare to any type */
+.lens-flare::before {
+    content: '';
+    position: absolute;
+    width: 150px;
+    height: 150px;
+    background: radial-gradient(
+        circle at center,
+        var(--flare-color-1, rgba(255, 255, 255, 0.8)) 0%,
+        var(--flare-color-2, rgba(255, 255, 255, 0.4)) 30%,
+        var(--flare-color-3, rgba(255, 255, 255, 0.2)) 60%,
+        transparent 100%
+    );
+    border-radius: 50%;
+    filter: blur(8px);
+    animation: lens-flare-1 12s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.lens-flare::after {
+    content: '';
+    position: absolute;
+    width: 120px;
+    height: 120px;
+    background: radial-gradient(
+        circle at center,
+        var(--flare-color-1, rgba(255, 255, 255, 0.7)) 0%,
+        var(--flare-color-2, rgba(255, 255, 255, 0.3)) 35%,
+        var(--flare-color-3, rgba(255, 255, 255, 0.2)) 65%,
+        transparent 100%
+    );
+    border-radius: 50%;
+    filter: blur(10px);
+    animation: lens-flare-2 14s ease-in-out infinite;
+    animation-delay: 2s;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* ============================================
+   USAGE NOTES
+   ============================================
+   
+   To use lens flares on any type:
+   <div class="type-bg-water lens-flare">Content</div>
+   
+   Customize lens flare colors with CSS variables:
+   .type-bg-water {
+       --flare-color-1: rgba(100, 200, 255, 0.8);
+       --flare-color-2: rgba(100, 200, 255, 0.4);
+       --flare-color-3: rgba(100, 200, 255, 0.2);
+   }
+   
+   ============================================ */
+
+
+/* ============================================
+   BUG TYPE - Light Green/Teal with Lens Flares
+   ============================================ */
+
+.type-bg-bug {
+    /* Fallback gradient */
+    background: linear-gradient(180deg, #A0D9B4 0%, #7FC8A9 100%) !important;
+    
+    /* Official Pokemon GO background image */
+    background-image: url('https://raw.githubusercontent.com/PokeMiners/pogo_assets/master/Images/Catch%20Card/bug.png') !important;
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+    
+    position: relative;
+    overflow: hidden;
+    
+    /* Custom lens flare colors for bug type */
+    --flare-color-1: rgba(255, 255, 255, 0.8);
+    --flare-color-2: rgba(160, 217, 180, 0.4);
+    --flare-color-3: rgba(127, 200, 169, 0.25);
+}
+
+/* Ensure content stays above effects */
+.type-bg-bug > * {
+    position: relative;
+    z-index: 2;
+}
+
+/* ============================================
+   DARK TYPE - Dark Blue/Black with Drifting Smoke
+   ============================================ */
+
+/* Smoke cloud drift animations */
+@keyframes smoke-drift-1 {
+    0% {
+        opacity: 0;
+        left: -25%;
+    }
+    10% {
+        opacity: 0.8;
+    }
+    90% {
+        opacity: 0.7;
+    }
+    100% {
+        opacity: 0;
+        left: 115%;
+    }
+}
+
+@keyframes smoke-drift-2 {
+    0% {
+        opacity: 0;
+        left: -30%;
+    }
+    15% {
+        opacity: 0.85;
+    }
+    85% {
+        opacity: 0.75;
+    }
+    100% {
+        opacity: 0;
+        left: 120%;
+    }
+}
+
+.type-bg-dark {
+    /* Fallback gradient */
+    background: linear-gradient(180deg, #0a0a0a 0%, #000000 100%) !important;
+    
+    /* Official Pokemon GO background image */
+    background-image: url('https://raw.githubusercontent.com/PokeMiners/pogo_assets/master/Images/Catch%20Card/dark.png') !important;
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+    
+    position: relative;
+    overflow: hidden;
+}
+
+/* First smoke cloud - larger, slower, more opaque */
+.type-bg-dark::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    width: 60%;
+    height: 45%;
+    
+    /* Dark translucent smoke cloud - bigger and more opaque */
+    background: radial-gradient(
+        ellipse 100% 80% at 50% 70%,
+        rgba(15, 15, 35, 0.9) 0%,
+        rgba(25, 25, 45, 0.75) 25%,
+        rgba(35, 35, 55, 0.6) 50%,
+        rgba(45, 45, 65, 0.4) 75%,
+        transparent 100%
+    );
+    
+    filter: blur(30px);
+    animation: smoke-drift-1 20s linear infinite;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Second smoke cloud - smaller, faster, more opaque */
+.type-bg-dark::after {
+    content: '';
+    position: absolute;
+    bottom: 5%;
+    width: 50%;
+    height: 40%;
+    
+    /* Dark translucent smoke cloud - bigger and more opaque */
+    background: radial-gradient(
+        ellipse 100% 75% at 50% 60%,
+        rgba(20, 20, 40, 0.85) 0%,
+        rgba(30, 30, 50, 0.7) 30%,
+        rgba(40, 40, 60, 0.5) 60%,
+        rgba(50, 50, 70, 0.3) 80%,
+        transparent 100%
+    );
+    
+    filter: blur(25px);
+    animation: smoke-drift-2 15s linear infinite;
+    animation-delay: 7s;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Ensure content stays above effects */
+.type-bg-dark > * {
+    position: relative;
+    z-index: 2;
+}
+
+/* ============================================
    FIGHTING TYPE - Blurry Dojo with Doorway
    ============================================ */
 .type-bg-fighting {
@@ -564,112 +853,6 @@
 }
 
 /* ============================================
-   DARK TYPE - Dark Blue/Black with Drifting Smoke Clouds
-   ============================================ */
-
-/* Smoke cloud drift animations - lower third left to right */
-@keyframes smoke-drift-1 {
-    0% {
-        opacity: 0;
-        left: -15%;
-    }
-    10% {
-        opacity: 0.4;
-    }
-    90% {
-        opacity: 0.3;
-    }
-    100% {
-        opacity: 0;
-        left: 115%;
-    }
-}
-
-@keyframes smoke-drift-2 {
-    0% {
-        opacity: 0;
-        left: -20%;
-    }
-    15% {
-        opacity: 0.5;
-    }
-    85% {
-        opacity: 0.4;
-    }
-    100% {
-        opacity: 0;
-        left: 120%;
-    }
-}
-
-.type-bg-dark {
-    /* Fallback gradient from original design */
-    background: linear-gradient(180deg, #0a0a0a 0%, #000000 100%);
-    
-    /* Official Pokemon GO background image */
-    background-image: url('https://raw.githubusercontent.com/PokeMiners/pogo_assets/master/Images/Catch%20Card/dark.png');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    
-    position: relative;
-    overflow: hidden;
-}
-
-/* First smoke cloud - larger, slower */
-.type-bg-dark::before {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    width: 40%;
-    height: 35%;
-    
-    /* Dark translucent smoke cloud */
-    background: radial-gradient(
-        ellipse 100% 80% at 50% 70%,
-        rgba(20, 20, 40, 0.7) 0%,
-        rgba(30, 30, 50, 0.5) 30%,
-        rgba(40, 40, 60, 0.3) 60%,
-        transparent 100%
-    );
-    
-    filter: blur(25px);
-    animation: smoke-drift-1 20s linear infinite;
-    pointer-events: none;
-    z-index: 1;
-}
-
-/* Second smoke cloud - smaller, faster */
-.type-bg-dark::after {
-    content: '';
-    position: absolute;
-    bottom: 5%;
-    width: 30%;
-    height: 30%;
-    
-    /* Dark translucent smoke cloud */
-    background: radial-gradient(
-        ellipse 100% 75% at 50% 60%,
-        rgba(25, 25, 45, 0.6) 0%,
-        rgba(35, 35, 55, 0.4) 35%,
-        rgba(45, 45, 65, 0.2) 65%,
-        transparent 100%
-    );
-    
-    filter: blur(20px);
-    animation: smoke-drift-2 15s linear infinite;
-    animation-delay: 7s;
-    pointer-events: none;
-    z-index: 1;
-}
-
-/* Ensure content stays above the animated effects */
-.type-bg-dark > * {
-    position: relative;
-    z-index: 2;
-}
-
-/* ============================================
    FAIRY TYPE - Lavender/Purple + Bright Pink Orbs
    ============================================ */
 @keyframes orb-float {
@@ -890,164 +1073,6 @@
 .type-bg-flying img {
     position: relative;
     z-index: 1;
-}
-
-/* ============================================
-   BUG TYPE - Light Green/Teal with Animated Lens Flare Circles
-   ============================================ */
-
-/* Lens flare protocol keyframes */
-@keyframes lens-flare-1 {
-    0% {
-        opacity: 0;
-        top: 15%;
-        right: 20%;
-    }
-    10% {
-        opacity: 0.6;
-        top: 15%;
-        right: 20%;
-    }
-    40% {
-        opacity: 0.6;
-        top: 15%;
-        right: 20%;
-    }
-    50% {
-        opacity: 0;
-        top: 15%;
-        right: 20%;
-    }
-    51% {
-        opacity: 0;
-        top: 25%;
-        right: 70%;
-    }
-    60% {
-        opacity: 0.5;
-        top: 25%;
-        right: 70%;
-    }
-    90% {
-        opacity: 0.5;
-        top: 25%;
-        right: 70%;
-    }
-    100% {
-        opacity: 0;
-        top: 25%;
-        right: 70%;
-    }
-}
-
-@keyframes lens-flare-2 {
-    0% {
-        opacity: 0;
-        bottom: 20%;
-        left: 15%;
-    }
-    15% {
-        opacity: 0.5;
-        bottom: 20%;
-        left: 15%;
-    }
-    45% {
-        opacity: 0.5;
-        bottom: 20%;
-        left: 15%;
-    }
-    50% {
-        opacity: 0;
-        bottom: 20%;
-        left: 15%;
-    }
-    51% {
-        opacity: 0;
-        bottom: 35%;
-        left: 65%;
-    }
-    65% {
-        opacity: 0.6;
-        bottom: 35%;
-        left: 65%;
-    }
-    95% {
-        opacity: 0.6;
-        bottom: 35%;
-        left: 65%;
-    }
-    100% {
-        opacity: 0;
-        bottom: 35%;
-        left: 65%;
-    }
-}
-
-.type-bg-bug {
-    /* Fallback gradient from original design */
-    background: linear-gradient(180deg, #A0D9B4 0%, #7FC8A9 100%);
-    
-    /* Official Pokemon GO background image */
-    background-image: url('https://raw.githubusercontent.com/PokeMiners/pogo_assets/master/Images/Catch%20Card/bug.png');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    
-    position: relative;
-    overflow: hidden;
-}
-
-/* First lens flare circle - uses protocol animation */
-.type-bg-bug::before {
-    content: '';
-    position: absolute;
-    width: 150px;
-    height: 150px;
-    
-    /* Circular gradient to mimic lens flare bubble */
-    background: radial-gradient(
-        circle at center,
-        rgba(255, 255, 255, 0.8) 0%,
-        rgba(255, 255, 255, 0.4) 30%,
-        rgba(160, 217, 180, 0.3) 60%,
-        transparent 100%
-    );
-    
-    border-radius: 50%;
-    filter: blur(8px);
-    animation: lens-flare-1 12s ease-in-out infinite;
-    pointer-events: none;
-    z-index: 1;
-}
-
-/* Second lens flare circle - uses protocol animation with delay */
-.type-bg-bug::after {
-    content: '';
-    position: absolute;
-    width: 120px;
-    height: 120px;
-    
-    /* Circular gradient to mimic lens flare bubble */
-    background: radial-gradient(
-        circle at center,
-        rgba(255, 255, 255, 0.7) 0%,
-        rgba(255, 255, 255, 0.3) 35%,
-        rgba(127, 200, 169, 0.25) 65%,
-        transparent 100%
-    );
-    
-    border-radius: 50%;
-    filter: blur(10px);
-    animation: lens-flare-2 14s ease-in-out infinite;
-    animation-delay: 2s;
-    pointer-events: none;
-    z-index: 1;
-}
-
-/* Ensure content stays above the animated effects */
-.type-bg-bug > * {
-    position: relative;
-    z-index: 2;
 }
 
 /* ============================================
