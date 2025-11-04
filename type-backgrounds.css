@@ -159,7 +159,7 @@
     background: linear-gradient(180deg, #A0D9B4 0%, #7FC8A9 100%) !important;
     
     /* Official Pokemon GO background image */
-    background-image: url('https://raw.githubusercontent.com/PokeMiners/pogo_assets/master/Images/Catch%20Card/bug.png') !important;
+    background-image: url('https://github.com/PokeMiners/pogo_assets/blob/master/Images/Catch%20Card/CatchCard_TypeBG_Bug.png?raw=true') !important;
     background-size: cover !important;
     background-position: center !important;
     background-repeat: no-repeat !important;
@@ -223,7 +223,7 @@
     background: linear-gradient(180deg, #0a0a0a 0%, #000000 100%) !important;
     
     /* Official Pokemon GO background image */
-    background-image: url('https://raw.githubusercontent.com/PokeMiners/pogo_assets/master/Images/Catch%20Card/dark.png') !important;
+    background-image: url('https://github.com/PokeMiners/pogo_assets/blob/master/Images/Catch%20Card/CatchCard_TypeBG_Dark.png?raw=true') !important;
     background-size: cover !important;
     background-position: center !important;
     background-repeat: no-repeat !important;
