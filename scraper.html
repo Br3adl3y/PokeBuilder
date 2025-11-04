@@ -1109,7 +1109,8 @@
             
             for (let i = 0; i < movesets.length; i++) {
                 const moveset1 = movesets[i];
-                const p1Data = results.get(moveset1.pokemon.variantId);
+                const p1VariantId = moveset1.pokemon.variantId;  // ✓ Store before nullifying
+                const p1Data = results.get(p1VariantId);
                 
                 for (let j = 0; j < movesets.length; j++) {
                     if (i === j) continue;
