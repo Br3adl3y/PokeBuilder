@@ -390,8 +390,8 @@
    GHOST TYPE
    ========== */
 .type-bg-ghost {
-    background: radial-gradient(circle at 70% 20%, rgba(255, 223, 100, 0.9) 3%, rgba(255, 223, 100, 0.4) 6%, transparent 10%), linear-gradient(180deg, #1a0f2e 0%, #2d1b3d 50%, #0d0515 100%) !important;
-    background-image: url('https://github.com/PokeMiners/pogo_assets/blob/master/Images/Catch%20Card/CatchCard_TypeBG_Ghost.png?raw=true') !important;
+    background: radial-gradient(circle at 70% 20%, rgba(255, 223, 100, 0.9) 3%, rgba(255, 223, 100, 0.4) 6%, transparent 10%),
+        linear-gradient(180deg, #1a0f2e 0%, #2d1b3d 50%, #0d0515 100%) !important;
     position: relative;
     overflow: hidden;
     --smoke-color-1: rgba(200, 200, 220, 0.5);
