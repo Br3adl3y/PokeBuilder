@@ -280,13 +280,13 @@ class PokeApp {
         return moves.filter(m => m.name.toLowerCase().includes(term));
     }
 
-    async updateCurrentView() {
+    updateCurrentView() {
         const gridContainer = document.querySelector('[data-content-grid]');
         if (gridContainer && !this.selectedPokemon && !this.selectedMove) {
             if (this.searchTerm) {
-                gridContainer.innerHTML = await this.renderSearchResults();
+                gridContainer.innerHTML = this.renderSearchResults();
             } else if (this.currentList === 'pokemon') {
-                gridContainer.innerHTML = await this.renderPokemonGrid();
+                gridContainer.innerHTML = this.renderPokemonGrid();
             } else if (this.currentList === 'fast') {
                 gridContainer.innerHTML = renderMoveList.call(this, 'fast');
             } else if (this.currentList === 'charge') {
@@ -295,6 +295,7 @@ class PokeApp {
             this.attachListListeners();
         }
     }
+
     // ====================================
     // NAVIGATION & VIEW MANAGEMENT
     // ====================================
@@ -362,14 +363,14 @@ class PokeApp {
     // RENDERING
     // ====================================
 
-    async render() {
+    render() {
         const app = document.getElementById('app');
         
         if (this.currentView === 'menu') {
             app.innerHTML = this.renderMenu();
         } else if (this.currentView === 'pokedex') {
             if (this.selectedPokemon) {
-                app.innerHTML = await renderPokemonDetail.call(this);
+                app.innerHTML = renderPokemonDetail.call(this);
             } else if (this.selectedMove) {
                 app.innerHTML = renderMoveDetail.call(this);
             } else {
@@ -466,7 +467,7 @@ class PokeApp {
         `;
     }
 
-    async renderSearchResults() {
+    renderSearchResults() {
         const results = this.getSearchResults();
         if (!results) return '';
 
@@ -487,11 +488,10 @@ class PokeApp {
         }
         
         if (results.pokemon.length > 0) {
-            const pokemonCards = await Promise.all(results.pokemon.map(forms => renderPokemonCard.call(this, forms)));
             html += `<div class="mb-6">
                 <h2 class="text-white text-xl font-bold mb-3">Pokémon</h2>
                 <div class="grid grid-cols-4 gap-3">
-                    ${pokemonCards.join('')}
+                    ${results.pokemon.map(forms => renderPokemonCard.call(this, forms)).join('')}
                 </div>
             </div>`;
         }
@@ -503,11 +503,11 @@ class PokeApp {
         return html;
     }
 
-    async renderPokemonGrid() {
+    renderPokemonGrid() {
         const filtered = this.getFilteredPokemonGroups();
         return `
             <div class="grid grid-cols-4 gap-3">
-                ${(await Promise.all(filtered.map(forms => renderPokemonCard.call(this, forms)))).join('')}
+                ${filtered.map(forms => renderPokemonCard.call(this, forms)).join('')}
             </div>
         `;
     }

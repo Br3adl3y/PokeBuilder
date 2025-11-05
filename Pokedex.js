@@ -256,7 +256,7 @@ async function renderPokemonDetail() {
                     <!-- LEFT: Sprite (2/3 width) -->
                     <div class="sprite-container relative bg-white/30 rounded-xl flex items-center justify-center" style="height: clamp(250px, 50vw, 400px);">
                         <div class="${typeBgClass}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;"></div>
-                        <img src="${spriteUrl}" alt="${p.name}" class="w-1/2 h-1/2 object-contain mx-auto relative z-10">
+                        <img src="${spriteUrl}" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${p.dexNumber}.png'" alt="${p.name}" class="w-1/2 h-1/2 object-contain mx-auto relative z-10">
                         
                         <!-- Name/Type overlaid at BOTTOM -->
                         <div class="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-white/90 to-transparent z-10">
@@ -726,7 +726,7 @@ function renderMoveDetail() {
                             const spriteUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.dexNumber}.png`;
                             return `
                                 <div class="rounded-xl p-2 text-center ${isElite ? 'elite-move' : ''}" data-pokemon-id="${p.id}">
-                                    <img src="${spriteUrl}" class="pokemon-sprite w-16 h-16 mx-auto">
+                                    <img src="${spriteUrl}" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${basePokemon.dexNumber}.png'" alt="${basePokemon.name}" class="pokemon-sprite w-24 h-24 mx-auto mb-2">
                                     <div class="text-xs font-medium mt-1">${p.name}</div>
                                     ${isElite ? '<div class="text-xs text-purple-600 font-bold">ELITE</div>' : ''}
                                 </div>
