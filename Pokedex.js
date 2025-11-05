@@ -87,32 +87,6 @@ function getEvolutionChain(pokemon) {
     return buildFullTree(base);
 }
 
-async function renderEvolutionChain(tree) {
-    if (!tree) return '';
-    
-    const result = [];
-    const visited = new Set();
-    
-    const addToChain = (node, candyCost = null, evolveRequirement = null) => {
-        if (visited.has(node.pokemon.id)) return;
-        visited.add(node.pokemon.id);
-        
-        result.push({
-            pokemon: node.pokemon,
-            candyCost: candyCost,
-            evolveRequirement: evolveRequirement
-        });
-        
-        if (node.evolutions && node.evolutions.length > 0) {
-            node.evolutions.forEach(evo => {
-                addToChain(evo.branch, evo.candyCost, evo.evolveRequirement);
-            });
-        }
-    };
-    
-    addToChain(tree);
-}    
-
 // ====================================
 // SPRITE FETCHING WITH FALLBACK
 // ====================================
@@ -165,7 +139,7 @@ async function getPokemonSprite(pokemonIdOrDexNumber) {
 // EVOLUTION CHAIN RENDERING (UPDATED)
 // ====================================
 
-async function renderEvolutionChainItems(result) {
+async function renderEvolutionChain(result) {
     // Fetch all sprite URLs
     const items = await Promise.all(result.map(async (item) => {
         const sprite = await getPokemonSprite(item.pokemon.dexNumber);
