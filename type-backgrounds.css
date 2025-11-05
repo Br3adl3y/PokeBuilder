@@ -32,6 +32,10 @@
     z-index: 2;
 }
 
+/* ============================================
+   REUSABLE ANIMATION SYSTEMS
+   ============================================ */
+
 /* LENS FLARE PROTOCOL - Add .lens-flare class to any type */
 @keyframes lens-flare-1 {
     0% {
@@ -126,13 +130,13 @@
     height: 150px;
     background: radial-gradient(
         circle at center,
-        var(--flare-color-1, rgba(255, 255, 255, 0.8)) 0%,
-        var(--flare-color-2, rgba(255, 255, 255, 0.4)) 30%,
-        var(--flare-color-3, rgba(255, 255, 255, 0.2)) 60%,
-        transparent 100%
+        transparent 0%,
+        var(--flare-color-1, rgba(255, 255, 255, 0.15)) 40%,
+        var(--flare-color-2, rgba(255, 255, 255, 0.35)) 70%,
+        var(--flare-color-3, rgba(255, 255, 255, 0.5)) 100%
     );
     border-radius: 50%;
-    filter: blur(8px);
+    filter: blur(0px);
     animation: lens-flare-1 12s ease-in-out infinite;
     pointer-events: none;
     z-index: 1;
@@ -145,13 +149,13 @@
     height: 120px;
     background: radial-gradient(
         circle at center,
-        var(--flare-color-1, rgba(255, 255, 255, 0.7)) 0%,
-        var(--flare-color-2, rgba(255, 255, 255, 0.3)) 35%,
-        var(--flare-color-3, rgba(255, 255, 255, 0.2)) 65%,
-        transparent 100%
+        transparent 0%,
+        var(--flare-color-1, rgba(255, 255, 255, 0.12)) 40%,
+        var(--flare-color-2, rgba(255, 255, 255, 0.3)) 70%,
+        var(--flare-color-3, rgba(255, 255, 255, 0.45)) 100%
     );
     border-radius: 50%;
-    filter: blur(10px);
+    filter: blur(0px);
     animation: lens-flare-2 14s ease-in-out infinite;
     animation-delay: 2s;
     pointer-events: none;
@@ -165,10 +169,10 @@
         left: -25%;
     }
     10% {
-        opacity: var(--smoke-opacity-1, 0.8);
+        opacity: calc(var(--smoke-opacity-1, 0.8) * 0.5);
     }
     90% {
-        opacity: var(--smoke-opacity-1, 0.7);
+        opacity: calc(var(--smoke-opacity-1, 0.7) * 0.5);
     }
     100% {
         opacity: 0;
@@ -182,10 +186,10 @@
         left: -30%;
     }
     15% {
-        opacity: var(--smoke-opacity-2, 0.85);
+        opacity: calc(var(--smoke-opacity-2, 0.85) * 0.5);
     }
     85% {
-        opacity: var(--smoke-opacity-2, 0.75);
+        opacity: calc(var(--smoke-opacity-2, 0.75) * 0.5);
     }
     100% {
         opacity: 0;
@@ -197,8 +201,8 @@
     content: '';
     position: absolute;
     bottom: 0;
-    width: var(--smoke-width-1, 60%);
-    height: var(--smoke-height-1, 45%);
+    width: calc(var(--smoke-width-1, 60%) * 2);
+    height: calc(var(--smoke-height-1, 45%) * 2);
     background: radial-gradient(
         ellipse 100% 80% at 50% 70%,
         var(--smoke-color-1, rgba(15, 15, 35, 0.9)) 0%,
@@ -217,8 +221,8 @@
     content: '';
     position: absolute;
     bottom: 5%;
-    width: var(--smoke-width-2, 50%);
-    height: var(--smoke-height-2, 40%);
+    width: calc(var(--smoke-width-2, 50%) * 2);
+    height: calc(var(--smoke-height-2, 40%) * 2);
     background: radial-gradient(
         ellipse 100% 75% at 50% 60%,
         var(--smoke-color-1, rgba(20, 20, 40, 0.85)) 0%,
@@ -480,46 +484,6 @@
     --smoke-opacity-2: 0.7;
 }
 
-@keyframes sand-blow {
-    0% {
-        transform: translateX(-100%);
-        opacity: 0;
-    }
-    20% {
-        opacity: 0.6;
-    }
-    80% {
-        opacity: 0.4;
-    }
-    100% {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-}
-
-.type-bg-ground::before,
-.type-bg-ground::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 200%;
-    height: 100%;
-    background-image:
-        radial-gradient(circle, rgba(139, 115, 85, 0.6) 1px, transparent 1px),
-        radial-gradient(circle, rgba(160, 130, 109, 0.5) 1.5px, transparent 1.5px);
-    background-size: 37px 61px, 59px 83px;
-    background-position: 0 0, 31px 43px;
-    animation: sand-blow 8s linear infinite;
-    z-index: 0;
-    filter: blur(0);
-}
-
-.type-bg-ground::after {
-    animation-delay: 4s;
-    opacity: 0.7;
-}
-
 /* ========
    ICE TYPE
    ======== */
@@ -531,8 +495,14 @@
     background-repeat: no-repeat !important;
     position: relative;
     overflow: hidden;
+    /* White and light blue smoke colors */
+    --smoke-color-1: rgba(255, 255, 255, 0.7);
+    --smoke-color-2: rgba(230, 245, 255, 0.6);
+    --smoke-color-3: rgba(200, 230, 255, 0.5);
+    --smoke-color-4: rgba(180, 220, 255, 0.3);
+    --smoke-opacity-1: 0.5;
+    --smoke-opacity-2: 0.6;
 }
-
 
 /* ===========
    NORMAL TYPE
