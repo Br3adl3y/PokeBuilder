@@ -253,9 +253,9 @@
     background-repeat: no-repeat !important;
     position: relative;
     overflow: hidden;
-    --flare-color-1: rgba(255, 255, 255, 0.8);
-    --flare-color-2: rgba(160, 217, 180, 0.4);
-    --flare-color-3: rgba(127, 200, 169, 0.25);
+    --flare-color-1: rgba(255, 255, 255, 0.15);
+    --flare-color-2: rgba(160, 217, 180, 0.6);
+    --flare-color-3: rgba(127, 200, 169, 0.85);
 }
 
 /* =========
@@ -286,9 +286,9 @@
     background-repeat: no-repeat !important;
     position: relative;
     overflow: hidden;
-    --flare-color-1: rgba(240, 220, 80, 0.8);
-    --flare-color-2: rgba(255, 240, 100, 0.5);
-    --flare-color-3: rgba(250, 230, 90, 0.3);
+    --flare-color-1: rgba(240, 220, 80, 0.15);
+    --flare-color-2: rgba(255, 240, 100, 0.6);
+    --flare-color-3: rgba(250, 230, 90, 0.85);
 }
 
 /* ==========
@@ -368,9 +368,9 @@
     background-repeat: no-repeat !important;
     position: relative;
     overflow: hidden;
-    --flare-color-1: rgba(255, 255, 255, 0.7);
-    --flare-color-2: rgba(255, 240, 200, 0.4);
-    --flare-color-3: rgba(255, 230, 180, 0.2);
+    --flare-color-1: rgba(255, 255, 255, 0.15);
+    --flare-color-2: rgba(255, 240, 200, 0.6);
+    --flare-color-3: rgba(255, 230, 180, 0.85);
 }
 
 /* ===========
@@ -515,9 +515,9 @@
     background-repeat: no-repeat !important;
     position: relative;
     overflow: hidden;
-    --flare-color-1: rgba(255, 255, 255, 0.6);
-    --flare-color-2: rgba(255, 240, 200, 0.4);
-    --flare-color-3: rgba(255, 230, 180, 0.2);
+    --flare-color-1: rgba(255, 255, 255, 0.15);
+    --flare-color-2: rgba(255, 240, 200, 0.6);
+    --flare-color-3: rgba(255, 230, 180, .85);
 }
 
 /* ===========
@@ -531,9 +531,9 @@
     background-repeat: no-repeat !important;
     position: relative;
     overflow: hidden;
-    --flare-color-1: rgba(138, 43, 226, 0.6);
-    --flare-color-2: rgba(138, 43, 226, 0.4);
-    --flare-color-3: rgba(75, 0, 130, 0.3);
+    --flare-color-1: rgba(138, 43, 226, 0.15);
+    --flare-color-2: rgba(138, 43, 226, 0.6);
+    --flare-color-3: rgba(75, 0, 130, 0.85);
 }
 
 /* =========
@@ -547,9 +547,9 @@
     background-repeat: no-repeat !important;
     position: relative;
     overflow: hidden;
-    --flare-color-1: rgba(255, 255, 255, 0.6);
-    --flare-color-2: rgba(200, 200, 200, 0.4);
-    --flare-color-3: rgba(160, 160, 160, 0.2);
+    --flare-color-1: rgba(255, 255, 255, 0.15);
+    --flare-color-2: rgba(200, 200, 200, 0.6);
+    --flare-color-3: rgba(160, 160, 160, 0.85);
 }
 
 /* ==========
@@ -671,17 +671,21 @@
 /* =========
    FIRE TYPE
    ========= */
-@keyframes ember-float {
+@keyframes ember-rotate-1 {
     0% {
-        transform: translateY(0) translateX(0);
-        opacity: 0;
-    }
-    20% {
-        opacity: 1;
+        transform: rotate(0deg);
     }
     100% {
-        transform: translateY(-300px) translateX(30px);
-        opacity: 0;
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes ember-rotate-2 {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
     }
 }
 
@@ -691,26 +695,74 @@
     overflow: hidden;
 }
 
-.type-bg-fire::before,
-.type-bg-fire::after {
+.type-bg-fire::before {
     content: '';
     position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    /* Position pivot point off-screen to the bottom-right */
+    bottom: -150%;
+    right: -150%;
+    width: 400%;
+    height: 400%;
+    /* Random scattered embers instead of grid */
     background-image: 
-        radial-gradient(circle, rgba(255, 120, 0, 0.8) 1px, transparent 1px),
-        radial-gradient(circle, rgba(255, 200, 50, 0.6) 1.5px, transparent 1.5px);
-    background-size: 53px 107px, 79px 139px;
-    background-position: 23% 0, 67% 29px;
-    animation: ember-float 6s linear infinite;
+        radial-gradient(circle, rgba(255, 120, 0, 0.9) 2px, transparent 2px),
+        radial-gradient(circle, rgba(255, 200, 50, 0.8) 1.5px, transparent 1.5px),
+        radial-gradient(circle, rgba(255, 150, 30, 0.7) 2.5px, transparent 2.5px),
+        radial-gradient(circle, rgba(255, 180, 80, 0.6) 1px, transparent 1px),
+        radial-gradient(circle, rgba(255, 140, 60, 0.8) 2px, transparent 2px),
+        radial-gradient(circle, rgba(255, 210, 100, 0.7) 1.5px, transparent 1.5px);
+    background-size: 
+        139px 197px,
+        211px 283px,
+        173px 241px,
+        107px 163px,
+        227px 311px,
+        151px 223px;
+    background-position: 
+        17% 23%,
+        53% 67%,
+        89% 41%,
+        31% 79%,
+        71% 13%,
+        43% 97%;
+    animation: ember-rotate-1 45s linear infinite;
+    transform-origin: center center;
     z-index: 0;
 }
 
 .type-bg-fire::after {
-    animation-delay: 3s;
-    background-position: 47% 17px, 87% 41px;
+    content: '';
+    position: absolute;
+    /* Position pivot point off-screen to the top-left */
+    top: -150%;
+    left: -150%;
+    width: 400%;
+    height: 400%;
+    /* Different random ember pattern */
+    background-image: 
+        radial-gradient(circle, rgba(255, 130, 20, 0.8) 2px, transparent 2px),
+        radial-gradient(circle, rgba(255, 190, 70, 0.7) 1.5px, transparent 1.5px),
+        radial-gradient(circle, rgba(255, 160, 50, 0.9) 2.5px, transparent 2.5px),
+        radial-gradient(circle, rgba(255, 200, 90, 0.6) 1px, transparent 1px),
+        radial-gradient(circle, rgba(255, 170, 80, 0.8) 2px, transparent 2px),
+        radial-gradient(circle, rgba(255, 220, 110, 0.7) 1.5px, transparent 1.5px);
+    background-size: 
+        193px 269px,
+        157px 229px,
+        233px 307px,
+        127px 181px,
+        199px 277px,
+        179px 251px;
+    background-position: 
+        61% 37%,
+        19% 83%,
+        77% 11%,
+        39% 59%,
+        91% 73%,
+        27% 47%;
+    animation: ember-rotate-2 55s linear infinite reverse;
+    transform-origin: center center;
+    z-index: 0;
 }
 
 .type-bg-fire img {
