@@ -638,15 +638,6 @@ class PokeApp {
 }
 
 // ====================================
-// INITIALIZATION
-// ====================================
-
-document.addEventListener('DOMContentLoaded', () => {
-    initializeDatabase();
-    new PokeApp();
-});
-
-// ====================================
 // SHARED CONSTANTS AND UTILITIES
 // ====================================
 
