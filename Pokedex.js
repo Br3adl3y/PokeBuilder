@@ -111,11 +111,64 @@ async function renderEvolutionChain(tree) {
     };
     
     addToChain(tree);
+}    
+
+// ====================================
+// SPRITE FETCHING WITH FALLBACK
+// ====================================
+
+// Cache to avoid redundant API calls
+const spriteCache = new Map();
+
+/**
+ * Fetch Pokemon sprite URL with fallback logic
+ * Priority: Showdown GIF → Official Artwork PNG → Default sprite
+ */
+async function getPokemonSprite(pokemonIdOrDexNumber) {
+  const cacheKey = String(pokemonIdOrDexNumber);
+  
+  if (spriteCache.has(cacheKey)) {
+    return spriteCache.get(cacheKey);
+  }
+  
+  try {
+    const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${pokemonIdOrDexNumber}`);
     
-    // Fetch all sprite IDs
+    if (!response.ok) {
+      throw new Error(`Pokemon ${pokemonIdOrDexNumber} not found`);
+    }
+    
+    const data = await response.json();
+    
+    // Priority 1: Showdown animated sprite
+    const showdownSprite = data.sprites.other?.showdown?.front_default;
+    
+    // Priority 2: Official artwork
+    const officialArtwork = data.sprites.other?.['official-artwork']?.front_default;
+    
+    // Priority 3: Default front sprite (fallback)
+    const defaultSprite = data.sprites.front_default;
+    
+    const spriteUrl = showdownSprite || officialArtwork || defaultSprite;
+    
+    spriteCache.set(cacheKey, spriteUrl);
+    return spriteUrl;
+    
+  } catch (error) {
+    console.error(`Error fetching Pokemon ${pokemonIdOrDexNumber}:`, error);
+    // Fallback to constructed URL if API fails
+    return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemonIdOrDexNumber}.png`;
+  }
+}
+
+// ====================================
+// EVOLUTION CHAIN RENDERING (UPDATED)
+// ====================================
+
+async function renderEvolutionChainItems(result) {
+    // Fetch all sprite URLs
     const items = await Promise.all(result.map(async (item) => {
-        const spriteId = await getShowdownSpriteId(item.pokemon);
-        const sprite = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/${spriteId}.gif`;
+        const sprite = await getPokemonSprite(item.pokemon.dexNumber);
         
         return {
             ...item,
@@ -138,13 +191,13 @@ async function renderEvolutionChain(tree) {
 }
 
 // ====================================
-// POKEMON CARD RENDERING
+// POKEMON CARD RENDERING (UPDATED)
 // ====================================
 
-function renderPokemonCard(forms) {
+async function renderPokemonCard(forms) {
     const basePokemon = forms[0];
     const tags = this.userTags[basePokemon.id] || [];
-    const spriteUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${basePokemon.dexNumber}.png`;
+    const spriteUrl = await getPokemonSprite(basePokemon.dexNumber);
     
     return `
         <div class="rounded-2xl p-4 shadow-lg" data-pokemon-id="${basePokemon.id}">
@@ -171,15 +224,14 @@ function renderPokemonCard(forms) {
 }
 
 // ====================================
-// POKEMON DETAIL PAGE
+// POKEMON DETAIL PAGE (UPDATED)
 // ====================================
 
 async function renderPokemonDetail() {
     const p = this.selectedForm || this.selectedPokemon;
     const forms = this.getPokemonForms(p.dexNumber);
     const tags = this.userTags[p.id] || [];
-    const spriteId = await getShowdownSpriteId(p);
-    const spriteUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/${spriteId}.gif`;                
+    const spriteUrl = await getPokemonSprite(p.dexNumber);
     const chain = getEvolutionChain.call(this, p);
     const isSingleType = p.types.length === 1;
 
@@ -222,7 +274,7 @@ async function renderPokemonDetail() {
 
     return `
         <div class="min-h-screen pokedex-bg p-4 py-8" data-detail-container>
-            <div class="detail-container rounded-3xl mx-auto"
+            <div class="detail-container rounded-3xl mx-auto">
                 
                 <!-- ROW 1: 2/3 sprite + 1/3 evolution -->
                 <div class="detail-row-1 mb-4">
