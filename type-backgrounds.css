@@ -690,7 +690,7 @@
 }
 
 .type-bg-fire {
-    background: linear-gradient(180deg, #ff6b9d 0%, #ff8c42 50%, #ffa94d 100%) !important;
+    background: linear-gradient(180deg, #ff6b9d 0%, #ff8c42 43%, #5f4433 38%, #3b2916 100%) !important;
     position: relative;
     overflow: hidden;
 }
