@@ -734,8 +734,8 @@
     content: '';
     position: absolute;
     /* Position pivot point off-screen to the top-left */
-    top: -150%;
-    left: -150%;
+    bottom: -125%;
+    right: -125%;
     width: 400%;
     height: 400%;
     /* Different random ember pattern */
