@@ -280,13 +280,13 @@ class PokeApp {
         return moves.filter(m => m.name.toLowerCase().includes(term));
     }
 
-    updateCurrentView() {
+    async updateCurrentView() {
         const gridContainer = document.querySelector('[data-content-grid]');
         if (gridContainer && !this.selectedPokemon && !this.selectedMove) {
             if (this.searchTerm) {
-                gridContainer.innerHTML = this.renderSearchResults();
+                gridContainer.innerHTML = await this.renderSearchResults();
             } else if (this.currentList === 'pokemon') {
-                gridContainer.innerHTML = this.renderPokemonGrid();
+                gridContainer.innerHTML = await this.renderPokemonGrid();
             } else if (this.currentList === 'fast') {
                 gridContainer.innerHTML = renderMoveList.call(this, 'fast');
             } else if (this.currentList === 'charge') {
@@ -295,7 +295,6 @@ class PokeApp {
             this.attachListListeners();
         }
     }
-
     // ====================================
     // NAVIGATION & VIEW MANAGEMENT
     // ====================================
@@ -451,13 +450,7 @@ class PokeApp {
                 </div>
 
                 <div class="max-w-6xl mx-auto p-4" data-content-grid>
-                    ${this.loading ? 
-                        '<div class="text-black text-center py-20">Loading...</div>' :
-                        this.searchTerm ? this.renderSearchResults() :
-                        this.currentList === 'pokemon' ? this.renderPokemonGrid() :
-                        this.currentList === 'fast' ? renderMoveList.call(this, 'fast') :
-                        renderMoveList.call(this, 'charge')
-                    }
+                    <div class="text-black text-center py-20">Loading...</div>
                 </div>
                 
                 <button class="fab-button fab-left ${leftFab.color} text-white ${fabsHidden}" data-action="set-list" data-list="${leftFab.action}">
