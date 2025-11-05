@@ -47,6 +47,8 @@
             color: white;
             font-weight: bold;
             transition: width 0.3s;
+            white-space: nowrap;
+            position: relative;
         }
         .stat-grid {
             display: grid;
@@ -170,30 +172,26 @@
         </div>
     </div>
 
-    <div style="margin-bottom: 20px; padding: 15px; background: white; border-radius: 8px;">
-        <h3 style="margin-top: 0;">Battle Simulation Settings</h3>
-        <label style="display: inline-block; margin-right: 20px;">
-            <input type="checkbox" id="sim-little" checked> Little League (500 CP)
-        </label>
-        <label style="display: inline-block; margin-right: 20px;">
-            <input type="checkbox" id="sim-great" checked> Great League (1500 CP)
-        </label>
-        <label style="display: inline-block; margin-right: 20px;">
-            <input type="checkbox" id="sim-ultra" checked> Ultra League (2500 CP)
-        </label>
-        <label style="display: inline-block; margin-right: 20px;">
-            <input type="checkbox" id="sim-master" checked> Master League
-        </label>
+    <div style="margin-bottom: 20px; padding: 15px; background: white; border-radius: 8px; display: none;" id="league-selection">
+        <h3 style="margin-top: 0;">Battle Simulation - Select Leagues</h3>
+        <div style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 4px;">
+            <div id="league-checkboxes">
+                <!-- Populated dynamically after scraping -->
+            </div>
+        </div>
+        <div style="margin-top: 15px;">
+            <button onclick="runBattleSimulations()" id="sim-btn">⚔️ Run Battle Simulations</button>
+        </div>
     </div>
 
-    <div>
-        <button onclick="startScraping()" id="scrape-btn">🚀 Start Scraping</button>
+    <div style="margin-bottom: 20px; padding: 15px; background: white; border-radius: 8px;">
+        <button onclick="startScraping()" id="scrape-btn">🚀 Scrape Game Master & Calculate IVs</button>
         <button onclick="viewDatabase()" class="secondary-btn" id="view-btn" disabled>👁️ View Database</button>
         <button onclick="downloadJSON()" class="secondary-btn" id="download-btn" disabled>📥 Download JSON</button>
         <button onclick="clearDatabase()" class="danger-btn">🗑️ Clear Database</button>
     </div>
 
-    <div style="margin-top: 20px; padding: 15px; background: white; border-radius: 8px;">
+    <div style="margin-top: 20px; padding: 15px; background: white; border-radius: 8px; display: none;" id="csv-upload-section">
         <label for="csv-upload" style="display: block; margin-bottom: 10px;">
             <strong>📋 Upload Spreadsheet CSV (Name, Form columns):</strong>
         </label>
@@ -987,10 +985,46 @@
             updateStatus('⚔️ Starting battle simulations...');
             
             const leagueConfigs = [
-                { name: 'little', cpLimit: 500, cpPrune: 500, enabled: document.getElementById('sim-little').checked },
-                { name: 'great', cpLimit: 1500, cpPrune: 1500, enabled: document.getElementById('sim-great').checked },
-                { name: 'ultra', cpLimit: 2500, cpPrune: 2500, enabled: document.getElementById('sim-ultra').checked },
-                { name: 'master', cpLimit: null, cpPrune: 2500, enabled: document.getElementById('sim-master').checked }
+                { 
+                    name: 'little-limited', 
+                    displayName: 'Little League (Limited)',
+                    cpLimit: 500, 
+                    cpPrune: 500, 
+                    enabled: document.getElementById('sim-little-limited').checked,
+                    limitToFirstStage: true
+                },
+                { 
+                    name: 'little-open', 
+                    displayName: 'Little League (Open)',
+                    cpLimit: 500, 
+                    cpPrune: 500, 
+                    enabled: document.getElementById('sim-little-open').checked,
+                    limitToFirstStage: false
+                },
+                { 
+                    name: 'great', 
+                    displayName: 'Great League',
+                    cpLimit: 1500, 
+                    cpPrune: 1500, 
+                    enabled: document.getElementById('sim-great').checked,
+                    limitToFirstStage: false
+                },
+                { 
+                    name: 'ultra', 
+                    displayName: 'Ultra League',
+                    cpLimit: 2500, 
+                    cpPrune: 2500, 
+                    enabled: document.getElementById('sim-ultra').checked,
+                    limitToFirstStage: false
+                },
+                { 
+                    name: 'master', 
+                    displayName: 'Master League',
+                    cpLimit: null, 
+                    cpPrune: 2500, 
+                    enabled: document.getElementById('sim-master').checked,
+                    limitToFirstStage: false
+                }
             ];
             
             const scenarios = [
@@ -1000,16 +1034,16 @@
             
             for (const league of leagueConfigs) {
                 if (!league.enabled) {
-                    updateStatus(`⏭️ Skipping ${league.name} league (disabled)`);
+                    updateStatus(`⏭️ Skipping ${league.displayName} (disabled)`);
                     continue;
                 }
                 
-                updateStatus(`⚔️ Simulating ${league.name} league...`);
+                updateStatus(`⚔️ Simulating ${league.displayName}...`);
                 
                 const eligiblePokemon = getEligiblePokemon(allPokemon, league, allMoves);
                 
                 if (eligiblePokemon.length === 0) {
-                    updateStatus(`⚠️ No eligible Pokemon for ${league.name} league`);
+                    updateStatus(`⚠️ No eligible Pokemon for ${league.displayName}`);
                     continue;
                 }
                 
@@ -1035,7 +1069,7 @@
                 if (global.gc) global.gc();
                 await new Promise(resolve => setTimeout(resolve, 100));
                 
-                updateStatus(`✅ ${league.name} league complete! (${rankings.length} Pokemon ranked)`);
+                updateStatus(`✅ ${league.displayName} complete! (${rankings.length} Pokemon ranked)`);
             }
             
             updateStatus('✅ All battle simulations complete!');
@@ -1045,7 +1079,23 @@
             const eligible = [];
             
             for (const p of allPokemon) {
-                const leagueData = p[league.name];
+                // Check if first stage evolution filter applies
+                if (league.limitToFirstStage) {
+                    // Must have evolutions (can evolve)
+                    if (!p.evolutions || p.evolutions.length === 0) continue;
+                    
+                    // Check if this is a first stage (no pre-evolution)
+                    // Look through all pokemon to see if any evolve INTO this one
+                    const isFirstStage = !allPokemon.some(other => 
+                        other.evolutions && other.evolutions.some(evo => 
+                            evo.name === p.name && (evo.form === p.form || (!evo.form && !p.form))
+                        )
+                    );
+                    
+                    if (!isFirstStage) continue;
+                }
+                
+                const leagueData = p[league.name.replace('-limited', '').replace('-open', '')];
                 if (!leagueData) continue;
                 
                 if (league.name === 'master') {
@@ -1109,8 +1159,7 @@
             
             for (let i = 0; i < movesets.length; i++) {
                 const moveset1 = movesets[i];
-                const p1VariantId = moveset1.pokemon.variantId;  // ✓ Store before nullifying
-                const p1Data = results.get(p1VariantId);
+                const p1Data = results.get(moveset1.pokemon.variantId);
                 
                 for (let j = 0; j < movesets.length; j++) {
                     if (i === j) continue;
@@ -1138,8 +1187,6 @@
                         }
                     }
                     
-                    // After processing all scenarios for this opponent, clear temp data: moveset2.pokemon = null;
-                    console.log("Matchup complete:", i, j);
                     matchupsCompleted++;
                     
                     if (matchupsCompleted % 50 === 0) {
@@ -1148,8 +1195,6 @@
                         await new Promise(resolve => setTimeout(resolve, 0));
                     }
                 }
-                
-                // Clear this moveset's pokemon reference after it's done as attacker: moveset1.pokemon = null;
             }
             
             updateProgress(totalMatchups, totalMatchups, 
@@ -1444,7 +1489,7 @@
                 await calculateTypeEffectiveness();
 
                 document.getElementById('progress-container').style.display = 'none';
-                updateStatus('✅ Scraping complete! Data saved to IndexedDB.');
+                updateStatus('✅ Scraping complete! Data saved to IndexedDB. Select leagues below to run battle simulations.');
                 updateStats({
                     pokemon: pokemon.length,
                     fastPvP: moves.filter(m => m.category === 'fast' && m.mode === 'pvp').length,
@@ -1453,15 +1498,9 @@
                     chargePvE: moves.filter(m => m.category === 'charge' && m.mode === 'pve').length
                 });
                 
-                const typeEffData = await loadFromDatabase('typeEffectiveness');
-                const damageMatrixData = typeEffData.find(d => d.id === 'damageMatrix');
-                
-                if (damageMatrixData) {
-                    await calculateRankings(pokemon, moves, damageMatrixData.matrix, damageMatrixData.defenderTypes);
-                }
-                
                 document.getElementById('view-btn').disabled = false;
                 document.getElementById('download-btn').disabled = false;
+                document.getElementById('league-selection').style.display = 'block';
                 
             } catch (error) {
                 updateStatus(`❌ Error: ${error.message}`);
@@ -1469,6 +1508,33 @@
             } finally {
                 btn.disabled = false;
                 btn.textContent = '🔄 Re-scrape Data';
+            }
+        }
+
+        async function runBattleSimulations() {
+            const btn = document.getElementById('sim-btn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Simulating...';
+            
+            try {
+                const allPokemon = await loadFromDatabase('pokemon');
+                const allMoves = await loadFromDatabase('moves');
+                const typeEffData = await loadFromDatabase('typeEffectiveness');
+                const damageMatrixData = typeEffData.find(d => d.id === 'damageMatrix');
+                
+                if (damageMatrixData) {
+                    await calculateRankings(allPokemon, allMoves, damageMatrixData.matrix, damageMatrixData.defenderTypes);
+                }
+                
+                document.getElementById('progress-container').style.display = 'none';
+                updateStatus('✅ All battle simulations complete!');
+                
+            } catch (error) {
+                updateStatus(`❌ Simulation Error: ${error.message}`);
+                console.error('Simulation error:', error);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '⚔️ Run Battle Simulations';
             }
         }
 
