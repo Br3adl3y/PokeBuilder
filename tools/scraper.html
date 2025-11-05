@@ -204,7 +204,7 @@
     <script>
         const GAME_MASTER_URL = 'https://raw.githubusercontent.com/PokeMiners/game_masters/master/latest/latest.json';
         const DB_NAME = 'PokemonGoDB';
-        const DB_VERSION = 5;
+        const DB_VERSION = 1;
         let db = null;
         let spreadsheetData = null;
 
@@ -619,6 +619,12 @@
                     
                     const rankingsStore = db.createObjectStore('rankings', { keyPath: 'id' });
                     rankingsStore.createIndex('league', 'league', { unique: false });
+                    db.createObjectStore('cups', { keyPath: 'id' });
+                    
+                    const userPokemonStore = db.createObjectStore('userPokemon', { keyPath: 'id' });
+                    userPokemonStore.createIndex('name', 'name', { unique: false });
+                    userPokemonStore.createIndex('dateAdded', 'dateAdded', { unique: false });
+                    userPokemonStore.createIndex('dateCaught', 'dateCaught', { unique: false });
                 };
             });
         }
