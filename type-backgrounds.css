@@ -253,8 +253,8 @@
     background-repeat: no-repeat !important;
     position: relative;
     overflow: hidden;
-    --flare-color-1: rgba(255, 255, 255, 0.15);
-    --flare-color-2: rgba(160, 217, 180, 0.6);
+    --flare-color-1: rgba(255, 255, 255, 0.3);
+    --flare-color-2: rgba(160, 217, 180, 0.4);
     --flare-color-3: rgba(127, 200, 169, 0.85);
 }
 
@@ -286,8 +286,8 @@
     background-repeat: no-repeat !important;
     position: relative;
     overflow: hidden;
-    --flare-color-1: rgba(240, 220, 80, 0.15);
-    --flare-color-2: rgba(255, 240, 100, 0.6);
+    --flare-color-1: rgba(240, 220, 80, 0.3);
+    --flare-color-2: rgba(255, 240, 100, 0.4);
     --flare-color-3: rgba(250, 230, 90, 0.85);
 }
 
@@ -368,8 +368,8 @@
     background-repeat: no-repeat !important;
     position: relative;
     overflow: hidden;
-    --flare-color-1: rgba(255, 255, 255, 0.15);
-    --flare-color-2: rgba(255, 240, 200, 0.6);
+    --flare-color-1: rgba(255, 255, 255, 0.3);
+    --flare-color-2: rgba(255, 240, 200, 0.4);
     --flare-color-3: rgba(255, 230, 180, 0.85);
 }
 
@@ -515,8 +515,8 @@
     background-repeat: no-repeat !important;
     position: relative;
     overflow: hidden;
-    --flare-color-1: rgba(255, 255, 255, 0.15);
-    --flare-color-2: rgba(255, 240, 200, 0.6);
+    --flare-color-1: rgba(255, 255, 255, 0.3);
+    --flare-color-2: rgba(255, 240, 200, 0.4);
     --flare-color-3: rgba(255, 230, 180, .85);
 }
 
@@ -531,8 +531,8 @@
     background-repeat: no-repeat !important;
     position: relative;
     overflow: hidden;
-    --flare-color-1: rgba(138, 43, 226, 0.15);
-    --flare-color-2: rgba(138, 43, 226, 0.6);
+    --flare-color-1: rgba(138, 43, 226, 0.3);
+    --flare-color-2: rgba(138, 43, 226, 0.4);
     --flare-color-3: rgba(75, 0, 130, 0.85);
 }
 
@@ -547,8 +547,8 @@
     background-repeat: no-repeat !important;
     position: relative;
     overflow: hidden;
-    --flare-color-1: rgba(255, 255, 255, 0.15);
-    --flare-color-2: rgba(200, 200, 200, 0.6);
+    --flare-color-1: rgba(255, 255, 255, 0.3);
+    --flare-color-2: rgba(200, 200, 200, 0.4);
     --flare-color-3: rgba(160, 160, 160, 0.85);
 }
 
