@@ -182,7 +182,21 @@ async function renderPokemonDetail() {
     const spriteUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/${spriteId}.gif`;                
     const chain = getEvolutionChain.call(this, p);
     const isSingleType = p.types.length === 1;
-    const typeBgClass = `type-bg-${p.types[0].toLowerCase()}`;
+    
+    // Determine which types need lens flares
+    const lensFlareTypes = ['bug', 'dragon', 'fighting', 'normal', 'poison', 'rock'];
+    // Determine which types need smoke effects
+    const smokeEffectTypes = ['dark', 'ghost', 'ground'];
+
+    const primaryType = p.types[0].toLowerCase();
+    let typeBgClass = `type-bg-${primaryType}`;
+
+    if (lensFlareTypes.includes(primaryType)) {
+        typeBgClass += ' lens-flare';
+    }
+    if (smokeEffectTypes.includes(primaryType)) {
+        typeBgClass += ' smoke-effect';
+    }
 
     // Get all Pokemon in evolution chain for IV buttons (deduplicated)
     const getAllChainPokemon = (tree) => {

@@ -1,12 +1,31 @@
 /* ============================================
-   LENS FLARE PROTOCOL - Reusable Animation System
-   ============================================
-   Usage: Add .lens-flare class to any type background
-   The ::before and ::after will automatically get lens flares
-   Customize colors with CSS variables on each type
+   REUSABLE ANIMATION SYSTEMS
    ============================================ */
-
-/* Lens flare protocol keyframes */
+/* ============================================
+   USAGE GUIDE
+   ============================================
+   
+   LENS FLARE TYPES (add both classes):
+   <div class="type-bg-bug lens-flare">Content</div>
+   <div class="type-bg-dragon lens-flare">Content</div>
+   <div class="type-bg-fighting lens-flare">Content</div>
+   <div class="type-bg-normal lens-flare">Content</div>
+   <div class="type-bg-poison lens-flare">Content</div>
+   <div class="type-bg-rock lens-flare">Content</div>
+   
+   SMOKE EFFECT TYPES (add both classes):
+   <div class="type-bg-dark smoke-effect">Content</div>
+   <div class="type-bg-ghost smoke-effect">Content</div>
+   <div class="type-bg-ground smoke-effect">Content</div>
+   
+   STANDARD TYPES (single class):
+   <div class="type-bg-fairy">Content</div>
+   <div class="type-bg-flying">Content</div>
+   <div class="type-bg-grass">Content</div>
+   <div class="type-bg-ice">Content</div>
+   
+   ============================================ */
+/* LENS FLARE PROTOCOL - Add .lens-flare class to any type */
 @keyframes lens-flare-1 {
     0% {
         opacity: 0;
@@ -93,7 +112,6 @@
     }
 }
 
-/* Reusable lens flare system - add .lens-flare to any type */
 .lens-flare::before {
     content: '';
     position: absolute;
@@ -133,67 +151,17 @@
     z-index: 1;
 }
 
-/* ============================================
-   USAGE NOTES
-   ============================================
-   
-   To use lens flares on any type:
-   <div class="type-bg-water lens-flare">Content</div>
-   
-   Customize lens flare colors with CSS variables:
-   .type-bg-water {
-       --flare-color-1: rgba(100, 200, 255, 0.8);
-       --flare-color-2: rgba(100, 200, 255, 0.4);
-       --flare-color-3: rgba(100, 200, 255, 0.2);
-   }
-   
-   ============================================ */
-
-
-/* ============================================
-   BUG TYPE - Light Green/Teal with Lens Flares
-   ============================================ */
-
-.type-bg-bug {
-    /* Fallback gradient */
-    background: linear-gradient(180deg, #A0D9B4 0%, #7FC8A9 100%) !important;
-    
-    /* Official Pokemon GO background image */
-    background-image: url('https://github.com/PokeMiners/pogo_assets/blob/master/Images/Catch%20Card/CatchCard_TypeBG_Bug.png?raw=true') !important;
-    background-size: cover !important;
-    background-position: center !important;
-    background-repeat: no-repeat !important;
-    
-    position: relative;
-    overflow: hidden;
-    
-    /* Custom lens flare colors for bug type */
-    --flare-color-1: rgba(255, 255, 255, 0.8);
-    --flare-color-2: rgba(160, 217, 180, 0.4);
-    --flare-color-3: rgba(127, 200, 169, 0.25);
-}
-
-/* Ensure content stays above effects */
-.type-bg-bug > * {
-    position: relative;
-    z-index: 2;
-}
-
-/* ============================================
-   DARK TYPE - Dark Blue/Black with Drifting Smoke
-   ============================================ */
-
-/* Smoke cloud drift animations */
+/* SMOKE EFFECT PROTOCOL - Add .smoke-effect class to any type */
 @keyframes smoke-drift-1 {
     0% {
         opacity: 0;
         left: -25%;
     }
     10% {
-        opacity: 0.8;
+        opacity: var(--smoke-opacity-1, 0.8);
     }
     90% {
-        opacity: 0.7;
+        opacity: var(--smoke-opacity-1, 0.7);
     }
     100% {
         opacity: 0;
@@ -207,10 +175,10 @@
         left: -30%;
     }
     15% {
-        opacity: 0.85;
+        opacity: var(--smoke-opacity-2, 0.85);
     }
     85% {
-        opacity: 0.75;
+        opacity: var(--smoke-opacity-2, 0.75);
     }
     100% {
         opacity: 0;
@@ -218,184 +186,357 @@
     }
 }
 
-.type-bg-dark {
-    /* Fallback gradient */
-    background: linear-gradient(180deg, #0a0a0a 0%, #000000 100%) !important;
-    
-    /* Official Pokemon GO background image */
-    background-image: url('https://github.com/PokeMiners/pogo_assets/blob/master/Images/Catch%20Card/CatchCard_TypeBG_Dark.png?raw=true') !important;
-    background-size: cover !important;
-    background-position: center !important;
-    background-repeat: no-repeat !important;
-    
-    position: relative;
-    overflow: hidden;
-}
-
-/* First smoke cloud - larger, slower, more opaque */
-.type-bg-dark::before {
+.smoke-effect::before {
     content: '';
     position: absolute;
     bottom: 0;
-    width: 60%;
-    height: 45%;
-    
-    /* Dark translucent smoke cloud - bigger and more opaque */
+    width: var(--smoke-width-1, 60%);
+    height: var(--smoke-height-1, 45%);
     background: radial-gradient(
         ellipse 100% 80% at 50% 70%,
-        rgba(15, 15, 35, 0.9) 0%,
-        rgba(25, 25, 45, 0.75) 25%,
-        rgba(35, 35, 55, 0.6) 50%,
-        rgba(45, 45, 65, 0.4) 75%,
+        var(--smoke-color-1, rgba(15, 15, 35, 0.9)) 0%,
+        var(--smoke-color-2, rgba(25, 25, 45, 0.75)) 25%,
+        var(--smoke-color-3, rgba(35, 35, 55, 0.6)) 50%,
+        var(--smoke-color-4, rgba(45, 45, 65, 0.4)) 75%,
         transparent 100%
     );
-    
     filter: blur(30px);
-    animation: smoke-drift-1 20s linear infinite;
+    animation: smoke-drift-1 var(--smoke-duration-1, 20s) linear infinite;
     pointer-events: none;
     z-index: 1;
 }
 
-/* Second smoke cloud - smaller, faster, more opaque */
-.type-bg-dark::after {
+.smoke-effect::after {
     content: '';
     position: absolute;
     bottom: 5%;
-    width: 50%;
-    height: 40%;
-    
-    /* Dark translucent smoke cloud - bigger and more opaque */
+    width: var(--smoke-width-2, 50%);
+    height: var(--smoke-height-2, 40%);
     background: radial-gradient(
         ellipse 100% 75% at 50% 60%,
-        rgba(20, 20, 40, 0.85) 0%,
-        rgba(30, 30, 50, 0.7) 30%,
-        rgba(40, 40, 60, 0.5) 60%,
-        rgba(50, 50, 70, 0.3) 80%,
+        var(--smoke-color-1, rgba(20, 20, 40, 0.85)) 0%,
+        var(--smoke-color-2, rgba(30, 30, 50, 0.7)) 30%,
+        var(--smoke-color-3, rgba(40, 40, 60, 0.5)) 60%,
+        var(--smoke-color-4, rgba(50, 50, 70, 0.3)) 80%,
         transparent 100%
     );
-    
     filter: blur(25px);
-    animation: smoke-drift-2 15s linear infinite;
+    animation: smoke-drift-2 var(--smoke-duration-2, 15s) linear infinite;
     animation-delay: 7s;
     pointer-events: none;
     z-index: 1;
 }
 
-/* Ensure content stays above effects */
-.type-bg-dark > * {
+/* ============================================
+   POKEMON TYPE BACKGROUNDS
+   ============================================ */
+
+/* BUG TYPE - Add .lens-flare class in HTML */
+.type-bg-bug {
+    background: linear-gradient(180deg, #A0D9B4 0%, #7FC8A9 100%) !important;
+    background-image: url('https://github.com/PokeMiners/pogo_assets/blob/master/Images/Catch%20Card/CatchCard_TypeBG_Bug.png?raw=true') !important;
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
     position: relative;
-    z-index: 2;
+    overflow: hidden;
+    --flare-color-1: rgba(255, 255, 255, 0.8);
+    --flare-color-2: rgba(160, 217, 180, 0.4);
+    --flare-color-3: rgba(127, 200, 169, 0.25);
 }
 
-/* ============================================
-   FIGHTING TYPE - Blurry Dojo with Doorway
-   ============================================ */
-.type-bg-fighting {
-    background: linear-gradient(180deg, #8B4513 0%, #D2B48C 100%) !important;
+/* DARK TYPE - Add .smoke-effect class in HTML */
+.type-bg-dark {
+    background: linear-gradient(180deg, #0a0a0a 0%, #000000 100%) !important;
+    background-image: url('https://github.com/PokeMiners/pogo_assets/blob/master/Images/Catch%20Card/CatchCard_TypeBG_Dark.png?raw=true') !important;
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+    position: relative;
+    overflow: hidden;
+    --smoke-color-1: rgba(15, 15, 35, 0.9);
+    --smoke-color-2: rgba(25, 25, 45, 0.75);
+    --smoke-color-3: rgba(35, 35, 55, 0.6);
+    --smoke-color-4: rgba(45, 45, 65, 0.4);
+}
+
+/* DRAGON TYPE - Add .lens-flare class in HTML */
+.type-bg-dragon {
+    background: radial-gradient(ellipse at center, #6b7d2f 0%, #5b6d1f 50%, #4b5d1f 100%) !important;
+    background-image: url('https://github.com/PokeMiners/pogo_assets/blob/master/Images/Catch%20Card/CatchCard_TypeBG_Dragon.png?raw=true') !important;
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+    position: relative;
+    overflow: hidden;
+    --flare-color-1: rgba(240, 220, 80, 0.8);
+    --flare-color-2: rgba(255, 240, 100, 0.5);
+    --flare-color-3: rgba(250, 230, 90, 0.3);
+}
+
+/* FAIRY TYPE - Improved gradient from image */
+.type-bg-fairy {
+    background: linear-gradient(180deg, #E8A5D8 0%, #C77AB8 50%, #9B5FA0 100%) !important;
     position: relative;
     overflow: hidden;
 }
 
-/* Outdoor gradient behind everything */
-.type-bg-fighting::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 50%;
-    background: linear-gradient(180deg, 
-        rgba(255, 255, 255, 0.9) 0%,
-        rgba(200, 255, 100, 0.85) 50%,
-        rgba(144, 238, 144, 0.8) 100%);
-    z-index: 0;
+@keyframes orb-pulse {
+    0%, 100% {
+        opacity: 0.7;
+        filter: blur(3px);
+    }
+    50% {
+        opacity: 1;
+        filter: blur(5px);
+    }
 }
 
-/* Grid wall with doorway cutout at bottom center */
-.type-bg-fighting::after {
+.type-bg-fairy::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 50%;
-    background: 
-        repeating-linear-gradient(0deg, 
-            transparent, transparent 19px, 
-            rgba(101, 67, 33, 0.7) 19px, rgba(101, 67, 33, 0.7) 21px),
-        repeating-linear-gradient(90deg, 
-            transparent, transparent 19px, 
-            rgba(101, 67, 33, 0.7) 19px, rgba(101, 67, 33, 0.7) 21px),
-        #D2B48C;
-    clip-path: polygon(
-        0% 0%,
-        0% 100%,
-        30% 100%,
-        30% 41.5%,
-        70% 41.5%,
-        70% 100%,
-        100% 100%,
-        100% 0%
-    );
-    filter: blur(3px);
+    top: 30%;
+    left: 20%;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: radial-gradient(circle, 
+        rgba(255, 105, 180, 1) 0%,
+        rgba(255, 105, 180, 0.8) 30%,
+        rgba(255, 182, 193, 0.5) 60%,
+        transparent 80%);
+    animation: orb-pulse 3s ease-in-out infinite;
     z-index: 1;
 }
 
-.type-bg-fighting img {
-    position: relative;
-    z-index: 2;
+.type-bg-fairy::after {
+    content: '';
+    position: absolute;
+    top: 60%;
+    left: 70%;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background: radial-gradient(circle, 
+        rgba(255, 105, 180, 1) 0%,
+        rgba(255, 105, 180, 0.8) 30%,
+        rgba(255, 182, 193, 0.5) 60%,
+        transparent 80%);
+    animation: orb-pulse 3.5s ease-in-out infinite;
+    animation-delay: 1s;
+    z-index: 1;
 }
 
-/* ============================================
-   ROCK TYPE - Mountain Range
-   ============================================ */
-.type-bg-rock {
-    background: linear-gradient(180deg, #87CEEB 0%, #B0D8F0 100%) !important;
+/* FIGHTING TYPE - Add .lens-flare class in HTML */
+.type-bg-fighting {
+    background: linear-gradient(180deg, #8B4513 0%, #D2B48C 100%) !important;
+    background-image: url('https://github.com/PokeMiners/pogo_assets/blob/master/Images/Catch%20Card/CatchCard_TypeBG_Fighting.png?raw=true') !important;
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+    position: relative;
+    overflow: hidden;
+    --flare-color-1: rgba(255, 255, 255, 0.7);
+    --flare-color-2: rgba(255, 240, 200, 0.4);
+    --flare-color-3: rgba(255, 230, 180, 0.2);
+}
+
+/* FLYING TYPE */
+.type-bg-flying {
+    background: linear-gradient(180deg, #87CEEB 0%, #B0E0E6 100%) !important;
+    background-image: url('https://github.com/PokeMiners/pogo_assets/blob/master/Images/Catch%20Card/CatchCard_TypeBG_Flying.png?raw=true') !important;
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
     position: relative;
     overflow: hidden;
 }
 
-/* Mountain range with blur following RED LINE from Cranidos image */
-.type-bg-rock::before {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: #A0826D;
-    clip-path: polygon(
-        0% 100%,
-        0% 25%,
-        5% 18%,
-        10% 22%,
-        15% 30%,
-        20% 35%,
-        25% 32%,
-        30% 28%,
-        35% 30%,
-        40% 35%,
-        45% 38%,
-        50% 38%,
-        55% 38%,
-        60% 38%,
-        65% 35%,
-        70% 30%,
-        75% 28%,
-        80% 25%,
-        85% 30%,
-        90% 20%,
-        95% 28%,
-        100% 22%,
-        100% 100%
-    );
-    filter: blur(4px);
-    z-index: 0;
+/* GHOST TYPE - Add .smoke-effect class in HTML */
+.type-bg-ghost {
+    background: radial-gradient(circle at 70% 20%, rgba(255, 223, 100, 0.9) 3%, rgba(255, 223, 100, 0.4) 6%, transparent 10%),
+        linear-gradient(180deg, #1a0f2e 0%, #2d1b3d 50%, #0d0515 100%) !important;
+    position: relative;
+    overflow: hidden;
+    --smoke-color-1: rgba(200, 200, 220, 0.5);
+    --smoke-color-2: rgba(180, 180, 200, 0.4);
+    --smoke-color-3: rgba(160, 160, 180, 0.3);
+    --smoke-color-4: rgba(140, 140, 160, 0.2);
+    --smoke-width-1: 70%;
+    --smoke-height-1: 50%;
 }
 
-.type-bg-rock img {
+/* GRASS TYPE - Improved gradient from image */
+.type-bg-grass {
+    background: linear-gradient(180deg, #A5D9E8 0%, #90C890 40%, #7AC74C 70%, #5FA54C 100%) !important;
     position: relative;
-    z-index: 3;
+    overflow: hidden;
+}
+
+@keyframes leaf-fall-1 {
+    0% {
+        transform: translate(0, -50px) rotate(0deg);
+        opacity: 0;
+    }
+    10% {
+        opacity: 0.8;
+    }
+    100% {
+        transform: translate(80px, 450px) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+@keyframes leaf-fall-2 {
+    0% {
+        transform: translate(0, -50px) rotate(0deg);
+        opacity: 0;
+    }
+    10% {
+        opacity: 0.7;
+    }
+    100% {
+        transform: translate(120px, 450px) rotate(-360deg);
+        opacity: 0;
+    }
+}
+
+.type-bg-grass::before {
+    content: '';
+    position: absolute;
+    top: -30px;
+    left: 20%;
+    width: 12px;
+    height: 20px;
+    background: radial-gradient(ellipse, rgba(100, 200, 50, 0.8) 0%, transparent 70%);
+    border-radius: 50%;
+    animation: leaf-fall-1 8s ease-in infinite;
+    z-index: 1;
+}
+
+.type-bg-grass::after {
+    content: '';
+    position: absolute;
+    top: -30px;
+    left: 60%;
+    width: 14px;
+    height: 22px;
+    background: radial-gradient(ellipse, rgba(120, 220, 70, 0.75) 0%, transparent 70%);
+    border-radius: 50%;
+    animation: leaf-fall-2 10s ease-in infinite 3s;
+    z-index: 1;
+}
+
+/* GROUND TYPE - Add .smoke-effect class in HTML */
+.type-bg-ground {
+    background: linear-gradient(180deg, #C19A6B 0%, #A0826D 50%, #8B7355 100%) !important;
+    background-image: url('https://github.com/PokeMiners/pogo_assets/blob/master/Images/Catch%20Card/CatchCard_TypeBG_Ground.png?raw=true') !important;
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+    position: relative;
+    overflow: hidden;
+    --smoke-color-1: rgba(193, 154, 107, 0.7);
+    --smoke-color-2: rgba(160, 130, 109, 0.6);
+    --smoke-color-3: rgba(139, 115, 85, 0.5);
+    --smoke-color-4: rgba(120, 100, 70, 0.3);
+    --smoke-opacity-1: 0.6;
+    --smoke-opacity-2: 0.7;
+}
+
+/* ICE TYPE */
+.type-bg-ice {
+    background: linear-gradient(180deg, #b3e5fc 0%, #81d4fa 100%) !important;
+    background-image: url('https://github.com/PokeMiners/pogo_assets/blob/master/Images/Catch%20Card/CatchCard_TypeBG_Ice.png?raw=true') !important;
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+    position: relative;
+    overflow: hidden;
+}
+
+@keyframes snow-fall {
+    0% {
+        transform: translateY(-50px) translateX(0) rotate(0deg);
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(400px) translateX(50px) rotate(360deg);
+        opacity: 0.3;
+    }
+}
+
+.type-bg-ice::before,
+.type-bg-ice::after {
+    content: '';
+    position: absolute;
+    top: -50px;
+    width: 100%;
+    height: 100%;
+    background-image:
+        radial-gradient(circle, rgba(255, 255, 255, 1) 2.5px, transparent 2.5px),
+        radial-gradient(circle, rgba(230, 245, 255, 0.9) 3px, transparent 3px),
+        radial-gradient(circle, rgba(240, 250, 255, 0.95) 2px, transparent 2px);
+    background-size: 67px 127px, 89px 157px, 59px 109px;
+    background-position: 13% 0, 57% 37px, 87% 13px;
+    animation: snow-fall 12s linear infinite;
+    z-index: 1;
+}
+
+.type-bg-ice::after {
+    animation-delay: 6s;
+    background-position: 37% 23px, 71% 0, 97% 47px;
+}
+
+/* NORMAL TYPE - Add .lens-flare class in HTML */
+.type-bg-normal {
+    background: linear-gradient(180deg, #FFE5CC 0%, #FFDAB9 63%, #e2a269 70%, #5fd15f 75%, #cdfb98c0 100%) !important;
+    background-image: url('https://github.com/PokeMiners/pogo_assets/blob/master/Images/Catch%20Card/CatchCard_TypeBG_Normal.png?raw=true') !important;
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+    position: relative;
+    overflow: hidden;
+    --flare-color-1: rgba(255, 255, 255, 0.6);
+    --flare-color-2: rgba(255, 240, 200, 0.4);
+    --flare-color-3: rgba(255, 230, 180, 0.2);
+}
+
+/* POISON TYPE - Add .lens-flare class in HTML */
+.type-bg-poison {
+    background: linear-gradient(135deg, #1a0033 0%, #0f0028 25%, #1a004d 50%, #0a001f 75%, #1a0040 100%) !important;
+    background-image: url('https://github.com/PokeMiners/pogo_assets/blob/master/Images/Catch%20Card/CatchCard_TypeBG_Poison.png?raw=true') !important;
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+    position: relative;
+    overflow: hidden;
+    --flare-color-1: rgba(138, 43, 226, 0.6);
+    --flare-color-2: rgba(138, 43, 226, 0.4);
+    --flare-color-3: rgba(75, 0, 130, 0.3);
+}
+
+/* ROCK TYPE - Add .lens-flare class in HTML */
+.type-bg-rock {
+    background: linear-gradient(180deg, #87CEEB 0%, #B0D8F0 100%) !important;
+    background-image: url('https://github.com/PokeMiners/pogo_assets/blob/master/Images/Catch%20Card/CatchCard_TypeBG_Rock.png?raw=true') !important;
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+    position: relative;
+    overflow: hidden;
+    --flare-color-1: rgba(255, 255, 255, 0.6);
+    --flare-color-2: rgba(200, 200, 200, 0.4);
+    --flare-color-3: rgba(160, 160, 160, 0.2);
+}
+
+/* Ensure content stays above effects */
+[class*="type-bg-"] > * {
+    position: relative;
+    z-index: 2;
 }
 
 /* ============================================
@@ -599,478 +740,6 @@
 }
 
 .type-bg-fire img {
-    position: relative;
-    z-index: 1;
-}
-
-/* ============================================
-   GRASS TYPE - Green Gradient to Sky Blue + Falling Leaves
-   ============================================ */
-@keyframes leaf-fall-1 {
-    0% {
-        transform: translate(0, -50px) rotate(0deg);
-        opacity: 0;
-    }
-    10% {
-        opacity: 0.8;
-    }
-    100% {
-        transform: translate(80px, 450px) rotate(360deg);
-        opacity: 0;
-    }
-}
-
-@keyframes leaf-fall-2 {
-    0% {
-        transform: translate(0, -50px) rotate(0deg);
-        opacity: 0;
-    }
-    10% {
-        opacity: 0.7;
-    }
-    100% {
-        transform: translate(120px, 450px) rotate(-360deg);
-        opacity: 0;
-    }
-}
-
-@keyframes leaf-fall-3 {
-    0% {
-        transform: translate(0, -50px) rotate(0deg);
-        opacity: 0;
-    }
-    10% {
-        opacity: 0.75;
-    }
-    100% {
-        transform: translate(60px, 450px) rotate(360deg);
-        opacity: 0;
-    }
-}
-
-.type-bg-grass {
-    background: linear-gradient(180deg, #87ceeb 0%, #90ee90 50%, #7ac74c 100%) !important;
-    position: relative;
-    overflow: hidden;
-}
-
-.type-bg-grass::before {
-    content: '';
-    position: absolute;
-    top: -30px;
-    left: 20%;
-    width: 12px;
-    height: 20px;
-    background: radial-gradient(ellipse, rgba(100, 200, 50, 0.8) 0%, transparent 70%);
-    border-radius: 50%;
-    animation: leaf-fall-1 8s ease-in infinite;
-    z-index: 0;
-}
-
-.type-bg-grass::after {
-    content: '';
-    position: absolute;
-    top: -30px;
-    left: 60%;
-    width: 14px;
-    height: 22px;
-    background: radial-gradient(ellipse, rgba(120, 220, 70, 0.75) 0%, transparent 70%);
-    border-radius: 50%;
-    animation: leaf-fall-2 10s ease-in infinite 3s;
-    z-index: 0;
-}
-
-.type-bg-grass img {
-    position: relative;
-    z-index: 1;
-}
-
-/* ============================================
-   GHOST TYPE - Foggy Graveyard with Yellow Moon
-   ============================================ */
-@keyframes fog-roll {
-    0% {
-        transform: translateX(-100%);
-    }
-    100% {
-        transform: translateX(100%);
-    }
-}
-
-.type-bg-ghost {
-    background: 
-        radial-gradient(circle at 70% 20%, rgba(255, 223, 100, 0.9) 3%, rgba(255, 223, 100, 0.4) 6%, transparent 10%),
-        linear-gradient(180deg, #1a0f2e 0%, #2d1b3d 50%, #0d0515 100%) !important;
-    position: relative;
-    overflow: hidden;
-}
-
-.type-bg-ghost::before,
-.type-bg-ghost::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: -100%;
-    width: 200%;
-    height: 40%;
-    background: linear-gradient(90deg, 
-        transparent 0%,
-        rgba(200, 200, 220, 0.4) 25%,
-        rgba(180, 180, 200, 0.5) 50%,
-        rgba(200, 200, 220, 0.4) 75%,
-        transparent 100%);
-    animation: fog-roll 15s linear infinite;
-    filter: blur(8px);
-    z-index: 0;
-}
-
-.type-bg-ghost::after {
-    animation-delay: 7.5s;
-    height: 50%;
-    opacity: 0.6;
-}
-
-.type-bg-ghost img {
-    position: relative;
-    z-index: 1;
-}
-
-/* ============================================
-   ICE TYPE - Light Blue + Falling Snowflakes
-   ============================================ */
-@keyframes snow-fall {
-    0% {
-        transform: translateY(-50px) translateX(0) rotate(0deg);
-        opacity: 0;
-    }
-    10% {
-        opacity: 1;
-    }
-    100% {
-        transform: translateY(400px) translateX(50px) rotate(360deg);
-        opacity: 0.3;
-    }
-}
-
-.type-bg-ice {
-    background: linear-gradient(180deg, #b3e5fc 0%, #81d4fa 100%) !important;
-    position: relative;
-    overflow: hidden;
-}
-
-.type-bg-ice::before,
-.type-bg-ice::after {
-    content: '';
-    position: absolute;
-    top: -50px;
-    width: 100%;
-    height: 100%;
-    background-image:
-        radial-gradient(circle, rgba(255, 255, 255, 1) 2.5px, transparent 2.5px),
-        radial-gradient(circle, rgba(230, 245, 255, 0.9) 3px, transparent 3px),
-        radial-gradient(circle, rgba(240, 250, 255, 0.95) 2px, transparent 2px);
-    background-size: 67px 127px, 89px 157px, 59px 109px;
-    background-position: 13% 0, 57% 37px, 87% 13px;
-    animation: snow-fall 12s linear infinite;
-    z-index: 0;
-}
-
-.type-bg-ice::after {
-    animation-delay: 6s;
-    background-position: 37% 23px, 71% 0, 97% 47px;
-}
-
-.type-bg-ice img {
-    position: relative;
-    z-index: 1;
-}
-
-/* ============================================
-   DRAGON TYPE - Yellow Scales on Green Background
-   ============================================ */
-@keyframes scale-pulse {
-    0%, 100% {
-        opacity: 0.4;
-        transform: scale(0.95);
-    }
-    50% {
-        opacity: 0.7;
-        transform: scale(1);
-    }
-}
-
-.type-bg-dragon {
-    background: radial-gradient(ellipse at center, #6b7d2f 0%, #5b6d1f 50%, #4b5d1f 100%) !important;
-    position: relative;
-    overflow: hidden;
-}
-
-.type-bg-dragon::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-image:
-        radial-gradient(ellipse 52px 82px at 15% 20%, rgba(240, 220, 80, 0.7) 0%, transparent 50%),
-        radial-gradient(ellipse 60px 90px at 45% 15%, rgba(255, 240, 100, 0.65) 0%, transparent 50%),
-        radial-gradient(ellipse 45px 75px at 75% 25%, rgba(250, 230, 90, 0.7) 0%, transparent 50%),
-        radial-gradient(ellipse 68px 98px at 25% 50%, rgba(235, 215, 70, 0.65) 0%, transparent 50%),
-        radial-gradient(ellipse 57px 87px at 60% 45%, rgba(255, 245, 110, 0.7) 0%, transparent 50%),
-        radial-gradient(ellipse 48px 78px at 85% 55%, rgba(245, 225, 85, 0.65) 0%, transparent 50%),
-        radial-gradient(ellipse 63px 93px at 20% 75%, rgba(250, 235, 95, 0.7) 0%, transparent 50%),
-        radial-gradient(ellipse 54px 84px at 50% 80%, rgba(255, 250, 105, 0.65) 0%, transparent 50%),
-        radial-gradient(ellipse 60px 90px at 80% 70%, rgba(240, 220, 80, 0.7) 0%, transparent 50%);
-    filter: blur(6px);
-    animation: scale-pulse 8s ease-in-out infinite;
-    z-index: 0;
-}
-
-.type-bg-dragon::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-image:
-        radial-gradient(ellipse 60px 90px at 30% 60%, rgba(245, 225, 85, 0.65) 0%, transparent 50%),
-        radial-gradient(ellipse 52px 82px at 55% 30%, rgba(250, 235, 95, 0.7) 0%, transparent 50%),
-        radial-gradient(ellipse 63px 93px at 70% 85%, rgba(255, 245, 105, 0.65) 0%, transparent 50%),
-        radial-gradient(ellipse 54px 84px at 10% 45%, rgba(240, 220, 80, 0.7) 0%, transparent 50%),
-        radial-gradient(ellipse 57px 87px at 40% 90%, rgba(250, 230, 90, 0.65) 0%, transparent 50%),
-        radial-gradient(ellipse 51px 81px at 95% 75%, rgba(255, 240, 100, 0.7) 0%, transparent 50%);
-    filter: blur(6px);
-    animation: scale-pulse 8s ease-in-out infinite;
-    animation-delay: 4s;
-    z-index: 0;
-}
-
-.type-bg-dragon img {
-    position: relative;
-    z-index: 1;
-}
-
-/* ============================================
-   FAIRY TYPE - Lavender/Purple + Bright Pink Orbs
-   ============================================ */
-@keyframes orb-float {
-    0%, 100% {
-        transform: translate(0, 0);
-    }
-    33% {
-        transform: translate(30px, -40px);
-    }
-    66% {
-        transform: translate(-20px, -20px);
-    }
-}
-
-@keyframes orb-pulse {
-    0%, 100% {
-        opacity: 0.7;
-        filter: blur(3px);
-    }
-    50% {
-        opacity: 1;
-        filter: blur(5px);
-    }
-}
-
-.type-bg-fairy {
-    background: linear-gradient(180deg, #b19cd9 0%, #9370db 100%) !important;
-    position: relative;
-    overflow: hidden;
-}
-
-.type-bg-fairy::before {
-    content: '';
-    position: absolute;
-    top: 30%;
-    left: 20%;
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    background: radial-gradient(circle, 
-        rgba(255, 105, 180, 1) 0%,
-        rgba(255, 105, 180, 0.8) 30%,
-        rgba(255, 182, 193, 0.5) 60%,
-        transparent 80%);
-    animation: orb-float 8s ease-in-out infinite, orb-pulse 3s ease-in-out infinite;
-    z-index: 0;
-}
-
-.type-bg-fairy::after {
-    content: '';
-    position: absolute;
-    top: 60%;
-    left: 70%;
-    width: 45px;
-    height: 45px;
-    border-radius: 50%;
-    background: radial-gradient(circle, 
-        rgba(255, 105, 180, 1) 0%,
-        rgba(255, 105, 180, 0.8) 30%,
-        rgba(255, 182, 193, 0.5) 60%,
-        transparent 80%);
-    animation: orb-float 10s ease-in-out infinite, orb-pulse 3.5s ease-in-out infinite;
-    animation-delay: 2s, 1s;
-    z-index: 0;
-}
-
-.type-bg-fairy img {
-    position: relative;
-    z-index: 1;
-}
-
-/* ============================================
-   POISON TYPE - Dark Purple/Blue Nether
-   ============================================ */
-@keyframes poison-swirl {
-    0%, 100% {
-        transform: rotate(0deg) scale(1);
-        opacity: 0.4;
-    }
-    50% {
-        transform: rotate(180deg) scale(1.1);
-        opacity: 0.7;
-    }
-}
-
-.type-bg-poison {
-    background: linear-gradient(135deg, #1a0033 0%, #0f0028 25%, #1a004d 50%, #0a001f 75%, #1a0040 100%) !important;
-    position: relative;
-    overflow: hidden;
-}
-
-.type-bg-poison::before,
-.type-bg-poison::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 200px;
-    height: 300px;
-    border-radius: 50%;
-    background: radial-gradient(ellipse, 
-        rgba(138, 43, 226, 0.4) 0%,
-        rgba(75, 0, 130, 0.3) 30%,
-        transparent 70%);
-    filter: blur(20px);
-    animation: poison-swirl 10s ease-in-out infinite;
-    z-index: 0;
-}
-
-.type-bg-poison::after {
-    animation-delay: 5s;
-    width: 250px;
-    height: 250px;
-}
-
-.type-bg-poison img {
-    position: relative;
-    z-index: 1;
-}
-
-/* ============================================
-   GROUND TYPE - Desert + Sandstorm
-   ============================================ */
-@keyframes sand-blow {
-    0% {
-        transform: translateX(-100%);
-        opacity: 0;
-    }
-    20% {
-        opacity: 0.6;
-    }
-    80% {
-        opacity: 0.4;
-    }
-    100% {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-}
-
-.type-bg-ground {
-    background: linear-gradient(180deg, #C19A6B 0%, #A0826D 50%, #8B7355 100%) !important;
-    position: relative;
-    overflow: hidden;
-    filter: blur(2px);
-}
-
-.type-bg-ground::before,
-.type-bg-ground::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 200%;
-    height: 100%;
-    background-image:
-        radial-gradient(circle, rgba(139, 115, 85, 0.6) 1px, transparent 1px),
-        radial-gradient(circle, rgba(160, 130, 109, 0.5) 1.5px, transparent 1.5px);
-    background-size: 37px 61px, 59px 83px;
-    background-position: 0 0, 31px 43px;
-    animation: sand-blow 8s linear infinite;
-    z-index: 0;
-    filter: blur(0);
-}
-
-.type-bg-ground::after {
-    animation-delay: 4s;
-    opacity: 0.7;
-}
-
-.type-bg-ground img {
-    position: relative;
-    z-index: 1;
-    filter: blur(0);
-}
-
-/* ============================================
-   FLYING TYPE - Sky Blue + Clouds
-   ============================================ */
-@keyframes cloud-drift {
-    0% {
-        transform: translateX(-100%);
-    }
-    100% {
-        transform: translateX(100%);
-    }
-}
-
-.type-bg-flying {
-    background: linear-gradient(180deg, #87CEEB 0%, #B0E0E6 100%) !important;
-    position: relative;
-    overflow: hidden;
-}
-
-.type-bg-flying::before,
-.type-bg-flying::after {
-    content: '';
-    position: absolute;
-    top: 20%;
-    left: -50%;
-    width: 150%;
-    height: 40%;
-    background-image:
-        radial-gradient(ellipse 150px 80px at 30% 50%, rgba(255, 255, 255, 0.7) 0%, transparent 70%),
-        radial-gradient(ellipse 120px 60px at 70% 40%, rgba(255, 255, 255, 0.6) 0%, transparent 70%);
-    filter: blur(15px);
-    animation: cloud-drift 30s linear infinite;
-    z-index: 0;
-}
-
-.type-bg-flying::after {
-    top: 60%;
-    animation-duration: 40s;
-    animation-delay: 15s;
-}
-
-.type-bg-flying img {
     position: relative;
     z-index: 1;
 }
@@ -1388,79 +1057,3 @@
     z-index: 3;
 }
 
-/* ============================================
-   NORMAL TYPE - Tree Canopy Silhouette
-   ============================================ */
-.type-bg-normal {
-    background: linear-gradient(180deg, #FFE5CC 0%, #FFDAB9 63%, #e2a269 70%, #5fd15f 75%, #cdfb98c0 100%) !important;
-    position: relative;
-    overflow: hidden;
-    filter: blur(5px);
-}
-
-/* Tree canopy layer with blur */
-.type-bg-normal::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: #796303;
-    clip-path: polygon(
-        0% 100%,
-        0% 10%,
-        /* GAP 1: (0,10) to (38,30) - points in SPATIAL order left to right */
-        3% 11%, 6% 12%, 10% 15%, 13% 17%, 16% 19%, 19% 24%, 22% 25%, 25% 26%, 28% 26%, 30% 28%, 32% 27%, 33% 29%, 35% 31%, 36% 30%,
-        38% 30%,
-        /* GAP 2: (38,30) to (0,62) - points in SPATIAL order right to left */
-        35% 33%, 32% 35%, 28% 39%, 25% 45%, 22% 47%, 19% 50%, 16% 52%, 13% 54%, 9% 57%, 6% 60%, 5% 60%, 3% 61%, 2% 61%, 1% 62%,
-        0% 62%,
-        0% 100%,
-        100% 100%,
-        100% 47%,
-        /* GAP 3: (100,47) to (66,28) - points in SPATIAL order right to left */
-        97% 46%, 94% 45%, 91% 43%, 89% 41%, 86% 40%, 83% 39%, 80% 36%, 77% 34%, 74% 33%, 72% 32%, 70% 31%, 69% 29%, 68% 29%, 67% 28%,
-        66% 28%,
-        /* GAP 4: (66,28) to (100,0) - points in SPATIAL order left to right */
-        68% 27%, 71% 26%, 74% 24%, 77% 22%, 80% 20%, 82% 18%, 85% 14%, 88% 11%, 91% 9%, 94% 7%, 95% 5%, 97% 3%, 98% 2%, 99% 1%,
-        100% 0%,
-        100% 100%
-    );
-    
-    opacity: .9;
-    z-index: 0;
-}
-
-/* Tree canopy layer with blur */
-.type-bg-normal::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: #4A7A3A;
-    clip-path: polygon(
-        0% 100%,
-        0% 10%,
-        /* GAP 1: (0,10) to (38,30) - points in SPATIAL order left to right */
-        4% 10%, 7% 13%, 11% 14%, 14% 18%, 15% 18%, 20% 25%, 23% 24%, 26% 27%, 29% 25%, 31% 29%, 33% 28%, 34% 28%, 36% 32%, 37% 29%,
-        38% 30%,
-        /* GAP 2: (38,30) to (0,62) - points in SPATIAL order right to left */
-        34% 34%, 33% 34%, 29% 40%, 24% 44%, 21% 46%, 20% 51%, 17% 51%, 14% 53%, 8% 56%, 5% 61%, 4% 61%, 2% 62%, 3% 62%, 0% 63%,
-        0% 62%,
-        0% 100%,
-        100% 100%,
-        100% 47%,
-        /* GAP 3: (100,47) to (66,28) - points in SPATIAL order right to left */
-        98% 47%, 95% 46%, 92% 42%, 90% 40%, 87% 39%, 84% 38%, 79% 37%, 78% 33%, 75% 34%, 73% 31%, 69% 30%, 68% 28%, 67% 28%, 68% 29%,
-        66% 28%,
-        /* GAP 4: (66,28) to (100,0) - points in SPATIAL order left to right */
-        67% 26%, 70% 25%, 73% 25%, 76% 21%, 81% 19%, 83% 19%, 84% 15%, 87% 12%, 90% 8%, 95% 8%, 96% 6%, 96% 2%, 97% 3%, 100% 2%,
-        100% 0%,
-        100% 100%
-    );
-    opacity: 0.7;
-    z-index: 0;
-}
