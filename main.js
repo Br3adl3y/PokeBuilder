@@ -487,10 +487,11 @@ class PokeApp {
         }
         
         if (results.pokemon.length > 0) {
+            const pokemonCards = await Promise.all(results.pokemon.map(forms => renderPokemonCard.call(this, forms)));
             html += `<div class="mb-6">
                 <h2 class="text-white text-xl font-bold mb-3">Pokémon</h2>
                 <div class="grid grid-cols-4 gap-3">
-                    ${(await Promise.allresults.pokemon.map(forms => renderPokemonCard.call(this, forms)).join(''))}
+                    ${pokemonCards.join('')}
                 </div>
             </div>`;
         }
