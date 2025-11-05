@@ -505,7 +505,7 @@ class PokeApp {
         if (!html) {
             html = '<div class="text-white text-center py-12">No results found</div>';
         }
-        
+        console.log('Attempting to render search results. Data:', this.searchResults);
         return html;
     }
 
@@ -516,6 +516,7 @@ class PokeApp {
                 ${filtered.map(forms => renderPokemonCard.call(this, forms)).join('')}
             </div>
         `;
+        console.log('Pokemon Grid Data:', this.pokemonList.slice(0, 5)); // Check the first few items
     }
 
     // ====================================
