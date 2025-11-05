@@ -1044,17 +1044,12 @@
         width: 150px;
         height: 150px;
     }
-    .type-bg-rock::before,
-    .type-bg-rock::after {
-        filter: blur(3px);
-    }
+
     .type-bg-dragon::before,
     .type-bg-dragon::after {
         opacity: 0.5;
     }
-    .type-bg-fighting::after {
-        filter: blur(2px);
-    }
+    
     .type-bg-fairy::before {
         width: 40px;
         height: 40px;
