@@ -363,14 +363,14 @@ class PokeApp {
     // RENDERING
     // ====================================
 
-    render() {
+    async render() {
         const app = document.getElementById('app');
         
         if (this.currentView === 'menu') {
             app.innerHTML = this.renderMenu();
         } else if (this.currentView === 'pokedex') {
             if (this.selectedPokemon) {
-                app.innerHTML = renderPokemonDetail.call(this);
+                app.innerHTML = await renderPokemonDetail.call(this);
             } else if (this.selectedMove) {
                 app.innerHTML = renderMoveDetail.call(this);
             } else {
@@ -451,7 +451,13 @@ class PokeApp {
                 </div>
 
                 <div class="max-w-6xl mx-auto p-4" data-content-grid>
-                    <div class="text-black text-center py-20">Loading...</div>
+                    ${this.loading ? 
+                        '<div class="text-black text-center py-20">Loading...</div>' :
+                        this.searchTerm ? this.renderSearchResults() :
+                        this.currentList === 'pokemon' ? this.renderPokemonGrid() :
+                        this.currentList === 'fast' ? renderMoveList.call(this, 'fast') :
+                        renderMoveList.call(this, 'charge')
+                    }
                 </div>
                 
                 <button class="fab-button fab-left ${leftFab.color} text-white ${fabsHidden}" data-action="set-list" data-list="${leftFab.action}">

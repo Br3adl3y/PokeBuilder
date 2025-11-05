@@ -87,300 +87,292 @@ function getEvolutionChain(pokemon) {
     return buildFullTree(base);
 }
 
-function getPokemonSprite(pokemonIdOrDexNumber) {
-  return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/${pokemonIdOrDexNumber}.gif`;
-}
-
-// Sprite fallback helper - add near other utilities
-function getPokemonSpriteCandidates(dexNumber) {
-  const n = String(parseInt(dexNumber, 10));
-  return [
-    // 1) Showdown animated GIF (preferred)
-    `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/${n}.gif`,
-    // 2) Official artwork (large PNG)
-    `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${n}.png`,
-    // 3) Regular small sprite PNG (fallback)
-    `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${n}.png`,
-    // 4) Transparent 1x1 as final fallback
-    'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='
-  ];
-}
-
-function tryNextSprite(img) {
-  try {
-    let idx = Number(img.dataset.spriteIndex || 0);
-    const candStr = img.dataset.spriteCandidates;
-    if (!candStr) {
-      // no candidates stored — give up and set 1x1
-      img.src = 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
-      return;
-    }
-    const candidates = candStr.split('||');
-    idx++;
-    if (idx < candidates.length) {
-      img.dataset.spriteIndex = String(idx);
-      img.src = candidates[idx];
-    } else {
-      // last fallback already used; stop
-      img.onerror = null;
-    }
-  } catch (e) {
-    img.onerror = null;
-    img.src = 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
-  }
+async function renderEvolutionChain(tree) {
+    if (!tree) return '';
+    
+    const result = [];
+    const visited = new Set();
+    
+    const addToChain = (node, candyCost = null, evolveRequirement = null) => {
+        if (visited.has(node.pokemon.id)) return;
+        visited.add(node.pokemon.id);
+        
+        result.push({
+            pokemon: node.pokemon,
+            candyCost: candyCost,
+            evolveRequirement: evolveRequirement
+        });
+        
+        if (node.evolutions && node.evolutions.length > 0) {
+            node.evolutions.forEach(evo => {
+                addToChain(evo.branch, evo.candyCost, evo.evolveRequirement);
+            });
+        }
+    };
+    
+    addToChain(tree);
+    
+    // Fetch all sprite IDs
+    const items = await Promise.all(result.map(async (item) => {
+        const spriteId = await getShowdownSpriteId(item.pokemon);
+        const sprite = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/${spriteId}.gif`;
+        
+        return {
+            ...item,
+            sprite
+        };
+    }));
+    
+    return items.map((item) => {
+        return `
+            <div class="flex items-center gap-2 mb-3">
+                <img src="${item.sprite}" class="pokemon-sprite h-16 cursor-pointer hover:scale-110 transition flex-shrink-0" style="image-rendering: pixelated;" data-pokemon-dex="${item.pokemon.dexNumber}">
+                <div class="flex-1 min-w-0">
+                    <div class="text-sm text-gray-700 font-medium truncate">${item.pokemon.name}</div>
+                    ${item.candyCost ? `<div class="text-xs text-gray-500">${item.candyCost} 🍬</div>` : ''}
+                    ${item.evolveRequirement ? `<div class="text-xs text-gray-400 italic mt-1 truncate">${item.evolveRequirement}</div>` : ''}
+                </div>
+            </div>
+        `;
+    }).join('');
 }
 
 // ====================================
-// EVOLUTION CHAIN RENDERING (UPDATED)
+// POKEMON CARD RENDERING
 // ====================================
 
-async function renderEvolutionChain(result) {
-  if (!result || !Array.isArray(result)) return '';
-
-  return result.map((item) => {
-    const candidates = getPokemonSpriteCandidates(item.pokemon.dexNumber).join('||');
+function renderPokemonCard(forms) {
+    const basePokemon = forms[0];
+    const tags = this.userTags[basePokemon.id] || [];
+    const spriteUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${basePokemon.dexNumber}.png`;
+    
     return `
-      <div class="flex items-center gap-2 mb-3">
-        <img
-          src="${getPokemonSpriteCandidates(item.pokemon.dexNumber)[0]}"
-          data-pokemon-dex="${item.pokemon.dexNumber}"
-          data-sprite-candidates="${candidates}"
-          data-sprite-index="0"
-          onerror="tryNextSprite(this)"
-          class="pokemon-sprite h-16 cursor-pointer hover:scale-110 transition flex-shrink-0"
-          style="image-rendering: pixelated;"
-          alt="${item.pokemon.name}"
-        />
-        <div class="flex-1 min-w-0">
-          <div class="text-sm text-gray-700 font-medium truncate">${item.pokemon.name}</div>
-          ${item.candyCost ? `<div class="text-xs text-gray-500">${item.candyCost} 🍬</div>` : ''}
-          ${item.evolveRequirement ? `<div class="text-xs text-gray-400 italic mt-1 truncate">${item.evolveRequirement}</div>` : ''}
+        <div class="rounded-2xl p-4 shadow-lg" data-pokemon-id="${basePokemon.id}">
+            <div class="text-center">
+                <img src="${spriteUrl}" alt="${basePokemon.name}" class="pokemon-sprite w-24 h-24 mx-auto mb-2">
+                <div class="text-teal-600 text-xs font-medium">#${String(basePokemon.dexNumber).padStart(4, '0')}</div>
+                <div class="flex items-center justify-center gap-1 mb-2">
+                    <span class="text-gray-800 font-semibold text-sm">${basePokemon.name}</span>
+                    ${basePokemon.types.map(type => 
+                        `<span class="type-circle" style="background-color: ${TYPE_COLORS[type]}" title="${type}"></span>`
+                    ).join('')}
+                </div>
+            </div>
+            
+            ${tags.length > 0 ? `
+                <div class="flex gap-1 flex-wrap justify-center mt-2">
+                    ${tags.map(tag => 
+                        `<span class="text-xs px-2 py-1 rounded-full bg-purple-200 text-purple-800">${tag}</span>`
+                    ).join('')}
+                </div>
+            ` : ''}
         </div>
-      </div>
     `;
-  }).join('');
 }
 
 // ====================================
-// POKEMON CARD RENDERING (UPDATED)
-// ====================================
-
-async function renderPokemonCard(forms) {
-  const basePokemon = forms[0];
-  const tags = this.userTags[basePokemon.id] || [];
-  const candidates = getPokemonSpriteCandidates(basePokemon.dexNumber).join('||');
-  const first = getPokemonSpriteCandidates(basePokemon.dexNumber)[0];
-
-  return `
-    <div class="rounded-2xl p-4 shadow-lg" data-pokemon-id="${basePokemon.id}">
-        <div class="text-center">
-            <img
-              src="${first}"
-              data-sprite-candidates="${candidates}"
-              data-sprite-index="0"
-              onerror="tryNextSprite(this)"
-              alt="${basePokemon.name}"
-              class="pokemon-sprite w-24 h-24 mx-auto mb-2"
-            />
-            <div class="text-teal-600 text-xs font-medium">#${String(basePokemon.dexNumber).padStart(4, '0')}</div>
-            <div class="flex items-center justify-center gap-1 mb-2">
-                <span class="text-gray-800 font-semibold text-sm">${basePokemon.name}</span>
-                ${basePokemon.types.map(type => 
-                    `<span class="type-circle" style="background-color: ${TYPE_COLORS[type]}" title="${type}"></span>`
-                ).join('')}
-            </div>
-        </div>
-
-        ${tags.length > 0 ? `
-            <div class="flex gap-1 flex-wrap justify-center mt-2">
-                ${tags.map(tag => 
-                    `<span class="text-xs px-2 py-1 rounded-full bg-purple-200 text-purple-800">${tag}</span>`
-                ).join('')}
-            </div>
-        ` : ''}
-    </div>
-  `;
-}
-
-// ====================================
-// POKEMON DETAIL PAGE (UPDATED)
+// POKEMON DETAIL PAGE
 // ====================================
 
 async function renderPokemonDetail() {
-  const p = this.selectedForm || this.selectedPokemon;
-  const forms = this.getPokemonForms(p.dexNumber);
-  const tags = this.userTags[p.id] || [];
-  const chain = getEvolutionChain.call(this, p);
-  const isSingleType = p.types.length === 1;
+    const p = this.selectedForm || this.selectedPokemon;
+    const forms = this.getPokemonForms(p.dexNumber);
+    const tags = this.userTags[p.id] || [];
+    const spriteId = await getShowdownSpriteId(p);
+    const spriteUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/${spriteId}.gif`;                
+    const chain = getEvolutionChain.call(this, p);
+    const isSingleType = p.types.length === 1;
 
-  const lensFlareTypes = ['bug', 'dragon', 'fighting', 'normal', 'poison', 'rock'];
-  const smokeEffectTypes = ['dark', 'ghost', 'ground', 'ice'];
+    // Determine which types need lens flares
+    const lensFlareTypes = ['bug', 'dragon', 'fighting', 'normal', 'poison', 'rock'];
+    // Determine which types need smoke effects
+    const smokeEffectTypes = ['dark', 'ghost', 'ground', 'ice'];
 
-  const primaryType = p.types[0].toLowerCase();
-  let typeBgClass = `type-bg-${primaryType}`;
-  if (lensFlareTypes.includes(primaryType)) typeBgClass += ' lens-flare';
-  if (smokeEffectTypes.includes(primaryType)) typeBgClass += ' smoke-effect';
+    const primaryType = p.types[0].toLowerCase();
+    let typeBgClass = `type-bg-${primaryType}`;
 
-  const candidates = getPokemonSpriteCandidates(p.dexNumber).join('||');
-  const first = getPokemonSpriteCandidates(p.dexNumber)[0];
+    if (lensFlareTypes.includes(primaryType)) {
+        typeBgClass += ' lens-flare';
+    }
+    if (smokeEffectTypes.includes(primaryType)) {
+        typeBgClass += ' smoke-effect';
+    }
 
-  // get all Pokemon in evolution chain for IV buttons (deduplicated)
-  const getAllChainPokemon = (tree) => {
-      if (!tree) return [];
-      const result = [];
-      const visited = new Set();
-      
-      const traverse = (node) => {
-          if (!node || visited.has(node.pokemon.id)) return;
-          visited.add(node.pokemon.id);
-          result.push(node.pokemon);
-          
-          if (node.evolutions && node.evolutions.length > 0) {
-              node.evolutions.forEach(evo => traverse(evo.branch));
-          }
-      };
-      
-      traverse(tree);
-      return result;
-  };
-  
-  const chainPokemon = chain ? getAllChainPokemon(chain) : [];
-
-  return `
-    <div class="min-h-screen pokedex-bg p-4 py-8" data-detail-container>
-      <div class="detail-container rounded-3xl mx-auto">
-        <div class="detail-row-1 mb-4">
-          <div class="sprite-container relative bg-white/30 rounded-xl flex items-center justify-center" style="height: clamp(250px, 50vw, 400px);">
-            <div class="${typeBgClass}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;"></div>
-            <img
-              src="${first}"
-              data-sprite-candidates="${candidates}"
-              data-sprite-index="0"
-              onerror="tryNextSprite(this)"
-              alt="${p.name}"
-              class="pokemon-sprite w-24 h-24 mx-auto mb-2"
-            />
-            <div class="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-white/90 to-transparent z-10">
-              <div class="text-gray-500 text-xs mb-1">#${String(p.dexNumber).padStart(4, '0')}</div>
-              <div class="flex items-end gap-2 flex-wrap">
-                <h1 class="text-2xl md:text-4xl font-bold text-gray-800 leading-none">${p.name.toUpperCase()}</h1>
-                <div class="flex gap-1 pb-1">
-                  ${p.types.map(type => `<span class="type-badge px-2 md:px-4 py-1 md:py-2 rounded-full text-white font-semibold uppercase text-xs md:text-sm" style="background-color: ${TYPE_COLORS[type]}">${type}</span>`).join('')}
-                </div>
-              </div>
-              ${forms.length > 1 ? `
-                <select data-action="change-form" class="mt-2 px-3 py-1 text-xs rounded-full bg-white border border-gray-300 shadow-sm w-fit">
-                  ${forms.map(f => `<option value="${f.id}" ${f.id === p.id ? 'selected' : ''}>${f.form || 'Base Form'}</option>`).join('')}
-                </select>
-              ` : ''}
-            </div>
-          </div>
-
-          <div class="evolution-container bg-white rounded-xl p-3 shadow flex flex-col" style="height: clamp(250px, 50vw, 400px);">
-            <div class="text-xs md:text-sm font-semibold text-gray-600 mb-2">Evolution</div>
-            <div class="evolution-scroll flex-1">
-              ${chain ? renderEvolutionChain.call(this, chain) : '<div class="text-xs text-gray-400">No evolutions</div>'}
-            </div>
-          </div>
-        </div>
-
-        <!-- ROW 2: Base Stats (2/9) | Max CP (2/9) | Future data (2/9) | IV Buttons (3/9 = 1/3) -->
-        <div class="detail-row-2 mb-4">
+    // Get all Pokemon in evolution chain for IV buttons (deduplicated)
+    const getAllChainPokemon = (tree) => {
+        if (!tree) return [];
+        const result = [];
+        const visited = new Set();
+        
+        const traverse = (node) => {
+            if (visited.has(node.pokemon.id)) return;
+            visited.add(node.pokemon.id);
+            result.push(node.pokemon);
             
-            <!-- Base Stats (2/9) -->
-            <div class="stats-container bg-white rounded-xl p-3 shadow">
-                <div class="text-xs md:text-sm font-semibold text-gray-600 mb-2">Base Stats</div>
-                <div class="space-y-1 text-xs md:text-sm">
-                    <div class="flex justify-between">
-                        <span class="text-gray-600">ATK</span>
-                        <span class="text-red-500 font-bold">${p.stats.attack}</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-gray-600">DEF</span>
-                        <span class="text-blue-500 font-bold">${p.stats.defense}</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-gray-600">HP</span>
-                        <span class="text-green-500 font-bold">${p.stats.hp}</span>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Max CP (2/9) -->
-            <div class="maxcp-container bg-white rounded-xl p-3 shadow">
-                <div class="text-xs md:text-sm font-semibold text-gray-600 mb-2">max cp</div>
-                <div class="text-xl md:text-2xl font-bold">${p.maxCP || 'TBD'}</div>
+            if (node.evolutions && node.evolutions.length > 0) {
+                node.evolutions.forEach(evo => traverse(evo.branch));
+            }
+        };
+        
+        traverse(tree);
+        return result;
+    };
+    
+    const chainPokemon = chain ? getAllChainPokemon(chain) : [];
+
+    return `
+        <div class="min-h-screen pokedex-bg p-4 py-8" data-detail-container>
+            <div class="detail-container rounded-3xl mx-auto"
                 
-                ${p.thirdMoveCost ? `
-                    <div class="mt-2">
-                        <div class="text-xs text-gray-500 mb-1">2nd Charge Move</div>
-                        <div class="text-xs md:text-sm">${p.thirdMoveCost.candy} 🍬 + ${(p.thirdMoveCost.stardust / 1000).toFixed(0)}k ⭐</div>
-                    </div>
-                ` : ''}
-                
-                ${p.shadowInfo ? `
-                    <div class="mt-2">
-                        <div class="text-xs text-gray-500 mb-1">Purification</div>
-                        <div class="text-xs md:text-sm">${p.shadowInfo.purificationCandy} 🍬 + ${(p.shadowInfo.purificationStardust / 1000).toFixed(0)}k ⭐</div>
-                    </div>
-                ` : ''}
-            </div>
-            
-            <!-- Future data (2/9) -->
-            <div class="bg-white rounded-xl p-3 shadow flex items-center justify-center text-gray-400 text-xs md:text-sm border-2 border-dashed border-gray-300">
-                Future data
-            </div>
-            
-            <!-- IV Buttons (3/9 = 1/3) -->
-            <div class="iv-container bg-white rounded-xl p-2 md:p-3 shadow overflow-hidden flex flex-col">
-                <div class="iv-scroll flex-1 space-y-2">
-                    ${chainPokemon.map(mon => `
-                        <div class="iv-row">
-                            <span class="iv-name text-xs md:text-sm text-gray-700 font-medium truncate">${mon.name}</span>
-                            <div class="iv-buttons">
-                                <button class="iv-btn px-2 py-1 rounded-full bg-yellow-300 text-yellow-900 font-semibold hover:bg-yellow-400 transition text-xs" data-action="iv-spread" data-league="little" data-pokemon="${mon.id}"><span class="sm:inline hidden">Little</span><span class="sm:hidden">L</span></button>
-
-                                <button class="iv-btn px-2 py-1 rounded-full bg-cyan-400 text-cyan-900 font-semibold hover:bg-cyan-500 transition text-xs" data-action="iv-spread" data-league="great" data-pokemon="${mon.id}"><span class="sm:inline hidden">Great</span><span class="sm:hidden">G</span></button>
-
-                                <button class="iv-btn px-2 py-1 rounded-full bg-purple-500 text-white font-semibold hover:bg-purple-600 transition text-xs" data-action="iv-spread" data-league="ultra" data-pokemon="${mon.id}"><span class="sm:inline hidden">Ultra</span><span class="sm:hidden">U</span></button>                                    </div>
+                <!-- ROW 1: 2/3 sprite + 1/3 evolution -->
+                <div class="detail-row-1 mb-4">
+                    
+                    <!-- LEFT: Sprite (2/3 width) -->
+                    <div class="sprite-container relative bg-white/30 rounded-xl flex items-center justify-center" style="height: clamp(250px, 50vw, 400px);">
+                        <div class="${typeBgClass}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;"></div>
+                        <img src="${spriteUrl}" alt="${p.name}" class="w-1/2 h-1/2 object-contain mx-auto relative z-10">
+                        
+                        <!-- Name/Type overlaid at BOTTOM -->
+                        <div class="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-white/90 to-transparent z-10">
+                            <div class="text-gray-500 text-xs mb-1">#${String(p.dexNumber).padStart(4, '0')}</div>
+                            
+                            <div class="flex items-end gap-2 flex-wrap">
+                                <h1 class="text-2xl md:text-4xl font-bold text-gray-800 leading-none">${p.name.toUpperCase()}</h1>
+                                <div class="flex gap-1 pb-1">
+                                    ${p.types.map(type => 
+                                        `<span class="type-badge px-2 md:px-4 py-1 md:py-2 rounded-full text-white font-semibold uppercase text-xs md:text-sm" style="background-color: ${TYPE_COLORS[type]}">${type}</span>`
+                                    ).join('')}
+                                </div>
+                            </div>
+                            
+                            <!-- Form Selector -->
+                            ${forms.length > 1 ? `
+                                <select data-action="change-form" class="mt-2 px-3 py-1 text-xs rounded-full bg-white border border-gray-300 shadow-sm w-fit">
+                                    ${forms.map(f => `<option value="${f.id}" ${f.id === p.id ? 'selected' : ''}>${f.form || 'Base Form'}</option>`).join('')}
+                                </select>
+                            ` : ''}
                         </div>
-                    `).join('')}
+                    </div>
+                    
+                    <!-- RIGHT: Evolution (1/3 width) -->
+                    <div class="evolution-container bg-white rounded-xl p-3 shadow flex flex-col" style="height: clamp(250px, 50vw, 400px);">
+                        <div class="text-xs md:text-sm font-semibold text-gray-600 mb-2">Evolution</div>
+                        <div class="evolution-scroll flex-1">
+                            ${chain ? await renderEvolutionChain.call(this, chain) : '<div class="text-xs text-gray-400">No evolutions</div>'}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ROW 2: Base Stats (2/9) | Max CP (2/9) | Future data (2/9) | IV Buttons (3/9 = 1/3) -->
+                <div class="detail-row-2 mb-4">
+                    
+                    <!-- Base Stats (2/9) -->
+                    <div class="stats-container bg-white rounded-xl p-3 shadow">
+                        <div class="text-xs md:text-sm font-semibold text-gray-600 mb-2">Base Stats</div>
+                        <div class="space-y-1 text-xs md:text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">ATK</span>
+                                <span class="text-red-500 font-bold">${p.stats.attack}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">DEF</span>
+                                <span class="text-blue-500 font-bold">${p.stats.defense}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">HP</span>
+                                <span class="text-green-500 font-bold">${p.stats.hp}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Max CP (2/9) -->
+                    <div class="maxcp-container bg-white rounded-xl p-3 shadow">
+                        <div class="text-xs md:text-sm font-semibold text-gray-600 mb-2">max cp</div>
+                        <div class="text-xl md:text-2xl font-bold">${p.maxCP || 'TBD'}</div>
+                        
+                        ${p.thirdMoveCost ? `
+                            <div class="mt-2">
+                                <div class="text-xs text-gray-500 mb-1">2nd Charge Move</div>
+                                <div class="text-xs md:text-sm">${p.thirdMoveCost.candy} 🍬 + ${(p.thirdMoveCost.stardust / 1000).toFixed(0)}k ⭐</div>
+                            </div>
+                        ` : ''}
+                        
+                        ${p.shadowInfo ? `
+                            <div class="mt-2">
+                                <div class="text-xs text-gray-500 mb-1">Purification</div>
+                                <div class="text-xs md:text-sm">${p.shadowInfo.purificationCandy} 🍬 + ${(p.shadowInfo.purificationStardust / 1000).toFixed(0)}k ⭐</div>
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    <!-- Future data (2/9) -->
+                    <div class="bg-white rounded-xl p-3 shadow flex items-center justify-center text-gray-400 text-xs md:text-sm border-2 border-dashed border-gray-300">
+                        Future data
+                    </div>
+                    
+                    <!-- IV Buttons (3/9 = 1/3) -->
+                    <div class="iv-container bg-white rounded-xl p-2 md:p-3 shadow overflow-hidden flex flex-col">
+                        <div class="iv-scroll flex-1 space-y-2">
+                            ${chainPokemon.map(mon => `
+                                <div class="iv-row">
+                                    <span class="iv-name text-xs md:text-sm text-gray-700 font-medium truncate">${mon.name}</span>
+                                    <div class="iv-buttons">
+                                        <button class="iv-btn px-2 py-1 rounded-full bg-yellow-300 text-yellow-900 font-semibold hover:bg-yellow-400 transition text-xs" data-action="iv-spread" data-league="little" data-pokemon="${mon.id}"><span class="sm:inline hidden">Little</span><span class="sm:hidden">L</span></button>
+
+                                        <button class="iv-btn px-2 py-1 rounded-full bg-cyan-400 text-cyan-900 font-semibold hover:bg-cyan-500 transition text-xs" data-action="iv-spread" data-league="great" data-pokemon="${mon.id}"><span class="sm:inline hidden">Great</span><span class="sm:hidden">G</span></button>
+
+                                        <button class="iv-btn px-2 py-1 rounded-full bg-purple-500 text-white font-semibold hover:bg-purple-600 transition text-xs" data-action="iv-spread" data-league="ultra" data-pokemon="${mon.id}"><span class="sm:inline hidden">Ultra</span><span class="sm:hidden">U</span></button>                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Moves Section -->
+                ${renderMovesSection.call(this, p)}
+
+                <!-- Tags -->
+                <div class="mt-6">
+                    <div class="flex items-center gap-3 mb-2 flex-wrap">
+                        ${tags.length > 0 ? tags.map(tag => 
+                            `<span class="px-3 py-1 rounded-full bg-purple-500 text-white text-sm flex items-center gap-2">
+                                ${tag}
+                                <button data-action="remove-tag" data-tag="${tag}" class="hover:text-red-200">
+                                    <i class="fa-solid fa-xmark text-xs"></i>
+                                </button>
+                            </span>`
+                        ).join('') : ''}
+                        
+                        <button data-action="show-tag-input" class="text-purple-500 hover:text-purple-600">
+                            <i class="fa-solid fa-tag text-xl"></i>
+                        </button>
+                    </div>
+                    
+                    ${this.showTagInput ? `
+                        <div class="flex gap-2">
+                            <input
+                                type="text"
+                                data-action="tag-input"
+                                placeholder="Add a tag..."
+                                class="flex-1 px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            />
+                            <button
+                                data-action="add-tag"
+                                class="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition"
+                            >
+                                Add
+                            </button>
+                        </div>
+                    ` : ''}
                 </div>
             </div>
-        </div>
 
-        <!-- Moves Section -->
-        ${renderMovesSection.call(this, p)}
-
-        <!-- Tags -->
-        <div class="mt-6">
-          <div class="flex items-center gap-3 mb-2 flex-wrap">
-            ${tags.length > 0 ? tags.map(tag => 
-              `<span class="px-3 py-1 rounded-full bg-purple-500 text-white text-sm flex items-center gap-2">
-                ${tag}
-                <button data-action="remove-tag" data-tag="${tag}" class="hover:text-red-200">
-                  <i class="fa-solid fa-xmark text-xs"></i>
-                </button>
-              </span>`
-            ).join('') : ''}
-            <button data-action="show-tag-input" class="text-purple-500 hover:text-purple-600">
-              <i class="fa-solid fa-tag text-xl"></i>
+            <!-- Close FAB -->
+            <button class="fab-button fab-center bg-gray-600 text-white" data-action="close-detail">
+                <i class="fa-solid fa-xmark text-xl"></i>
             </button>
-          </div>
-          ${this.showTagInput ? `
-            <div class="flex gap-2">
-              <input type="text" data-action="tag-input" placeholder="Add a tag..." class="flex-1 px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500" />
-              <button data-action="add-tag" class="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition">Add</button>
-            </div>` : ''}
         </div>
-      </div>
-
-      <!-- Close FAB -->
-      <button class="fab-button fab-center bg-gray-600 text-white" data-action="close-detail">
-        <i class="fa-solid fa-xmark text-xl"></i>
-      </button>
-    </div>
-  `;
+    `;
 }
 
 // ====================================
@@ -708,10 +700,7 @@ function renderMoveDetail() {
                             const spriteUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.dexNumber}.png`;
                             return `
                                 <div class="rounded-xl p-2 text-center ${isElite ? 'elite-move' : ''}" data-pokemon-id="${p.id}">
-                                    <img src="${spriteUrl}" 
-                                        onerror="this.onerror=null; this.src=this.src.replace('/showdown/', '/official-artwork/').replace('.gif', '.png')" 
-                                        alt="${p.name}" 
-                                        class="w-1/2 h-1/2 object-contain mx-auto relative z-10">
+                                    <img src="${spriteUrl}" class="pokemon-sprite w-16 h-16 mx-auto">
                                     <div class="text-xs font-medium mt-1">${p.name}</div>
                                     ${isElite ? '<div class="text-xs text-purple-600 font-bold">ELITE</div>' : ''}
                                 </div>
