@@ -1529,7 +1529,7 @@
                 const damageMatrixData = typeEffData.find(d => d.id === 'damageMatrix');
                 
                 if (damageMatrixData) {
-                    await calculateRankings(allPokemon, allMoves, damageMatrixData.matrix, damageMatrixData.defenderTypes);
+                    await calculateRankings(allPokemon, allMoves, allCups, damageMatrixData.matrix, damageMatrixData.defenderTypes);
                 }
                 
                 document.getElementById('progress-container').style.display = 'none';
