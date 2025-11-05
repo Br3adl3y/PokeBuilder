@@ -473,7 +473,7 @@ class PokeApp {
         `;
     }
 
-    renderSearchResults() {
+    async renderSearchResults() {
         const results = this.getSearchResults();
         if (!results) return '';
 
@@ -497,7 +497,7 @@ class PokeApp {
             html += `<div class="mb-6">
                 <h2 class="text-white text-xl font-bold mb-3">Pokémon</h2>
                 <div class="grid grid-cols-4 gap-3">
-                    ${results.pokemon.map(forms => renderPokemonCard.call(this, forms)).join('')}
+                    ${(await Promise.allresults.pokemon.map(forms => renderPokemonCard.call(this, forms)).join(''))}
                 </div>
             </div>`;
         }
@@ -509,11 +509,11 @@ class PokeApp {
         return html;
     }
 
-    renderPokemonGrid() {
+    async renderPokemonGrid() {
         const filtered = this.getFilteredPokemonGroups();
         return `
             <div class="grid grid-cols-4 gap-3">
-                ${filtered.map(forms => renderPokemonCard.call(this, forms)).join('')}
+                ${(await Promise.all(filtered.map(forms => renderPokemonCard.call(this, forms)))).join('')}
             </div>
         `;
     }
