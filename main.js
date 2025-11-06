@@ -153,36 +153,32 @@ class PokeApp {
         dbRequest.onsuccess = (event) => {
             const db = event.target.result;
             
-            const pokemonTransaction = db.transaction(['pokemon'], 'readonly');
-            const pokemonStore = pokemonTransaction.objectStore('pokemon');
-            const pokemonRequest = pokemonStore.getAll();
-            
-            pokemonRequest.onsuccess = () => {
-                this.pokemon = pokemonRequest.result || [];
-                this.checkLoadComplete();
-            };
-
-            const movesTransaction = db.transaction(['moves'], 'readonly');
-            const movesStore = movesTransaction.objectStore('moves');
-            const movesRequest = movesStore.getAll();
-            
-            movesRequest.onsuccess = () => {
-                this.moves = movesRequest.result || [];
-                this.checkLoadComplete();
-            };
+            // Load both at once
+            Promise.all([
+                new Promise(resolve => {
+                    const tx = db.transaction(['pokemon'], 'readonly');
+                    const store = tx.objectStore('pokemon');
+                    const req = store.getAll();
+                    req.onsuccess = () => resolve(req.result || []);
+                }),
+                new Promise(resolve => {
+                    const tx = db.transaction(['moves'], 'readonly');
+                    const store = tx.objectStore('moves');
+                    const req = store.getAll();
+                    req.onsuccess = () => resolve(req.result || []);
+                })
+            ]).then(([pokemon, moves]) => {
+                this.pokemon = pokemon;
+                this.moves = moves;
+                this.loading = false;
+                this.render();
+            });
         };
 
         dbRequest.onerror = () => {
             this.loading = false;
             this.render();
         };
-    }
-
-    checkLoadComplete() {
-        if (this.pokemon.length > 0 && this.moves.length > 0) {
-            this.loading = false;
-            this.render();
-        }
     }
 
     // ====================================
