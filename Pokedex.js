@@ -400,10 +400,12 @@ function attachPokemonEventListeners() {
     }
 
     // Evolution sprites click
-    document.querySelectorAll('[data-pokemon-dex]').forEach(sprite => {
+    document.querySelectorAll('[data-pokemon-id]').forEach(sprite => {
         sprite.addEventListener('click', () => {
-            const dexNumber = parseInt(sprite.dataset.pokemonDex);
-            const pokemon = this.pokemon.find(p => p.dexNumber === dexNumber);
+            const pokemonId = sprite.dataset.pokemonId;
+            console.log('Clicked pokemon ID:', pokemonId);
+            const pokemon = this.pokemon.find(p => p.id === pokemonId);
+            console.log('Found pokemon:', pokemon);
             if (pokemon) selectPokemon.call(this, pokemon);
         });
     });
