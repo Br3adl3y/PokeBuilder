@@ -153,35 +153,36 @@ class PokeApp {
         dbRequest.onsuccess = (event) => {
             const db = event.target.result;
             
-            // Load both at once
-            Promise.all([
-                new Promise(resolve => {
-                    const tx = db.transaction(['pokemon'], 'readonly');
-                    const store = tx.objectStore('pokemon');
-                    const req = store.getAll();
-                    req.onsuccess = () => resolve(req.result || []);
-                }),
-                new Promise(resolve => {
-                    const tx = db.transaction(['moves'], 'readonly');
-                    const store = tx.objectStore('moves');
-                    const req = store.getAll();
-                    req.onsuccess = () => resolve(req.result || []);
-                })
-            ]).then(([pokemon, moves]) => {
-                alert(`Loaded: ${pokemon.length} pokemon, ${moves.length} moves`);
-                this.pokemon = pokemon;
-                this.moves = moves;
-                this.loading = false;
-                alert(`Loading is now: ${this.loading}`);
-                this.render();
-            });
+            const pokemonTransaction = db.transaction(['pokemon'], 'readonly');
+            const pokemonStore = pokemonTransaction.objectStore('pokemon');
+            const pokemonRequest = pokemonStore.getAll();
+            
+            pokemonRequest.onsuccess = () => {
+                this.pokemon = pokemonRequest.result || [];
+                this.checkLoadComplete();
+            };
+
+            const movesTransaction = db.transaction(['moves'], 'readonly');
+            const movesStore = movesTransaction.objectStore('moves');
+            const movesRequest = movesStore.getAll();
+            
+            movesRequest.onsuccess = () => {
+                this.moves = movesRequest.result || [];
+                this.checkLoadComplete();
+            };
         };
 
         dbRequest.onerror = () => {
-            alert('Database error!');
             this.loading = false;
             this.render();
         };
+    }
+
+    checkLoadComplete() {
+        if (this.pokemon.length > 0 && this.moves.length > 0) {
+            this.loading = false;
+            this.render();
+        }
     }
 
     // ====================================
@@ -239,10 +240,7 @@ class PokeApp {
             if (!grouped[p.dexNumber]) grouped[p.dexNumber] = [];
             grouped[p.dexNumber].push(p);
         });
-        const result = Object.values(grouped);
-        console.log('getGroupedPokemon returning:', result);
-        console.log('First group:', result[0]);
-        return result;
+        return Object.values(grouped);
     }
 
     getFilteredPokemonGroups() {
@@ -507,6 +505,7 @@ class PokeApp {
         if (!html) {
             html = '<div class="text-white text-center py-12">No results found</div>';
         }
+        
         return html;
     }
 
@@ -517,7 +516,6 @@ class PokeApp {
                 ${filtered.map(forms => renderPokemonCard.call(this, forms)).join('')}
             </div>
         `;
-        
     }
 
     // ====================================

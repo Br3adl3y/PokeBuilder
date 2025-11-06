@@ -142,18 +142,10 @@ async function renderEvolutionChain(tree) {
 // ====================================
 
 function renderPokemonCard(forms) {
-    console.log('renderPokemonCard called with:', forms);
-    if (!forms || !Array.isArray(forms) || forms.length === 0) {
-        console.error('Invalid forms data:', forms);
-        return '<div class="text-red-500">Error: Invalid Pokemon data</div>';
-    }
     const basePokemon = forms[0];
-    console.log('basePokemon:', basePokemon);
     const tags = this.userTags[basePokemon.id] || [];
     const spriteUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${basePokemon.dexNumber}.png`;
     
-    
-
     return `
         <div class="rounded-2xl p-4 shadow-lg" data-pokemon-id="${basePokemon.id}">
             <div class="text-center">
