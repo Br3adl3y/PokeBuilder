@@ -31,13 +31,16 @@ function navigatePokemon(direction) {
 function getPokemonForms(dexNumber) {
     const forms = this.pokemon.filter(p => p.dexNumber === dexNumber);
     // Sort so base form (no form property or empty string) comes first
-    return forms.sort((a, b) => {
+    const sorted = forms.sort((a, b) => {
         const aIsBase = !a.form || a.form === '';
         const bIsBase = !b.form || b.form === '';
-        if (aIsBase) return -1;  // a is base, put it first
-        if (bIsBase) return 1;   // b is base, put it first
-        return 0;                // neither or both are base, keep original order
+        if (aIsBase) return -1;
+        if (bIsBase) return 1;
+        return 0;
     });
+    
+    console.log(`Forms for dex ${dexNumber}:`, sorted.map(f => f.form || 'BASE'));
+    return sorted;
 }
 
 // ====================================
