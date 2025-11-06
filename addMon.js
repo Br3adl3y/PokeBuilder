@@ -16,14 +16,14 @@ class ScreenshotProcessor {
     showCaptureModal() {
         const modalHtml = `
             <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" data-modal="screenshot">
-                <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4">
-                    <h2 class="text-2xl font-bold text-gray-800">Add Pokémon</h2>
-                    <p class="text-gray-600">Upload screenshots from Pokémon GO</p>
+                <div class="bg-gradient-to-br from-teal-400 to-teal-500 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+                    <h2 class="text-2xl font-bold text-white">Add Pokémon</h2>
+                    <p class="text-teal-50">Upload screenshots from Pokémon GO</p>
                     
                     <div class="space-y-3">
                         ${!this.isDesktop ? `
                             <button 
-                                class="w-full bg-blue-500 text-white rounded-xl py-4 flex items-center justify-center gap-3 hover:bg-blue-600 transition"
+                                class="w-full bg-white bg-opacity-20 backdrop-blur-sm text-white rounded-xl py-4 flex items-center justify-center gap-3 hover:bg-opacity-30 transition border border-white border-opacity-20"
                                 data-action="single-pokemon"
                             >
                                 <i class="fa-solid fa-image text-xl"></i>
@@ -32,7 +32,7 @@ class ScreenshotProcessor {
                         ` : ''}
                         
                         <button 
-                            class="w-full bg-purple-500 text-white rounded-xl py-4 flex items-center justify-center gap-3 hover:bg-purple-600 transition"
+                            class="w-full bg-white bg-opacity-20 backdrop-blur-sm text-white rounded-xl py-4 flex items-center justify-center gap-3 hover:bg-opacity-30 transition border border-white border-opacity-20"
                             data-action="batch-upload"
                         >
                             <i class="fa-solid fa-images text-xl"></i>
@@ -41,7 +41,7 @@ class ScreenshotProcessor {
                         
                         ${this.batchImages.length > 0 ? `
                             <button 
-                                class="w-full bg-green-500 text-white rounded-xl py-4 flex items-center justify-center gap-3 hover:bg-green-600 transition"
+                                class="w-full bg-white bg-opacity-20 backdrop-blur-sm text-white rounded-xl py-4 flex items-center justify-center gap-3 hover:bg-opacity-30 transition border border-white border-opacity-20"
                                 data-action="continue-batch"
                             >
                                 <i class="fa-solid fa-play text-xl"></i>
@@ -51,7 +51,7 @@ class ScreenshotProcessor {
                     </div>
                     
                     <button 
-                        class="w-full bg-gray-200 text-gray-700 rounded-xl py-3 mt-4 hover:bg-gray-300 transition"
+                        class="w-full bg-white bg-opacity-10 backdrop-blur-sm text-white rounded-xl py-3 mt-4 hover:bg-opacity-20 transition border border-white border-opacity-20"
                         data-action="close-modal"
                     >
                         Cancel
@@ -282,127 +282,93 @@ class ScreenshotProcessor {
         const needsAttention = this.getFieldsNeedingAttention(data);
         
         const modalHtml = `
-            <div class="fixed inset-0 bg-black bg-opacity-50 z-50 overflow-y-auto" data-modal="confirmation">
-                <div class="min-h-screen flex items-center justify-center p-4">
-                    <div class="bg-white rounded-2xl max-w-4xl w-full p-6 space-y-4 my-8">
+            <div class="fixed inset-0 bg-black bg-opacity-50 z-50 overflow-y-auto py-8" data-modal="confirmation">
+                <div class="flex items-start justify-center min-h-full p-4">
+                    <div class="bg-gradient-to-br from-teal-400 to-teal-500 rounded-2xl max-w-4xl w-full p-6 space-y-4 shadow-2xl">
                         <div class="flex justify-between items-start">
                             <div>
-                                <h2 class="text-2xl font-bold text-gray-800">Review Pokémon Data</h2>
-                                <p class="text-gray-600">Please verify and complete the information</p>
+                                <h2 class="text-2xl font-bold text-white">Review Pokémon Data</h2>
+                                <p class="text-teal-50">Please verify and complete the information</p>
                             </div>
                             ${isBatch ? `
-                                <div class="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                                <div class="text-sm text-white bg-white bg-opacity-20 px-3 py-1 rounded-full backdrop-blur-sm">
                                     ${this.currentBatchIndex + 1} / ${this.batchImages.length}
                                 </div>
                             ` : ''}
                         </div>
                         
-                        ${needsAttention.length > 0 ? `
-                            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                                <div class="flex items-start gap-2">
-                                    <i class="fa-solid fa-triangle-exclamation text-yellow-500 mt-1"></i>
-                                    <div>
-                                        <p class="font-semibold text-yellow-800">Attention Required</p>
-                                        <ul class="text-sm text-yellow-700 mt-1 space-y-1">
-                                            ${needsAttention.map(field => `<li>• ${field}</li>`).join('')}
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                        ` : ''}
-                        
                         <div class="grid md:grid-cols-2 gap-6">
-                            <!-- Screenshot Preview -->
-                            <div class="space-y-4">
+                            <!-- Screenshot Preview Column -->
+                            <div>
                                 <img src="${imageData.dataUrl}" alt="Screenshot" class="w-full rounded-lg shadow-lg">
-                                
-                                <!-- Toggle Switches -->
-                                <div class="bg-gray-50 rounded-lg p-4 space-y-3">
-                                    <h3 class="font-semibold text-gray-700 text-sm mb-3">Properties</h3>
-                                    
-                                    ${this.renderToggle('2nd Charge Move', 'secondChargeUnlocked', data.secondChargeUnlocked)}
-                                    ${this.renderToggle('Shiny', 'shiny', data.shiny)}
-                                    ${this.renderToggle('Shadow', 'shadow', data.shadow)}
-                                    ${this.renderToggle('Dynamax', 'dynamax', data.dynamax)}
-                                    ${this.renderToggle('XXL', 'xxl', data.xxl)}
-                                    ${this.renderToggle('XXS', 'xxs', data.xxs)}
-                                    
-                                    <div class="flex justify-between items-center pt-2 border-t">
-                                        <label class="text-sm text-gray-700">Background</label>
-                                        <input 
-                                            type="text" 
-                                            value="${data.background || ''}" 
-                                            data-field="background"
-                                            class="w-32 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                            placeholder="None"
-                                        />
-                                    </div>
-                                    
-                                    <div class="flex justify-between items-center">
-                                        <label class="text-sm text-gray-700">Costume</label>
-                                        <input 
-                                            type="text" 
-                                            value="${data.costume || ''}" 
-                                            data-field="costume"
-                                            class="w-32 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                            placeholder="None"
-                                        />
-                                    </div>
-                                </div>
                             </div>
                             
-                            <!-- Form Fields -->
-                            <div class="space-y-3 overflow-y-auto max-h-[60vh]">
+                            <!-- Form Fields Column -->
+                            <div class="space-y-3">
+                                ${needsAttention.length > 0 ? `
+                                    <div class="bg-yellow-500 bg-opacity-20 backdrop-blur-sm border border-yellow-300 border-opacity-50 rounded-lg p-4">
+                                        <div class="flex items-start gap-2">
+                                            <i class="fa-solid fa-triangle-exclamation text-yellow-100 mt-1"></i>
+                                            <div>
+                                                <p class="font-semibold text-white">Attention Required</p>
+                                                <ul class="text-sm text-teal-50 mt-1 space-y-1">
+                                                    ${needsAttention.map(field => `<li>• ${field}</li>`).join('')}
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ` : ''}
+                                
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    <label class="block text-sm font-medium text-white mb-1">
                                         Pokémon Name ${this.getConfidenceBadge(data.nameConfidence)}
                                     </label>
                                     <input 
                                         type="text" 
                                         value="${data.name}" 
                                         data-field="name"
-                                        class="w-full px-3 py-2 border ${data.nameConfidence < 0.7 ? 'border-yellow-400 bg-yellow-50' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        class="w-full px-3 py-2 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-lg text-white placeholder-teal-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 ${data.nameConfidence < 0.7 ? 'ring-2 ring-yellow-300' : ''}"
                                         placeholder="e.g., Pikachu"
                                     />
                                 </div>
                                 
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Form (if applicable)</label>
+                                    <label class="block text-sm font-medium text-white mb-1">Form (if applicable)</label>
                                     <select 
                                         data-field="form"
-                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        class="w-full px-3 py-2 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
                                     >
-                                        <option value="">Normal</option>
+                                        <option value="" class="bg-teal-600">Normal</option>
                                     </select>
-                                    <p class="text-xs text-gray-500 mt-1">Forms will populate based on selected Pokémon</p>
+                                    <p class="text-xs text-teal-100 mt-1">Forms will populate based on selected Pokémon</p>
                                 </div>
                                 
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Nickname (optional)</label>
+                                    <label class="block text-sm font-medium text-white mb-1">Nickname (optional)</label>
                                     <input 
                                         type="text" 
                                         value="" 
                                         data-field="nickname"
-                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        class="w-full px-3 py-2 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-lg text-white placeholder-teal-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
                                         placeholder="Custom nickname"
                                     />
                                 </div>
                                 
                                 <div class="grid grid-cols-2 gap-2">
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                                        <label class="block text-sm font-medium text-white mb-1">
                                             CP ${this.getConfidenceBadge(data.cpConfidence)}
                                         </label>
                                         <input 
                                             type="number" 
                                             value="${data.cp}" 
                                             data-field="cp"
-                                            class="w-full px-3 py-2 border ${data.cpConfidence < 0.7 ? 'border-yellow-400 bg-yellow-50' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            class="w-full px-3 py-2 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-lg text-white placeholder-teal-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 ${data.cpConfidence < 0.7 ? 'ring-2 ring-yellow-300' : ''}"
                                             placeholder="0-9999"
                                         />
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                                        <label class="block text-sm font-medium text-white mb-1">
                                             Level (auto)
                                         </label>
                                         <input 
@@ -411,69 +377,109 @@ class ScreenshotProcessor {
                                             value="" 
                                             data-field="level"
                                             disabled
-                                            class="w-full px-3 py-2 border border-gray-300 bg-gray-100 rounded-lg text-gray-600"
+                                            class="w-full px-3 py-2 bg-white bg-opacity-10 backdrop-blur-sm border border-white border-opacity-20 rounded-lg text-teal-100"
                                             placeholder="Calculated"
                                         />
                                     </div>
                                 </div>
                                 
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    <label class="block text-sm font-medium text-white mb-1">
                                         Date Caught ${this.getConfidenceBadge(data.dateCaughtConfidence)}
                                     </label>
                                     <input 
                                         type="date" 
                                         value="${data.dateCaught}" 
                                         data-field="dateCaught"
-                                        class="w-full px-3 py-2 border ${data.dateCaughtConfidence < 0.7 ? 'border-yellow-400 bg-yellow-50' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        class="w-full px-3 py-2 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 ${data.dateCaughtConfidence < 0.7 ? 'ring-2 ring-yellow-300' : ''}"
                                     />
                                 </div>
                                 
-                                <div class="border-t pt-3">
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Individual Values (IVs)</label>
+                                <div class="border-t border-white border-opacity-20 pt-3">
+                                    <label class="block text-sm font-medium text-white mb-2">Individual Values (IVs)</label>
                                     <div class="grid grid-cols-3 gap-2">
                                         <div>
-                                            <label class="block text-xs font-medium text-gray-600 mb-1">
+                                            <label class="block text-xs font-medium text-teal-100 mb-1">
                                                 ATK ${this.getConfidenceBadge(data.ivAttackConfidence, true)}
                                             </label>
                                             <input 
                                                 type="number" 
+                                                inputmode="numeric"
                                                 min="0" 
                                                 max="15" 
                                                 value="${data.ivAttack}" 
                                                 data-field="ivAttack"
-                                                class="w-full px-3 py-2 border ${data.ivAttackConfidence < 0.7 ? 'border-yellow-400 bg-yellow-50' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                                                data-iv-field="attack"
+                                                class="w-full px-3 py-2 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-lg text-white text-center placeholder-teal-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 ${data.ivAttackConfidence < 0.7 ? 'ring-2 ring-yellow-300' : ''}"
                                                 placeholder="0-15"
                                             />
                                         </div>
                                         <div>
-                                            <label class="block text-xs font-medium text-gray-600 mb-1">
+                                            <label class="block text-xs font-medium text-teal-100 mb-1">
                                                 DEF ${this.getConfidenceBadge(data.ivDefenseConfidence, true)}
                                             </label>
                                             <input 
                                                 type="number" 
+                                                inputmode="numeric"
                                                 min="0" 
                                                 max="15" 
                                                 value="${data.ivDefense}" 
                                                 data-field="ivDefense"
-                                                class="w-full px-3 py-2 border ${data.ivDefenseConfidence < 0.7 ? 'border-yellow-400 bg-yellow-50' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                                                data-iv-field="defense"
+                                                class="w-full px-3 py-2 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-lg text-white text-center placeholder-teal-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 ${data.ivDefenseConfidence < 0.7 ? 'ring-2 ring-yellow-300' : ''}"
                                                 placeholder="0-15"
                                             />
                                         </div>
                                         <div>
-                                            <label class="block text-xs font-medium text-gray-600 mb-1">
+                                            <label class="block text-xs font-medium text-teal-100 mb-1">
                                                 STA ${this.getConfidenceBadge(data.ivStaminaConfidence, true)}
                                             </label>
                                             <input 
                                                 type="number" 
+                                                inputmode="numeric"
                                                 min="0" 
                                                 max="15" 
                                                 value="${data.ivStamina}" 
                                                 data-field="ivStamina"
-                                                class="w-full px-3 py-2 border ${data.ivStaminaConfidence < 0.7 ? 'border-yellow-400 bg-yellow-50' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                                                data-iv-field="stamina"
+                                                class="w-full px-3 py-2 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-lg text-white text-center placeholder-teal-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 ${data.ivStaminaConfidence < 0.7 ? 'ring-2 ring-yellow-300' : ''}"
                                                 placeholder="0-15"
                                             />
                                         </div>
+                                    </div>
+                                </div>
+
+                                <!-- Toggle Switches -->
+                                <div class="bg-white bg-opacity-10 backdrop-blur-sm rounded-lg p-4 space-y-3 border border-white border-opacity-20">
+                                    <h3 class="font-semibold text-white text-sm mb-3">Properties</h3>
+                                    
+                                    ${this.renderToggle('2nd Charge Move Unlocked', 'secondChargeUnlocked', data.secondChargeUnlocked)}
+                                    ${this.renderToggle('Shiny', 'shiny', data.shiny)}
+                                    ${this.renderToggle('Shadow', 'shadow', data.shadow)}
+                                    ${this.renderToggle('Dynamax', 'dynamax', data.dynamax)}
+                                    ${this.renderToggle('XXL', 'xxl', data.xxl)}
+                                    ${this.renderToggle('XXS', 'xxs', data.xxs)}
+                                    
+                                    <div class="flex justify-between items-center pt-2 border-t border-white border-opacity-20">
+                                        <label class="text-sm text-white">Background</label>
+                                        <input 
+                                            type="text" 
+                                            value="${data.background || ''}" 
+                                            data-field="background"
+                                            class="w-32 px-2 py-1 text-sm bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded text-white placeholder-teal-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+                                            placeholder="None"
+                                        />
+                                    </div>
+                                    
+                                    <div class="flex justify-between items-center">
+                                        <label class="text-sm text-white">Costume</label>
+                                        <input 
+                                            type="text" 
+                                            value="${data.costume || ''}" 
+                                            data-field="costume"
+                                            class="w-32 px-2 py-1 text-sm bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded text-white placeholder-teal-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+                                            placeholder="None"
+                                        />
                                     </div>
                                 </div>
                             </div>
@@ -482,20 +488,20 @@ class ScreenshotProcessor {
                         <div class="flex gap-3 pt-4">
                             ${isBatch ? `
                                 <button 
-                                    class="px-6 bg-gray-200 text-gray-700 rounded-xl py-3 hover:bg-gray-300 transition font-semibold"
+                                    class="px-6 bg-white bg-opacity-20 backdrop-blur-sm text-white rounded-xl py-3 hover:bg-opacity-30 transition font-semibold border border-white border-opacity-20"
                                     data-action="skip-batch"
                                 >
                                     <i class="fa-solid fa-forward mr-2"></i>Skip
                                 </button>
                             ` : ''}
                             <button 
-                                class="flex-1 bg-blue-500 text-white rounded-xl py-3 hover:bg-blue-600 transition font-semibold"
+                                class="flex-1 bg-white text-teal-600 rounded-xl py-3 hover:bg-teal-50 transition font-semibold shadow-lg"
                                 data-action="save-pokemon"
                             >
                                 <i class="fa-solid fa-check mr-2"></i>${isBatch ? 'Save & Next' : 'Save Pokémon'}
                             </button>
                             <button 
-                                class="px-6 bg-gray-200 text-gray-700 rounded-xl py-3 hover:bg-gray-300 transition font-semibold"
+                                class="px-6 bg-white bg-opacity-20 backdrop-blur-sm text-white rounded-xl py-3 hover:bg-opacity-30 transition font-semibold border border-white border-opacity-20"
                                 data-action="cancel-confirmation"
                             >
                                 Cancel
@@ -588,6 +594,43 @@ class ScreenshotProcessor {
             });
         });
 
+        // IV Auto-advance functionality
+        const ivFields = {
+            attack: modal.querySelector('[data-iv-field="attack"]'),
+            defense: modal.querySelector('[data-iv-field="defense"]'),
+            stamina: modal.querySelector('[data-iv-field="stamina"]')
+        };
+
+        // Auto-advance from Attack -> Defense -> Stamina
+        ivFields.attack.addEventListener('input', (e) => {
+            const value = e.target.value;
+            if (value.length > 0 && parseInt(value) >= 0 && parseInt(value) <= 15) {
+                ivFields.defense.focus();
+                ivFields.defense.select();
+            }
+        });
+
+        ivFields.defense.addEventListener('input', (e) => {
+            const value = e.target.value;
+            if (value.length > 0 && parseInt(value) >= 0 && parseInt(value) <= 15) {
+                ivFields.stamina.focus();
+                ivFields.stamina.select();
+            }
+        });
+
+        // Prevent values outside 0-15 range
+        Object.values(ivFields).forEach(field => {
+            field.addEventListener('blur', (e) => {
+                let value = parseInt(e.target.value);
+                if (isNaN(value) || value < 0) {
+                    e.target.value = 0;
+                } else if (value > 15) {
+                    e.target.value = 15;
+                }
+                this.updateCalculatedLevel(modal);
+            });
+        });
+
         // Update form dropdown based on selected Pokémon
         const nameInput = modal.querySelector('[data-field="name"]');
         const formSelect = modal.querySelector('[data-field="form"]');
@@ -607,7 +650,6 @@ class ScreenshotProcessor {
             const field = modal.querySelector(`[data-field="${fieldName}"]`);
             if (field) {
                 field.addEventListener('change', () => this.updateCalculatedLevel(modal));
-                field.addEventListener('blur', () => this.updateCalculatedLevel(modal));
             }
         });
 
