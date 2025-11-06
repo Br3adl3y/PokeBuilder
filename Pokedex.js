@@ -128,7 +128,7 @@ async function renderEvolutionChain(tree) {
     return items.map((item) => {
         return `
             <div class="flex items-center gap-2 mb-3">
-                <img src="${item.sprite}" onerror="this.onerror=null; this.src='${item.fallbackSprite}';" class="pokemon-sprite h-16 cursor-pointer hover:scale-110 transition flex-shrink-0" style="image-rendering: pixelated;" data-pokemon-dex="${item.pokemon.dexNumber}">
+                <img src="${item.sprite}" onerror="this.onerror=null; this.src='${item.fallbackSprite}';" class="pokemon-sprite h-16 cursor-pointer hover:scale-110 transition flex-shrink-0" style="image-rendering: pixelated;" data-pokemon-id="${item.pokemon.id}">
                 <div class="flex-1 min-w-0">
                     <div class="text-sm text-gray-700 font-medium truncate">${item.pokemon.name}</div>
                     ${item.candyCost ? `<div class="text-xs text-gray-500">${item.candyCost} 🍬</div>` : ''}
