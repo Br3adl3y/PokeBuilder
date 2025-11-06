@@ -693,7 +693,6 @@ async function getShowdownSpriteId(pokemon) {
         const response = await fetch(apiUrl);
         if (!response.ok) throw new Error('Form not found');
         const data = await response.json();
-        console.log('Got sprite ID:', data.id);
         return data.id;
     } catch (error) {
         console.warn(`Could not fetch sprite ID for ${pokemon.name} (${pokemon.form})`, error);
