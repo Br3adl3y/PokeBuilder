@@ -414,9 +414,7 @@ function attachPokemonEventListeners() {
     document.querySelectorAll('[data-pokemon-id]').forEach(sprite => {
         sprite.addEventListener('click', () => {
             const pokemonId = sprite.dataset.pokemonId;
-            console.log('Clicked pokemon ID:', pokemonId);
             const pokemon = this.pokemon.find(p => p.id === pokemonId);
-            console.log('Found pokemon:', pokemon);
             if (pokemon) selectPokemon.call(this, pokemon);
         });
     });
