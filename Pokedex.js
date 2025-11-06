@@ -115,18 +115,24 @@ async function renderEvolutionChain(tree) {
     // Fetch all sprite IDs
     const items = await Promise.all(result.map(async (item) => {
         const spriteId = await getShowdownSpriteId(item.pokemon);
-        const sprite = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/${spriteId}.gif`;
+        const fallbackSprite = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${item.pokemon.dexNumber}.png`;
+        
+        // Use fallback for Pokemon after #939 or use Showdown gif
+        const sprite = spriteId > 939 
+            ? fallbackSprite
+            : `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/${spriteId}.gif`;
         
         return {
             ...item,
-            sprite
+            sprite,
+            fallbackSprite
         };
     }));
     
     return items.map((item) => {
         return `
             <div class="flex items-center gap-2 mb-3">
-                <img src="${item.sprite}" class="pokemon-sprite h-16 cursor-pointer hover:scale-110 transition flex-shrink-0" style="image-rendering: pixelated;" data-pokemon-dex="${item.pokemon.dexNumber}">
+                <img src="${item.sprite}" onerror="this.onerror=null; this.src='${item.fallbackSprite}';" class="pokemon-sprite h-16 cursor-pointer hover:scale-110 transition flex-shrink-0" style="image-rendering: pixelated;" data-pokemon-dex="${item.pokemon.dexNumber}">
                 <div class="flex-1 min-w-0">
                     <div class="text-sm text-gray-700 font-medium truncate">${item.pokemon.name}</div>
                     ${item.candyCost ? `<div class="text-xs text-gray-500">${item.candyCost} 🍬</div>` : ''}
@@ -179,7 +185,13 @@ async function renderPokemonDetail() {
     const forms = this.getPokemonForms(p.dexNumber);
     const tags = this.userTags[p.id] || [];
     const spriteId = await getShowdownSpriteId(p);
-    const spriteUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/${spriteId}.gif`;                
+    const fallbackSpriteUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.dexNumber}.png`;
+
+    // Use fallback for Pokemon after #939 or use Showdown gif
+    const spriteUrl = spriteId > 939
+        ? fallbackSpriteUrl
+        : `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/${spriteId}.gif`;
+
     const chain = getEvolutionChain.call(this, p);
     const isSingleType = p.types.length === 1;
 
@@ -230,7 +242,7 @@ async function renderPokemonDetail() {
                     <!-- LEFT: Sprite (2/3 width) -->
                     <div class="sprite-container relative bg-white/30 rounded-xl flex items-center justify-center" style="height: clamp(250px, 50vw, 400px);">
                         <div class="${typeBgClass}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;"></div>
-                        <img src="${spriteUrl}" alt="${p.name}" class="w-1/2 h-1/2 object-contain mx-auto relative z-10">
+                        <img src="${spriteUrl}" onerror="this.onerror=null; this.src='${fallbackSpriteUrl}';" alt="${p.name}" class="w-1/2 h-1/2 object-contain mx-auto relative z-10">
                         
                         <!-- Name/Type overlaid at BOTTOM -->
                         <div class="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-white/90 to-transparent z-10">
