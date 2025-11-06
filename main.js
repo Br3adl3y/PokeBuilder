@@ -259,19 +259,13 @@ class PokeApp {
         if (!this.searchTerm) return null;
         
         const term = this.searchTerm.toLowerCase();
-        const grouped = this.getFilteredPokemonGroups();
-        
-        console.log('Search term:', term);
-        console.log('Filtered pokemon groups:', grouped);
-        
         return {
-            fast: this.moves.filter(m => 
-                m.id.includes('fast') && m.name.toLowerCase().includes(term)
-            ),
-            charge: this.moves.filter(m => 
-                m.id.includes('charge') && m.name.toLowerCase().includes(term)
-            ),
-            pokemon: grouped
+            fast: this.getUniqueMoves('fast').filter(m => m.name.toLowerCase().includes(term)),
+            charge: this.getUniqueMoves('charge').filter(m => m.name.toLowerCase().includes(term)),
+            pokemon: this.getGroupedPokemon().filter(forms => 
+                forms[0].name.toLowerCase().includes(term) ||
+                forms[0].dexNumber.toString().includes(term)
+            )
         };
     }
 
