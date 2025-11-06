@@ -714,7 +714,6 @@ class ScreenshotProcessor {
             cp: parseInt(modal.querySelector('[data-field="cp"]').value) || 0,
             level: parseFloat(modal.querySelector('[data-field="level"]').value) || null,
             dateCaught: modal.querySelector('[data-field="dateCaught"]').value,
-            dateUploaded: new Date().toISOString(),
             ivs: {
                 attack: parseInt(modal.querySelector('[data-field="ivAttack"]').value) || 0,
                 defense: parseInt(modal.querySelector('[data-field="ivDefense"]').value) || 0,
@@ -730,8 +729,8 @@ class ScreenshotProcessor {
             background: modal.querySelector('[data-field="background"]').value || null,
             costume: modal.querySelector('[data-field="costume"]').value || null,
             // Placeholders for future features
-            role: null,
-            ivEfficiency: null,
+            roles: [], // Will be populated when role assignment is implemented
+            ivEfficiency: null, // Will be calculated when IV ranking is implemented
             currentMoveset: {
                 fast: null,
                 charge1: null,
@@ -741,8 +740,7 @@ class ScreenshotProcessor {
                 fast: null,
                 charge1: null,
                 charge2: null
-            },
-            screenshot: null // Will be set in savePokemon
+            }
         };
     }
 
@@ -843,39 +841,93 @@ class ScreenshotProcessor {
         });
     }
 
-    // Save Pokémon to IndexedDB
-    async savePokemon(data) {
+    async savePokemon(formData) {
         try {
             const id = `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
             
-            const dbRequest = indexedDB.open('PokemonGoDB');
+            const pokemonEntry = {
+                id: id,
+                
+                // Basic Info
+                name: formData.name || '',
+                form: formData.form || null,
+                nickname: formData.nickname || null,
+                
+                // Stats
+                cp: parseInt(formData.cp) || 0,
+                level: parseFloat(formData.level) || null,
+                ivs: {
+                    attack: parseInt(formData.ivs?.attack) || 0,
+                    defense: parseInt(formData.ivs?.defense) || 0,
+                    stamina: parseInt(formData.ivs?.stamina) || 0
+                },
+                ivEfficiency: formData.ivEfficiency || null,
+                
+                // Properties (booleans)
+                secondChargeUnlocked: Boolean(formData.secondChargeUnlocked),
+                shiny: Boolean(formData.shiny),
+                shadow: Boolean(formData.shadow),
+                dynamax: Boolean(formData.dynamax),
+                xxl: Boolean(formData.xxl),
+                xxs: Boolean(formData.xxs),
+                
+                // Special attributes
+                background: formData.background || null,
+                costume: formData.costume || null,
+                
+                // Roles
+                roles: formData.roles || [],
+                
+                // Movesets
+                currentMoveset: {
+                    fast: formData.currentMoveset?.fast || null,
+                    charge1: formData.currentMoveset?.charge1 || null,
+                    charge2: formData.currentMoveset?.charge2 || null
+                },
+                assignedMoveset: {
+                    fast: formData.assignedMoveset?.fast || null,
+                    charge1: formData.assignedMoveset?.charge1 || null,
+                    charge2: formData.assignedMoveset?.charge2 || null
+                },
+                
+                // Dates
+                dateCaught: formData.dateCaught || '',
+                dateUploaded: new Date().toISOString(),
+                
+                // Screenshot
+                screenshot: formData.screenshot || null
+            };
+            
+            console.log('Saving Pokemon with full data:', pokemonEntry); // Debug log
+            
+            const dbRequest = indexedDB.open('PokemonGoDB', 2);
+            
             dbRequest.onsuccess = (event) => {
                 const db = event.target.result;
                 const tx = db.transaction(['userPokemon'], 'readwrite');
                 const store = tx.objectStore('userPokemon');
                 
-                store.add({
-                    id,
-                    ...data
-                });
+                store.add(pokemonEntry);
                 
                 tx.oncomplete = () => {
-                    // Open catch report placeholder
-                    this.showCatchReportPlaceholder(id, data);
+                    console.log('✅ Pokémon saved successfully');
+                    this.showCatchReportPlaceholder(id, pokemonEntry);
                 };
                 
                 tx.onerror = () => {
-                    console.error('Error saving Pokémon:', tx.error);
-                    this.showErrorModal('Failed to save Pokémon');
+                    console.error('❌ Transaction error:', tx.error);
+                    this.showErrorModal('Failed to save Pokémon to database');
                 };
             };
             
             dbRequest.onerror = () => {
+                console.error('❌ Database error:', dbRequest.error);
                 this.showErrorModal('Failed to access database');
             };
+            
         } catch (error) {
-            console.error('Error saving Pokémon:', error);
-            this.showErrorModal('Failed to save Pokémon');
+            console.error('❌ Error in savePokemon:', error);
+            this.showErrorModal('Failed to save Pokémon: ' + error.message);
         }
     }
 

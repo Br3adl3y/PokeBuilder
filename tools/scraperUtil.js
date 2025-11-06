@@ -783,75 +783,40 @@ const GAME_MASTER_URL = 'https://raw.githubusercontent.com/PokeMiners/game_maste
         // RANKING CALCULATOR
         // ============================================================
 
-        async function calculateRankings(allPokemon, allMoves, typeChart, typeOrder) {
+        async function calculateRankings(allPokemon, allMoves, selectedCups, typeChart, typeOrder) {
             updateStatus('⚔️ Starting battle simulations...');
-            
-            const leagueConfigs = [
-                { 
-                    name: 'little-limited', 
-                    displayName: 'Little League (Limited)',
-                    cpLimit: 500, 
-                    cpPrune: 500, 
-                    enabled: document.getElementById('sim-little-limited').checked,
-                    limitToFirstStage: true
-                },
-                { 
-                    name: 'little-open', 
-                    displayName: 'Little League (Open)',
-                    cpLimit: 500, 
-                    cpPrune: 500, 
-                    enabled: document.getElementById('sim-little-open').checked,
-                    limitToFirstStage: false
-                },
-                { 
-                    name: 'great', 
-                    displayName: 'Great League',
-                    cpLimit: 1500, 
-                    cpPrune: 1500, 
-                    enabled: document.getElementById('sim-great').checked,
-                    limitToFirstStage: false
-                },
-                { 
-                    name: 'ultra', 
-                    displayName: 'Ultra League',
-                    cpLimit: 2500, 
-                    cpPrune: 2500, 
-                    enabled: document.getElementById('sim-ultra').checked,
-                    limitToFirstStage: false
-                },
-                { 
-                    name: 'master', 
-                    displayName: 'Master League',
-                    cpLimit: null, 
-                    cpPrune: 2500, 
-                    enabled: document.getElementById('sim-master').checked,
-                    limitToFirstStage: false
-                }
-            ];
             
             const scenarios = [
                 'leads', 'leads-baited', 'switches', 'switches-baited', 
                 'closers', 'attackers', 'attackers-baited', 'underdog'
             ];
             
-            for (const league of leagueConfigs) {
-                if (!league.enabled) {
-                    updateStatus(`⏭️ Skipping ${league.displayName} (disabled)`);
-                    continue;
-                }
+            for (const cup of selectedCups) {
+                updateStatus(`⚔️ Simulating ${cup.title} (${cup.cpLimit || 'No Limit'} CP)...`);
                 
-                updateStatus(`⚔️ Simulating ${league.displayName}...`);
+                // Convert cup to league config format
+                const leagueConfig = {
+                    name: cup.id.toLowerCase().replace(/_/g, '-'),
+                    displayName: cup.title,
+                    cpLimit: cup.cpLimit,
+                    cpPrune: cup.cpLimit || 2500,
+                    limitToFirstStage: false, // TODO: Detect from cup restrictions
+                    allowedTypes: cup.allowedTypes,
+                    allowedPokemon: cup.allowedPokemon,
+                    bannedPokemon: cup.bannedPokemon,
+                    maxLevel: cup.maxLevel
+                };
                 
-                const eligiblePokemon = getEligiblePokemon(allPokemon, league, allMoves);
+                const eligiblePokemon = getEligiblePokemon(allPokemon, leagueConfig, allMoves);
                 
                 if (eligiblePokemon.length === 0) {
-                    updateStatus(`⚠️ No eligible Pokemon for ${league.displayName}`);
+                    updateStatus(`⚠️ No eligible Pokemon for ${cup.title}`);
                     continue;
                 }
                 
                 const rankings = await simulateLeague(
                     eligiblePokemon, 
-                    league, 
+                    leagueConfig, 
                     scenarios, 
                     typeChart, 
                     typeOrder,
@@ -859,9 +824,10 @@ const GAME_MASTER_URL = 'https://raw.githubusercontent.com/PokeMiners/game_maste
                 );
                 
                 await saveToDatabase('rankings', [{
-                    id: `${league.name}-${new Date().toISOString().split('T')[0]}`,
-                    league: league.name,
-                    cpLimit: league.cpLimit,
+                    id: `${leagueConfig.name}-${new Date().toISOString().split('T')[0]}`,
+                    league: leagueConfig.name,
+                    cupTitle: cup.title,
+                    cpLimit: cup.cpLimit,
                     calculatedAt: new Date().toISOString(),
                     rankings: rankings
                 }]);
@@ -871,7 +837,7 @@ const GAME_MASTER_URL = 'https://raw.githubusercontent.com/PokeMiners/game_maste
                 if (global.gc) global.gc();
                 await new Promise(resolve => setTimeout(resolve, 100));
                 
-                updateStatus(`✅ ${league.displayName} complete! (${rankings.length} Pokemon ranked)`);
+                updateStatus(`✅ ${cup.title} complete! (${rankings.length} Pokemon ranked)`);
             }
             
             updateStatus('✅ All battle simulations complete!');
@@ -1276,7 +1242,7 @@ const GAME_MASTER_URL = 'https://raw.githubusercontent.com/PokeMiners/game_maste
                 const gameMaster = await response.json();
                 updateStatus(`✅ Loaded ${gameMaster.length.toLocaleString()} templates. Parsing...`);
                 
-                const { pokemon, moves, cups } = await parseGameMaster(gameMaster);
+                const { pokemon, moves, cups, activeCupIds } = await parseGameMaster(gameMaster);
                 
                 updateStatus('💾 Saving to IndexedDB...');
                 await saveToDatabase('pokemon', pokemon);
@@ -1344,7 +1310,13 @@ const GAME_MASTER_URL = 'https://raw.githubusercontent.com/PokeMiners/game_maste
                 const damageMatrixData = typeEffData.find(d => d.id === 'damageMatrix');
                 
                 if (damageMatrixData) {
-                    await calculateRankings(allPokemon, allMoves, selectedCups, damageMatrixData.matrix, damageMatrixData.defenderTypes);
+                    await calculateRankings(
+                        allPokemon, 
+                        allMoves, 
+                        selectedCups,
+                        damageMatrixData.matrix, 
+                        damageMatrixData.defenderTypes
+                    );
                 }
                 
                 document.getElementById('progress-container').style.display = 'none';
@@ -1372,12 +1344,12 @@ const GAME_MASTER_URL = 'https://raw.githubusercontent.com/PokeMiners/game_maste
             };
 
             const { pvpMoves, pveMoves } = buildMoveMaps(gameMaster);
-            
+
             // Parse cups first
             updateStatus('⏳ Parsing cup templates...');
             const parsedCups = parseCups(gameMaster);
             cups.push(...parsedCups);
-            
+
             // Parse the active season schedule
             updateStatus('⏳ Parsing VS Seeker schedule...');
             const activeCupIds = parseVSSeekerSchedule(gameMaster);
@@ -1507,7 +1479,8 @@ const GAME_MASTER_URL = 'https://raw.githubusercontent.com/PokeMiners/game_maste
             return {
                 pokemon: sortedPokemon,
                 moves: moves.sort((a, b) => a.name.localeCompare(b.name)),
-                cups: cups
+                cups: cups,
+                activeCupIds: activeCupIds
             };
         }
 
@@ -1617,7 +1590,7 @@ const GAME_MASTER_URL = 'https://raw.githubusercontent.com/PokeMiners/game_maste
             console.log(`✅ Found ${activeCupIds.size} unique cups in current season`);
             return activeCupIds;
         }
-        
+
         function isStandardLeague(templateId) {
             const exactStandard = [
                 'COMBAT_LEAGUE_DEFAULT_GREAT',
@@ -2344,7 +2317,7 @@ const GAME_MASTER_URL = 'https://raw.githubusercontent.com/PokeMiners/game_maste
             document.getElementById('fast-pvp-count').textContent = counts.fastPvP || 0;
             document.getElementById('charge-pvp-count').textContent = counts.chargePvP || 0;
             
-            const estimatedSize = (counts.pokemon * 2.5) + (counts.fastPvP + counts.chargePvP + counts.fastPvE + counts.chargePvE) * 0.3;
+            const estimatedSize = (counts.pokemon * 2.5) + ((counts.fastPvP || 0) + (counts.chargePvP || 0)) * 0.3;
             document.getElementById('db-size').textContent = Math.round(estimatedSize) + ' KB';
         }
 
@@ -2494,20 +2467,55 @@ const GAME_MASTER_URL = 'https://raw.githubusercontent.com/PokeMiners/game_maste
             }
         }
 
+        async function downloadJSON() {
+            try {
+                const pokemon = await loadFromDatabase('pokemon');
+                const moves = await loadFromDatabase('moves');
+                const metadata = await loadFromDatabase('metadata');
+                const typeEffectiveness = await loadFromDatabase('typeEffectiveness');
+                const rankings = await loadFromDatabase('rankings');
+                const cups = await loadFromDatabase('cups');
+                const userPokemon = await loadFromDatabase('userPokemon');
+                
+                const exportData = {
+                    metadata: metadata[0] || {},
+                    pokemon: pokemon,
+                    moves: moves,
+                    typeEffectiveness: typeEffectiveness,
+                    rankings: rankings,
+                    cups: cups,
+                    userPokemon: userPokemon // User's collection
+                };
+                
+                const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `pokemon-go-database-${new Date().toISOString().split('T')[0]}.json`;
+                link.click();
+                URL.revokeObjectURL(url);
+                
+            } catch (error) {
+                alert('Error downloading: ' + error.message);
+            }
+        }
+
         (async function init() {
             try {
                 await initDatabase();
                 
                 const pokemon = await loadFromDatabase('pokemon');
                 const moves = await loadFromDatabase('moves');
-                const cups = await loadFromDatabase('cups');  // <-- ADD THIS
+                const cups = await loadFromDatabase('cups');
+                const userPokemon = await loadFromDatabase('userPokemon');
                 
                 if (pokemon.length > 0) {
-                    updateStatus(`✅ Database loaded: ${pokemon.length} Pokemon, ${moves.length} moves.`);
+                    updateStatus(`✅ Database loaded: ${pokemon.length} Pokemon, ${moves.length} moves${userPokemon.length > 0 ? `, ${userPokemon.length} in collection` : ''}.`);
                     updateStats({
                         pokemon: pokemon.length,
                         fastPvP: moves.filter(m => m.category === 'fast' && m.mode === 'pvp').length,
                         chargePvP: moves.filter(m => m.category === 'charge' && m.mode === 'pvp').length,
+                        userCollection: userPokemon.length // Add this if you have a stats display
                     });
                     document.getElementById('view-btn').disabled = false;
                     document.getElementById('download-btn').disabled = false;
