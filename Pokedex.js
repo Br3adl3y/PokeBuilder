@@ -4,9 +4,9 @@
 
 function selectPokemon(pokemon) {
     const forms = this.getPokemonForms(pokemon.dexNumber);
-    const baseForm = forms.find(f => !f.form || f.form === '');
-    this.selectedPokemon = baseForm || forms[0];  // Base form for selectedPokemon
-    this.selectedForm = pokemon;  // Use the actual form that was clicked
+    const baseForm = forms[0];
+    this.selectedPokemon = baseForm;
+    this.selectedForm = pokemon;
     this.expandedSections = {};
     this.moveMode = 'pvp';
     this.showTagInput = false;
@@ -34,9 +34,9 @@ function getPokemonForms(dexNumber) {
     return forms.sort((a, b) => {
         const aIsBase = !a.form || a.form === '';
         const bIsBase = !b.form || b.form === '';
-        if (aIsBase && !bIsBase) return -1;
-        if (!aIsBase && bIsBase) return 1;
-        return 0;
+        if (aIsBase) return -1;  // a is base, put it first
+        if (bIsBase) return 1;   // b is base, put it first
+        return 0;                // neither or both are base, keep original order
     });
 }
 
