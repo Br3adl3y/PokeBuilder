@@ -240,7 +240,10 @@ class PokeApp {
             if (!grouped[p.dexNumber]) grouped[p.dexNumber] = [];
             grouped[p.dexNumber].push(p);
         });
-        return Object.values(grouped);
+        const result = Object.values(grouped);
+        console.log('getGroupedPokemon returning:', result);
+        console.log('First group:', result[0]);
+        return result;
     }
 
     getFilteredPokemonGroups() {
