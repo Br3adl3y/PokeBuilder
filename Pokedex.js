@@ -2,11 +2,14 @@
 // POKEMON SELECTION & NAVIGATION
 // ====================================
 
-function selectPokemon(pokemon) {
-    const forms = this.getPokemonForms(pokemon.dexNumber);
+function selectPokemon(pokemon, forceSpecificForm = false) {
+    const forms = getPokemonForms.call(this, pokemon.dexNumber);
     const baseForm = forms[0];
+    
     this.selectedPokemon = baseForm;
-    this.selectedForm = pokemon;
+    // Only show specific form if explicitly requested (from evolution chain)
+    this.selectedForm = forceSpecificForm ? pokemon : null;
+    
     this.expandedSections = {};
     this.moveMode = 'pvp';
     this.showTagInput = false;
@@ -39,7 +42,6 @@ function getPokemonForms(dexNumber) {
         return 0;
     });
     
-    console.log(`Forms for dex ${dexNumber}:`, sorted.map(f => f.form || 'BASE'));
     return sorted;
 }
 
@@ -189,8 +191,7 @@ function renderPokemonCard(forms) {
 
 async function renderPokemonDetail() {
     const p = this.selectedForm || this.selectedPokemon;
-    const forms = this.getPokemonForms(p.dexNumber);
-    const tags = this.userTags[p.id] || [];
+    const forms = getPokemonForms.call(this, p.dexNumber);    const tags = this.userTags[p.id] || [];
     const spriteId = await getShowdownSpriteId(p);
     const spriteUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/${spriteId}.gif`;
     const fallbackSpriteUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.dexNumber}.png`;
@@ -233,6 +234,9 @@ async function renderPokemonDetail() {
     };
     
     const chainPokemon = chain ? getAllChainPokemon(chain) : [];
+
+    console.log('Forms array:', forms.map(f => ({id: f.id, form: f.form, name: f.name})));
+    console.log('Currently displaying (p):', {id: p.id, form: p.form, name: p.name});
 
     return `
         <div class="min-h-screen pokedex-bg p-4 py-8" data-detail-container>
@@ -415,7 +419,7 @@ function attachPokemonEventListeners() {
         sprite.addEventListener('click', () => {
             const pokemonId = sprite.dataset.pokemonId;
             const pokemon = this.pokemon.find(p => p.id === pokemonId);
-            if (pokemon) selectPokemon.call(this, pokemon);
+            if (pokemon) selectPokemon.call(this, pokemon, true); // Force specific form
         });
     });
 }

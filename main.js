@@ -95,7 +95,6 @@ async function initializeDatabase() {
                         resolve(db);
                     }
                 } else {
-                    console.log('Database already populated');
                     resolve(db);
                 }
             };
