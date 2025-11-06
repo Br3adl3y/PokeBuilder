@@ -30,12 +30,6 @@ async function initializeDatabase() {
                 rankingsStore.createIndex('cupName', 'cupName', { unique: false });
                 rankingsStore.createIndex('timestamp', 'timestamp', { unique: false });
             }
-            if (!db.objectStoreNames.contains('userPokemon')) {
-                const userPokemonStore = db.createObjectStore('userPokemon', { keyPath: 'id' });
-                userPokemonStore.createIndex('name', 'name', { unique: false });
-                userPokemonStore.createIndex('dateAdded', 'dateUploaded', { unique: false });
-                userPokemonStore.createIndex('dateCaught', 'dateCaught', { unique: false });
-            }
         };
         
         request.onsuccess = async (event) => {
@@ -133,8 +127,7 @@ class PokeApp {
         this.touchStartY = 0;
         this.touchEndY = 0;
         this.longPressTimer = null;
-        this.screenshotProcessor = new ScreenshotProcessor(this);
-
+        
         this.loadUserTags();
         this.loadFromIndexedDB();
         this.render();
@@ -588,9 +581,7 @@ class PokeApp {
         // FAB buttons
         const addPokemonBtn = document.querySelector('[data-action="add-pokemon"]');
         if (addPokemonBtn) {
-            addPokemonBtn.addEventListener('click', () => {
-                this.screenshotProcessor.showCaptureModal();
-            });
+            addPokemonBtn.addEventListener('click', () => alert('Add Pokemon feature coming soon!'));
         }
 
         const teamBuilderBtn = document.querySelector('[data-action="team-builder"]');
@@ -636,6 +627,15 @@ class PokeApp {
         );
     }
 }
+
+// ====================================
+// INITIALIZATION
+// ====================================
+
+document.addEventListener('DOMContentLoaded', () => {
+    initializeDatabase();
+    new PokeApp();
+});
 
 // ====================================
 // SHARED CONSTANTS AND UTILITIES
