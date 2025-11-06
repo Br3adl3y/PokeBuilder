@@ -5,8 +5,8 @@
 function selectPokemon(pokemon) {
     const forms = this.getPokemonForms(pokemon.dexNumber);
     const baseForm = forms.find(f => !f.form || f.form === '');
-    this.selectedPokemon = pokemon;
-    this.selectedForm = baseForm || forms[0];
+    this.selectedPokemon = baseForm || forms[0];  // Base form for selectedPokemon
+    this.selectedForm = pokemon;  // Use the actual form that was clicked
     this.expandedSections = {};
     this.moveMode = 'pvp';
     this.showTagInput = false;
