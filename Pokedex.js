@@ -29,7 +29,15 @@ function navigatePokemon(direction) {
 }
 
 function getPokemonForms(dexNumber) {
-    return this.pokemon.filter(p => p.dexNumber === dexNumber);
+    const forms = this.pokemon.filter(p => p.dexNumber === dexNumber);
+    // Sort so base form (no form property or empty string) comes first
+    return forms.sort((a, b) => {
+        const aIsBase = !a.form || a.form === '';
+        const bIsBase = !b.form || b.form === '';
+        if (aIsBase && !bIsBase) return -1;
+        if (!aIsBase && bIsBase) return 1;
+        return 0;
+    });
 }
 
 // ====================================
