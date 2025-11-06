@@ -382,6 +382,9 @@ class PokeApp {
     }
 
     renderMenu() {
+        const buildTime = document.lastModified || new Date().toISOString();
+        const commitHash = '{{COMMIT_HASH}}'; // Will be replaced by GitHub Actions
+        
         return `
             <div class="min-h-screen bg-gradient-to-br from-teal-400 via-teal-500 to-emerald-500 flex flex-col items-center justify-center p-8">
                 <div class="w-full max-w-md space-y-4">
@@ -398,6 +401,12 @@ class PokeApp {
                 <button class="fab-button fab-right bg-purple-500 text-white" data-action="add-pokemon">
                     <i class="fa-solid fa-plus text-xl"></i>
                 </button>
+                
+                <!-- Build Info Badge -->
+                <div class="fixed bottom-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded backdrop-blur-sm font-mono">
+                    ${buildTime.split(' ')[0]} ${buildTime.split(' ')[1]?.substring(0,5) || ''}
+                    ${commitHash !== '{{COMMIT_HASH}}' ? `<br>${commitHash}` : ''}
+                </div>
             </div>
         `;
     }

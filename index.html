@@ -435,6 +435,21 @@
                 new PokeApp();
             });
         });
+
+        // Force reload if testing locally
+        if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+            const currentTime = new Date().getTime();
+            console.log('🔄 Dev mode: Cache busting enabled', new Date().toLocaleTimeString());
+            
+            // Add timestamp to all fetch requests
+            const originalFetch = window.fetch;
+            window.fetch = function(...args) {
+                if (args[0].includes('.json') || args[0].includes('.js')) {
+                    args[0] += (args[0].includes('?') ? '&' : '?') + '_t=' + currentTime;
+                }
+                return originalFetch.apply(this, args);
+            };
+        }
     </script>
 </body>
 </html>
