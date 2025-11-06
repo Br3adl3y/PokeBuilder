@@ -168,14 +168,17 @@ class PokeApp {
                     req.onsuccess = () => resolve(req.result || []);
                 })
             ]).then(([pokemon, moves]) => {
+                alert(`Loaded: ${pokemon.length} pokemon, ${moves.length} moves`);
                 this.pokemon = pokemon;
                 this.moves = moves;
                 this.loading = false;
+                alert(`Loading is now: ${this.loading}`);
                 this.render();
             });
         };
 
         dbRequest.onerror = () => {
+            alert('Database error!');
             this.loading = false;
             this.render();
         };
