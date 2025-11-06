@@ -687,8 +687,6 @@ async function getShowdownSpriteId(pokemon) {
     
     const apiUrl = `https://pokeapi.co/api/v2/pokemon/${pokemonName}-${formName}`;
     
-    console.log('Fetching sprite ID for:', pokemonName, formName, 'from', apiUrl);
-    
     try {
         const response = await fetch(apiUrl);
         if (!response.ok) throw new Error('Form not found');
