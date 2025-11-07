@@ -1247,10 +1247,20 @@ const GAME_MASTER_URL = 'https://raw.githubusercontent.com/PokeMiners/game_maste
                 updateStatus('💾 Saving to IndexedDB...');
                 await saveToDatabase('pokemon', pokemon);
                 await saveToDatabase('moves', moves);
-                await saveToDatabase('metadata', [{
-                    key: 'activeSeasonCups',
-                    value: Array.from(activeCupIds)
-                }]);
+                await saveToDatabase('metadata', [
+                    {
+                        key: 'activeSeasonCups',
+                        value: Array.from(activeCupIds)
+                    },
+                    {
+                        key: 'seasonSchedule',
+                        value: {
+                            seasonTitle: scheduleData.seasonTitle,
+                            blogUrl: scheduleData.blogUrl,
+                            schedule: scheduleData.schedule
+                        }
+                    }
+                ]);
                 
                 await saveToDatabase('metadata', [{
                     key: 'lastUpdated',
@@ -1310,12 +1320,13 @@ const GAME_MASTER_URL = 'https://raw.githubusercontent.com/PokeMiners/game_maste
                 const damageMatrixData = typeEffData.find(d => d.id === 'damageMatrix');
                 
                 if (damageMatrixData) {
+                    // Fixed parameter order: allPokemon, allMoves, selectedCups, typeChart, typeOrder
                     await calculateRankings(
                         allPokemon, 
                         allMoves, 
                         selectedCups,
-                        damageMatrixData.matrix, 
-                        damageMatrixData.defenderTypes
+                        damageMatrixData.matrix,      // This is typeChart
+                        damageMatrixData.defenderTypes // This is typeOrder
                     );
                 }
                 
@@ -1345,14 +1356,9 @@ const GAME_MASTER_URL = 'https://raw.githubusercontent.com/PokeMiners/game_maste
 
             const { pvpMoves, pveMoves } = buildMoveMaps(gameMaster);
 
-            // Parse cups first
-            updateStatus('⏳ Parsing cup templates...');
-            const parsedCups = parseCups(gameMaster);
-            cups.push(...parsedCups);
-
-            // Parse the active season schedule
             updateStatus('⏳ Parsing VS Seeker schedule...');
-            const activeCupIds = parseVSSeekerSchedule(gameMaster);
+            const scheduleData = parseVSSeekerSchedule(gameMaster);
+            const activeCupIds = scheduleData.activeCupIds;
 
             for (const item of gameMaster) {
                 if (!item.templateId?.startsWith('V') || !item.data?.pokemonSettings) continue;
@@ -1568,13 +1574,9 @@ const GAME_MASTER_URL = 'https://raw.githubusercontent.com/PokeMiners/game_maste
             const settings = scheduleTemplate.data.vsSeekerScheduleSettings;
             const activeCupIds = new Set();
             
-            // Get the most recent season (last in array)
             const seasons = settings.seasonSchedules;
             const currentSeason = seasons[seasons.length - 1];
-            
-            console.log(`📅 Current Season: ${currentSeason.seasonTitle}`);
-            
-            // Extract all cup template IDs from all weeks
+                       
             for (const week of currentSeason.vsSeekerSchedules) {
                 const startDate = new Date(parseInt(week.startTimeMs));
                 const endDate = new Date(parseInt(week.endTimeMs));
@@ -1583,19 +1585,20 @@ const GAME_MASTER_URL = 'https://raw.githubusercontent.com/PokeMiners/game_maste
                 
                 for (const cupId of week.vsSeekerLeagueTempalteId) {
                     activeCupIds.add(cupId);
-                    console.log(`    → ${cupId}`);
+                    const displayId = cupId.replace('COMBAT_LEAGUE_', '');
+                    console.log(`    → ${displayId}`);
                 }
             }
             
-            console.log(`✅ Found ${activeCupIds.size} unique cups in current season`);
+            console.log('Active Cup IDs:', Array.from(activeCupIds).map(id => id.replace('COMBAT_LEAGUE_', '')));
             return activeCupIds;
         }
 
         function isStandardLeague(templateId) {
             const exactStandard = [
-                'COMBAT_LEAGUE_DEFAULT_GREAT',
-                'COMBAT_LEAGUE_DEFAULT_ULTRA',
-                'COMBAT_LEAGUE_DEFAULT_MASTER',
+                'COMBAT_LEAGUE_VS_SEEKER_GREAT', 
+                'COMBAT_LEAGUE_VS_SEEKER_ULTRA',
+                'COMBAT_LEAGUE_VS_SEEKER_MASTER',
                 'COMBAT_LEAGUE_VS_SEEKER_GREAT_LITTLE'
             ];
             
@@ -1620,6 +1623,12 @@ const GAME_MASTER_URL = 'https://raw.githubusercontent.com/PokeMiners/game_maste
             const metadata = await loadFromDatabase('metadata');
             const seasonData = metadata.find(m => m.key === 'activeSeasonCups');
             const activeCupIds = seasonData ? new Set(seasonData.value) : new Set();
+                       
+            // Always check Little League by default (not in schedule but we want it)
+            const littleCup = cups.find(c => c.id === 'COMBAT_LEAGUE_VS_SEEKER_GREAT_LITTLE');
+            if (littleCup) {
+                activeCupIds.add(littleCup.id);
+            }
             
             const standardCups = cups.filter(c => c.isStandard).sort((a, b) => {
                 const order = { 500: 0, 1500: 1, 2500: 2, null: 3 };
@@ -1635,11 +1644,13 @@ const GAME_MASTER_URL = 'https://raw.githubusercontent.com/PokeMiners/game_maste
                 const extraInfo = cup.maxLevel ? ` (Max Level ${cup.maxLevel})` : '';
                 const isActive = activeCupIds.has(cup.id);
                 const activeLabel = isActive ? ' 🔥' : '';
-                
+                const displayId = cup.id.replace('COMBAT_LEAGUE_', '');
+                               
                 html += `
-                    <label style="display: block; margin: 8px 0; cursor: pointer;">
+                    <label style="display: block; margin: 8px 0; cursor: pointer;" title="${displayId}">
                         <input type="checkbox" value="${cup.id}" ${isActive ? 'checked' : ''} style="margin-right: 8px;">
                         <strong>${cup.title}</strong>${activeLabel} - ${cpText}${extraInfo}
+                        <span style="color: #999; font-size: 11px; margin-left: 5px;">${displayId}</span>
                     </label>
                 `;
             });
@@ -1669,11 +1680,13 @@ const GAME_MASTER_URL = 'https://raw.githubusercontent.com/PokeMiners/game_maste
                     const restrictText = restrictions.length > 0 ? ` (${restrictions.join(', ')})` : '';
                     const isActive = activeCupIds.has(cup.id);
                     const activeLabel = isActive ? ' 🔥' : '';
-                    
+                    const displayId = cup.id.replace('COMBAT_LEAGUE_', '');
+                                        
                     html += `
-                        <label style="display: block; margin: 8px 0; cursor: pointer;">
+                        <label style="display: block; margin: 8px 0; cursor: pointer;" title="${displayId}">
                             <input type="checkbox" value="${cup.id}" ${isActive ? 'checked' : ''} style="margin-right: 8px;">
                             <strong>${cup.title}</strong>${activeLabel} - ${cpText}${restrictText}
+                            <span style="color: #999; font-size: 11px; margin-left: 5px;">${displayId}</span>
                         </label>
                     `;
                 });

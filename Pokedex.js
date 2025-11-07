@@ -3,12 +3,16 @@
 // ====================================
 
 function selectPokemon(pokemon, forceSpecificForm = false) {
+    console.log('selectPokemon called with:', pokemon.name, pokemon.form, 'force:', forceSpecificForm);
+    console.trace(); // This shows you WHERE it was called from
+    
     const forms = getPokemonForms.call(this, pokemon.dexNumber);
     const baseForm = forms[0];
     
     this.selectedPokemon = baseForm;
-    // Only show specific form if explicitly requested (from evolution chain)
     this.selectedForm = forceSpecificForm ? pokemon : null;
+    
+    console.log('After setting - selectedPokemon:', this.selectedPokemon.form, 'selectedForm:', this.selectedForm?.form);
     
     this.expandedSections = {};
     this.moveMode = 'pvp';
@@ -17,6 +21,9 @@ function selectPokemon(pokemon, forceSpecificForm = false) {
 }
 
 function selectForm(formId) {
+    console.log('selectForm called with formId:', formId);
+    console.trace();
+    
     this.selectedForm = this.pokemon.find(p => p.id === formId);
     this.expandedSections = {};
     this.render();
@@ -415,11 +422,11 @@ function attachPokemonEventListeners() {
     }
 
     // Evolution sprites click
-    document.querySelectorAll('[data-pokemon-id]').forEach(sprite => {
+        document.querySelectorAll('.evolution-scroll [data-pokemon-id]').forEach(sprite => {
         sprite.addEventListener('click', () => {
             const pokemonId = sprite.dataset.pokemonId;
             const pokemon = this.pokemon.find(p => p.id === pokemonId);
-            if (pokemon) selectPokemon.call(this, pokemon, true); // Force specific form
+            if (pokemon) selectPokemon.call(this, pokemon, true);
         });
     });
 }
