@@ -12,6 +12,242 @@ class ScreenshotProcessor {
         this.isDesktop = !('ontouchstart' in window);
     }
 
+    setupNameAutocomplete(modal) {
+        const nameInput = modal.querySelector('[data-field="name"]');
+        const formSelect = modal.querySelector('[data-field="form"]');
+        
+        // Create autocomplete dropdown
+        const dropdown = document.createElement('div');
+        dropdown.className = 'absolute z-50 w-full mt-1 bg-white rounded-lg shadow-lg max-h-60 overflow-y-auto hidden';
+        dropdown.setAttribute('data-autocomplete', 'dropdown');
+        
+        nameInput.parentElement.style.position = 'relative';
+        nameInput.parentElement.appendChild(dropdown);
+        
+        // Show dropdown on focus or input
+        const showDropdown = () => {
+            const query = nameInput.value.toLowerCase().trim();
+            
+            // Get unique Pokemon names
+            const uniqueNames = [...new Set(this.app.pokemon.map(p => p.name))];
+            
+            // Filter and sort
+            let matches = uniqueNames.filter(name => 
+                name.toLowerCase().includes(query)
+            ).sort();
+            
+            // Limit to 10 results
+            matches = matches.slice(0, 10);
+            
+            if (matches.length === 0 || (matches.length === 1 && matches[0].toLowerCase() === query)) {
+                dropdown.classList.add('hidden');
+                return;
+            }
+            
+            // Populate dropdown
+            dropdown.innerHTML = matches.map(name => `
+                <div class="px-4 py-2 hover:bg-teal-100 cursor-pointer transition text-gray-800" data-name="${name}">
+                    ${this.highlightMatch(name, query)}
+                </div>
+            `).join('');
+            
+            dropdown.classList.remove('hidden');
+            
+            // Add click handlers
+            dropdown.querySelectorAll('[data-name]').forEach(item => {
+                item.addEventListener('click', () => {
+                    nameInput.value = item.dataset.name;
+                    dropdown.classList.add('hidden');
+                    
+                    // Update form options and moves
+                    this.updateFormOptions(nameInput.value, formSelect);
+                    this.updateMoveOptions(nameInput.value, formSelect.value, modal);
+                    this.updateCalculatedLevel(modal);
+                    
+                    // Clear any validation errors
+                    nameInput.classList.remove('ring-2', 'ring-red-500');
+                    const errorMsg = nameInput.parentElement.querySelector('.validation-error');
+                    if (errorMsg) errorMsg.remove();
+                });
+            });
+        };
+        
+        nameInput.addEventListener('input', showDropdown);
+        nameInput.addEventListener('focus', showDropdown);
+        
+        // Hide dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!nameInput.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
+        
+        // Keyboard navigation
+        let selectedIndex = -1;
+        nameInput.addEventListener('keydown', (e) => {
+            const items = dropdown.querySelectorAll('[data-name]');
+            
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+                updateSelection(items, selectedIndex);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                selectedIndex = Math.max(selectedIndex - 1, -1);
+                updateSelection(items, selectedIndex);
+            } else if (e.key === 'Enter' && selectedIndex >= 0) {
+                e.preventDefault();
+                items[selectedIndex].click();
+                selectedIndex = -1;
+            } else if (e.key === 'Escape') {
+                dropdown.classList.add('hidden');
+                selectedIndex = -1;
+            }
+        });
+        
+        function updateSelection(items, index) {
+            items.forEach((item, i) => {
+                if (i === index) {
+                    item.classList.add('bg-teal-100');
+                    item.scrollIntoView({ block: 'nearest' });
+                } else {
+                    item.classList.remove('bg-teal-100');
+                }
+            });
+        }
+    }
+
+    highlightMatch(text, query) {
+        if (!query) return text;
+        
+        const index = text.toLowerCase().indexOf(query.toLowerCase());
+        if (index === -1) return text;
+        
+        const before = text.slice(0, index);
+        const match = text.slice(index, index + query.length);
+        const after = text.slice(index + query.length);
+        
+        return `${before}<strong class="text-teal-600">${match}</strong>${after}`;
+    }
+
+    validateFormData(modal) {
+        const errors = [];
+        
+        // Get values
+        const name = modal.querySelector('[data-field="name"]').value.trim();
+        const cp = modal.querySelector('[data-field="cp"]').value;
+        const ivAtk = modal.querySelector('[data-field="ivAttack"]').value;
+        const ivDef = modal.querySelector('[data-field="ivDefense"]').value;
+        const ivSta = modal.querySelector('[data-field="ivStamina"]').value;
+        const dateCaught = modal.querySelector('[data-field="dateCaught"]').value;
+        
+        // Validate Pokemon name (required)
+        if (!name) {
+            errors.push({ field: 'name', message: 'Pokémon name is required' });
+        } else {
+            // Check if Pokemon exists in database
+            const pokemon = this.app.pokemon.find(p => 
+                p.name.toLowerCase() === name.toLowerCase()
+            );
+            if (!pokemon) {
+                errors.push({ field: 'name', message: 'Pokémon not found in database' });
+            }
+        }
+        
+        // Validate CP (required, 0-9999)
+        if (!cp) {
+            errors.push({ field: 'cp', message: 'CP is required' });
+        } else {
+            const cpNum = parseInt(cp);
+            if (isNaN(cpNum) || cpNum < 0 || cpNum > 9999) {
+                errors.push({ field: 'cp', message: 'CP must be between 0 and 9999' });
+            }
+        }
+        
+        // Validate IVs (required, 0-15)
+        if (ivAtk === '') {
+            errors.push({ field: 'ivAttack', message: 'Attack IV is required' });
+        } else {
+            const val = parseInt(ivAtk);
+            if (isNaN(val) || val < 0 || val > 15) {
+                errors.push({ field: 'ivAttack', message: 'Attack IV must be 0-15' });
+            }
+        }
+        
+        if (ivDef === '') {
+            errors.push({ field: 'ivDefense', message: 'Defense IV is required' });
+        } else {
+            const val = parseInt(ivDef);
+            if (isNaN(val) || val < 0 || val > 15) {
+                errors.push({ field: 'ivDefense', message: 'Defense IV must be 0-15' });
+            }
+        }
+        
+        if (ivSta === '') {
+            errors.push({ field: 'ivStamina', message: 'Stamina IV is required' });
+        } else {
+            const val = parseInt(ivSta);
+            if (isNaN(val) || val < 0 || val > 15) {
+                errors.push({ field: 'ivStamina', message: 'Stamina IV must be 0-15' });
+            }
+        }
+        
+        // Validate date (required, not in future)
+        if (!dateCaught) {
+            errors.push({ field: 'dateCaught', message: 'Date caught is required' });
+        } else {
+            const caughtDate = new Date(dateCaught);
+            const today = new Date();
+            today.setHours(23, 59, 59, 999); // End of today
+            
+            if (caughtDate > today) {
+                errors.push({ field: 'dateCaught', message: 'Date cannot be in the future' });
+            }
+            
+            // Pokemon GO launched July 6, 2016
+            const pogoLaunch = new Date('2016-07-06');
+            if (caughtDate < pogoLaunch) {
+                errors.push({ field: 'dateCaught', message: 'Date cannot be before Pokémon GO launched (July 6, 2016)' });
+            }
+        }
+        
+        return errors;
+    }
+
+    showValidationErrors(modal, errors) {
+        // Clear existing error states
+        modal.querySelectorAll('.border-red-500, .ring-red-500').forEach(el => {
+            el.classList.remove('border-red-500', 'ring-red-500', 'ring-2');
+        });
+        
+        // Remove existing error messages
+        modal.querySelectorAll('.validation-error').forEach(el => el.remove());
+        
+        // Show new errors
+        errors.forEach(error => {
+            const field = modal.querySelector(`[data-field="${error.field}"]`);
+            if (field) {
+                // Highlight field
+                field.classList.add('ring-2', 'ring-red-500');
+                
+                // Add error message below field
+                const errorMsg = document.createElement('p');
+                errorMsg.className = 'validation-error text-red-200 text-xs mt-1';
+                errorMsg.textContent = error.message;
+                field.parentElement.appendChild(errorMsg);
+            }
+        });
+        
+        // Scroll to first error
+        if (errors.length > 0) {
+            const firstErrorField = modal.querySelector(`[data-field="${errors[0].field}"]`);
+            if (firstErrorField) {
+                firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                firstErrorField.focus();
+            }
+        }
+    }
+
     // Show screenshot capture modal
     showCaptureModal() {
         const modalHtml = `
@@ -219,6 +455,7 @@ class ScreenshotProcessor {
             secondChargeUnlocked: false,
             shiny: false,
             shadow: false,
+            purified: false,
             dynamax: false,
             xxl: false,
             xxs: false,
@@ -246,6 +483,40 @@ class ScreenshotProcessor {
             defense: { value: '', confidence: 0 },
             stamina: { value: '', confidence: 0 }
         };
+    }
+
+    updateMoveOptions(pokemonName, form, modal) {
+        const pokemon = this.app.pokemon.find(p => 
+            p.name.toLowerCase() === pokemonName.toLowerCase() &&
+            (!form || p.form === form)
+        );
+        
+        if (!pokemon) return;
+        
+        const fastSelect = modal.querySelector('[data-field="currentFastMove"]');
+        const charge1Select = modal.querySelector('[data-field="currentChargeMove1"]');
+        const charge2Select = modal.querySelector('[data-field="currentChargeMove2"]');
+        
+        // Populate fast moves
+        fastSelect.innerHTML = '<option value="" class="bg-teal-600">None</option>';
+        if (pokemon.fastMoves) {
+            pokemon.fastMoves.forEach(moveId => {
+                const move = this.app.moves.find(m => m.id === moveId || m.rawId === moveId);
+                if (move) {
+                    fastSelect.innerHTML += `<option value="${moveId}" class="bg-teal-600">${move.name}</option>`;
+                }
+            });
+        }
+        
+        // Populate charged moves
+        const chargeOptions = '<option value="" class="bg-teal-600">None</option>' + 
+            (pokemon.chargedMoves || []).map(moveId => {
+                const move = this.app.moves.find(m => m.id === moveId || m.rawId === moveId);
+                return move ? `<option value="${moveId}" class="bg-teal-600">${move.name}</option>` : '';
+            }).join('');
+        
+        charge1Select.innerHTML = chargeOptions;
+        charge2Select.innerHTML = chargeOptions;
     }
 
     // Calculate level from CP given IVs and pokemon
@@ -449,13 +720,71 @@ class ScreenshotProcessor {
                                     </div>
                                 </div>
 
+                                <div class="border-t border-white border-opacity-20 pt-3">
+                                    <label class="block text-sm font-medium text-white mb-2">Current Moves</label>
+                                    <div class="space-y-2">
+                                        <div>
+                                            <label class="block text-xs font-medium text-teal-100 mb-1">Fast Move</label>
+                                            <select 
+                                                data-field="currentFastMove"
+                                                class="w-full px-3 py-2 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+                                            >
+                                                <option value="" class="bg-teal-600">None</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-medium text-teal-100 mb-1">Charged Move 1</label>
+                                            <select 
+                                                data-field="currentChargeMove1"
+                                                class="w-full px-3 py-2 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+                                            >
+                                                <option value="" class="bg-teal-600">None</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-medium text-teal-100 mb-1">Charged Move 2</label>
+                                            <select 
+                                                data-field="currentChargeMove2"
+                                                class="w-full px-3 py-2 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+                                            >
+                                                <option value="" class="bg-teal-600">None</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <!-- Toggle Switches -->
                                 <div class="bg-white bg-opacity-10 backdrop-blur-sm rounded-lg p-4 space-y-3 border border-white border-opacity-20">
                                     <h3 class="font-semibold text-white text-sm mb-3">Properties</h3>
                                     
                                     ${this.renderToggle('2nd Charge Move Unlocked', 'secondChargeUnlocked', data.secondChargeUnlocked)}
                                     ${this.renderToggle('Shiny', 'shiny', data.shiny)}
-                                    ${this.renderToggle('Shadow', 'shadow', data.shadow)}
+                                    <div class="flex justify-between items-center">
+                                        <label class="text-sm text-white">Shadow Status</label>
+                                        <div class="flex gap-2">
+                                            <button 
+                                                type="button"
+                                                data-shadow-state="normal"
+                                                class="px-3 py-1 text-xs rounded-lg transition bg-white text-teal-600"
+                                            >
+                                                Normal
+                                            </button>
+                                            <button 
+                                                type="button"
+                                                data-shadow-state="shadow"
+                                                class="px-3 py-1 text-xs rounded-lg transition bg-white bg-opacity-20 text-white"
+                                            >
+                                                Shadow
+                                            </button>
+                                            <button 
+                                                type="button"
+                                                data-shadow-state="purified"
+                                                class="px-3 py-1 text-xs rounded-lg transition bg-white bg-opacity-20 text-white"
+                                            >
+                                                Purified
+                                            </button>
+                                        </div>
+                                    </div>
                                     ${this.renderToggle('Dynamax', 'dynamax', data.dynamax)}
                                     ${this.renderToggle('XXL', 'xxl', data.xxl)}
                                     ${this.renderToggle('XXS', 'xxs', data.xxs)}
@@ -564,6 +893,9 @@ class ScreenshotProcessor {
         const modal = document.querySelector('[data-modal="confirmation"]');
         if (!modal) return;
 
+        // Setup autocomplete
+        this.setupNameAutocomplete(modal);
+        
         // Cancel button
         modal.querySelector('[data-action="cancel-confirmation"]').addEventListener('click', () => {
             if (confirm('Are you sure you want to cancel? Unsaved data will be lost.')) {
@@ -594,38 +926,130 @@ class ScreenshotProcessor {
             });
         });
 
-        // IV Auto-advance functionality
+        // Shadow state buttons
+        modal.querySelectorAll('[data-shadow-state]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const state = btn.dataset.shadowState;
+                
+                // Update button styles
+                modal.querySelectorAll('[data-shadow-state]').forEach(b => {
+                    if (b.dataset.shadowState === state) {
+                        if (state === 'shadow') {
+                            b.className = 'px-3 py-1 text-xs rounded-lg transition bg-purple-600 text-white';
+                        } else if (state === 'purified') {
+                            b.className = 'px-3 py-1 text-xs rounded-lg transition bg-blue-400 text-white';
+                        } else {
+                            b.className = 'px-3 py-1 text-xs rounded-lg transition bg-white text-teal-600';
+                        }
+                    } else {
+                        b.className = 'px-3 py-1 text-xs rounded-lg transition bg-white bg-opacity-20 text-white';
+                    }
+                });
+            });
+        });
+
+        // IV Auto-advance functionality with numpad shortcut support
         const ivFields = {
             attack: modal.querySelector('[data-iv-field="attack"]'),
             defense: modal.querySelector('[data-iv-field="defense"]'),
             stamina: modal.querySelector('[data-iv-field="stamina"]')
         };
 
-        // Auto-advance from Attack -> Defense -> Stamina
+        // Auto-select all text when IV fields receive focus
+        Object.values(ivFields).forEach(field => {
+            field.addEventListener('focus', (e) => {
+                e.target.select();
+            });
+        });
+
+        // Helper function to advance to next field
+        function advanceFromField(currentField, nextField) {
+            // Enforce 0-15 range
+            let numValue = parseInt(currentField.value);
+            if (numValue > 15) {
+                currentField.value = '15';
+            } else if (numValue < 0 || isNaN(numValue)) {
+                currentField.value = '0';
+            }
+            
+            // Move to next field
+            if (nextField) {
+                nextField.focus();
+                nextField.select();
+            }
+        }
+
+        // Attack IV
+        ivFields.attack.addEventListener('keydown', (e) => {
+            // Check for numpad operator keys (triggers advancement)
+            if (['/','.','+','-','*'].includes(e.key) || 
+                ['Divide','Decimal','Add','Subtract','Multiply'].includes(e.code)) {
+                e.preventDefault();
+                advanceFromField(e.target, ivFields.defense);
+                return;
+            }
+        });
+
         ivFields.attack.addEventListener('input', (e) => {
             const value = e.target.value;
-            if (value.length > 0 && parseInt(value) >= 0 && parseInt(value) <= 15) {
-                ivFields.defense.focus();
-                ivFields.defense.select();
+            const numValue = parseInt(value);
+            const length = value.length;
+            
+            // Auto-advance if: 2 digits OR single digit 2-9
+            if (length === 2 || (length === 1 && numValue >= 2 && numValue <= 9)) {
+                advanceFromField(e.target, ivFields.defense);
+            }
+        });
+
+        // Defense IV
+        ivFields.defense.addEventListener('keydown', (e) => {
+            // Check for numpad operator keys
+            if (['/','.','+','-','*'].includes(e.key) || 
+                ['Divide','Decimal','Add','Subtract','Multiply'].includes(e.code)) {
+                e.preventDefault();
+                advanceFromField(e.target, ivFields.stamina);
+                return;
             }
         });
 
         ivFields.defense.addEventListener('input', (e) => {
             const value = e.target.value;
-            if (value.length > 0 && parseInt(value) >= 0 && parseInt(value) <= 15) {
-                ivFields.stamina.focus();
-                ivFields.stamina.select();
+            const numValue = parseInt(value);
+            const length = value.length;
+            
+            if (length === 2 || (length === 1 && numValue >= 2 && numValue <= 9)) {
+                advanceFromField(e.target, ivFields.stamina);
             }
         });
 
-        // Prevent values outside 0-15 range
+        // Stamina IV (no next field, but still clean up on operators)
+        ivFields.stamina.addEventListener('keydown', (e) => {
+            // Check for numpad operator keys - just clean up and blur
+            if (['/','.','+','-','*'].includes(e.key) || 
+                ['Divide','Decimal','Add','Subtract','Multiply'].includes(e.code)) {
+                e.preventDefault();
+                advanceFromField(e.target, null);
+                e.target.blur();
+                return;
+            }
+        });
+
+        ivFields.stamina.addEventListener('input', (e) => {
+            // Auto-clamp if they type 16-19
+            const numValue = parseInt(e.target.value);
+            if (numValue > 15) {
+                e.target.value = '15';
+            }
+        });
+
+        // Prevent values outside 0-15 range on blur
         Object.values(ivFields).forEach(field => {
             field.addEventListener('blur', (e) => {
                 let value = parseInt(e.target.value);
                 if (isNaN(value) || value < 0) {
-                    e.target.value = 0;
+                    e.target.value = '0';
                 } else if (value > 15) {
-                    e.target.value = 15;
+                    e.target.value = '15';
                 }
                 this.updateCalculatedLevel(modal);
             });
@@ -637,11 +1061,25 @@ class ScreenshotProcessor {
         
         nameInput.addEventListener('change', () => {
             this.updateFormOptions(nameInput.value, formSelect);
+            this.updateMoveOptions(nameInput.value, formSelect.value, modal);
             this.updateCalculatedLevel(modal);
         });
-        
-        nameInput.addEventListener('blur', () => {
+
+        formSelect.addEventListener('change', () => {
+            this.updateMoveOptions(nameInput.value, formSelect.value, modal);
             this.updateCalculatedLevel(modal);
+        });
+
+        // Auto-check 2nd Charge Unlocked when charge move 2 is selected
+        const charge2Select = modal.querySelector('[data-field="currentChargeMove2"]');
+        charge2Select.addEventListener('change', (e) => {
+            const toggle = modal.querySelector('[data-toggle="secondChargeUnlocked"]');
+            const checkbox = toggle.querySelector('input[type="checkbox"]');
+            
+            if (e.target.value && e.target.value !== '') {
+                checkbox.checked = true;
+                toggle.classList.add('active');
+            }
         });
 
         // Auto-calculate level on field changes
@@ -657,6 +1095,14 @@ class ScreenshotProcessor {
 
         // Save button
         modal.querySelector('[data-action="save-pokemon"]').addEventListener('click', async () => {
+            // Validate form
+            const errors = this.validateFormData(modal);
+            
+            if (errors.length > 0) {
+                this.showValidationErrors(modal, errors);
+                return; // Don't save if there are errors
+            }
+            
             const formData = this.gatherFormData(modal);
             
             modal.remove();
@@ -707,6 +1153,18 @@ class ScreenshotProcessor {
     }
 
     gatherFormData(modal) {
+        // Find which shadow state button is active
+        let shadowState = 'normal';
+        modal.querySelectorAll('[data-shadow-state]').forEach(btn => {
+            if (btn.classList.contains('bg-purple-600')) {
+                shadowState = 'shadow';
+            } else if (btn.classList.contains('bg-blue-400')) {
+                shadowState = 'purified';
+            } else if (btn.classList.contains('bg-white') && btn.classList.contains('text-teal-600')) {
+                shadowState = 'normal';
+            }
+        });
+        
         return {
             name: modal.querySelector('[data-field="name"]').value,
             form: modal.querySelector('[data-field="form"]').value || null,
@@ -722,20 +1180,22 @@ class ScreenshotProcessor {
             // Toggle states
             secondChargeUnlocked: modal.querySelector('[data-field="secondChargeUnlocked"]').checked,
             shiny: modal.querySelector('[data-field="shiny"]').checked,
-            shadow: modal.querySelector('[data-field="shadow"]').checked,
+            shadow: shadowState === 'shadow',
+            purified: shadowState === 'purified',
             dynamax: modal.querySelector('[data-field="dynamax"]').checked,
             xxl: modal.querySelector('[data-field="xxl"]').checked,
             xxs: modal.querySelector('[data-field="xxs"]').checked,
             background: modal.querySelector('[data-field="background"]').value || null,
             costume: modal.querySelector('[data-field="costume"]').value || null,
+            // Current moveset
+            currentMoveset: {
+                fast: modal.querySelector('[data-field="currentFastMove"]').value || null,
+                charge1: modal.querySelector('[data-field="currentChargeMove1"]').value || null,
+                charge2: modal.querySelector('[data-field="currentChargeMove2"]').value || null
+            },
             // Placeholders for future features
             roles: [], // Will be populated when role assignment is implemented
             ivEfficiency: null, // Will be calculated when IV ranking is implemented
-            currentMoveset: {
-                fast: null,
-                charge1: null,
-                charge2: null
-            },
             assignedMoveset: {
                 fast: null,
                 charge1: null,
