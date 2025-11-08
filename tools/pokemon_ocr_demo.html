@@ -1,0 +1,959 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokémon GO OCR Demo</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.1/tesseract.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+        
+        .upload-area {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            margin-bottom: 30px;
+        }
+        
+        .upload-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .upload-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .results {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .results {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .result-card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .result-card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+        
+        .preview-img {
+            width: 100%;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .data-field {
+            margin-bottom: 15px;
+        }
+        
+        .data-field label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .data-field input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+        
+        .confidence {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 3px;
+        }
+        
+        .confidence.high { color: #10b981; }
+        .confidence.medium { color: #f59e0b; }
+        .confidence.low { color: #ef4444; }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: white;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .region-overlay {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .region-box {
+            position: absolute;
+            border: 3px solid #667eea;
+            background: rgba(102, 126, 234, 0.2);
+            pointer-events: none;
+        }
+        
+        .region-label {
+            position: absolute;
+            background: #667eea;
+            color: white;
+            padding: 4px 8px;
+            font-size: 12px;
+            font-weight: 600;
+            border-radius: 4px;
+            top: -25px;
+            left: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎮 Pokémon GO OCR Demo</h1>
+            <p>Upload a screenshot to extract Pokémon data automatically</p>
+        </div>
+        
+        <div class="upload-area">
+            <i class="fa-solid fa-image" style="font-size: 4rem; color: #667eea; margin-bottom: 20px;"></i>
+            <h2 style="margin-bottom: 10px;">Upload a Screenshot</h2>
+            <p style="color: #666; margin-bottom: 20px;">Upload a Pokémon GO screenshot to test OCR extraction</p>
+            <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                <i class="fa-solid fa-upload"></i> Choose Image
+            </button>
+            <input type="file" id="fileInput" accept="image/*" style="display: none;" onchange="handleFile(this.files[0])">
+        </div>
+        
+        <div id="loading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <h3>Processing Image...</h3>
+            <p id="loadingStatus">Initializing OCR engine...</p>
+        </div>
+        
+        <div id="results" class="results" style="display: none;"></div>
+    </div>
+
+    <script>
+        let tesseractWorker = null;
+        const pokemonNames = ['Bulbasaur', 'Ivysaur', 'Venusaur', 'Charmander', 'Charmeleon', 'Charizard', 
+            'Squirtle', 'Wartortle', 'Blastoise', 'Pikachu', 'Raichu', 'Mewtwo', 'Mew', 'Jumpluff', 
+            'Pumpkaboo', 'Durant', 'Rhyperior', 'Snorlax', 'Dragonite', 'Gyarados'];
+
+        async function initTesseract() {
+            if (!tesseractWorker) {
+                updateLoadingStatus('Initializing OCR engine...');
+                tesseractWorker = await Tesseract.createWorker('eng');
+            }
+        }
+
+        function updateLoadingStatus(status) {
+            const statusEl = document.getElementById('loadingStatus');
+            if (statusEl) statusEl.textContent = status;
+        }
+
+        async function handleFile(file) {
+            if (!file) return;
+            
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+            
+            try {
+                await initTesseract();
+                
+                const imageData = await loadImage(file);
+                
+                updateLoadingStatus('Finding anchor star...');
+                const anchor = findAnchorStar(imageData);
+                
+                updateLoadingStatus('Finding stats box edge...');
+                const statsBoxTop = findStatsBoxEdge(imageData);
+                
+                updateLoadingStatus('Extracting nickname...');
+                const nickname = await extractNickname(imageData, statsBoxTop);
+                
+                updateLoadingStatus('Extracting Pokémon name from date line...');
+                const pokemonName = await extractPokemonName(imageData);
+                
+                updateLoadingStatus('Extracting CP...');
+                const cp = await extractCP(imageData, anchor.x, anchor.y);
+                
+                updateLoadingStatus('Extracting date...');
+                const dateCaught = await extractDateCaught(imageData, pokemonName);
+                
+                updateLoadingStatus('Reading IV stats from color bars...');
+                const ivStats = await extractIVStats(imageData, pokemonName);
+                
+                document.getElementById('loading').style.display = 'none';
+                displayResults(imageData, { nickname, pokemonName, cp, dateCaught, ivStats, anchor, statsBoxTop });
+                
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error processing image: ' + error.message);
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        function loadImage(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        resolve({
+                            image: img,
+                            dataUrl: e.target.result,
+                            width: img.width,
+                            height: img.height
+                        });
+                    };
+                    img.onerror = () => reject(new Error('Failed to load image'));
+                    img.src = e.target.result;
+                };
+                reader.onerror = () => reject(new Error('Failed to read file'));
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function preprocessImage(imageData, region) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = region.width;
+            canvas.height = region.height;
+            
+            ctx.drawImage(
+                imageData.image,
+                region.x, region.y, region.width, region.height,
+                0, 0, region.width, region.height
+            );
+            
+            const imgData = ctx.getImageData(0, 0, region.width, region.height);
+            const data = imgData.data;
+            
+            // Convert to black and white with threshold
+            for (let i = 0; i < data.length; i += 4) {
+                const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+                const threshold = avg > 128 ? 255 : 0;
+                data[i] = data[i + 1] = data[i + 2] = threshold;
+            }
+            
+            ctx.putImageData(imgData, 0, 0);
+            
+            return canvas.toDataURL();
+        }
+
+        async function performOCR(imageDataUrl, whitelist = null) {
+            try {
+                const config = {};
+                if (whitelist) {
+                    config.tessedit_char_whitelist = whitelist;
+                }
+                
+                const result = await tesseractWorker.recognize(imageDataUrl);
+                return {
+                    text: result.data.text.trim(),
+                    confidence: result.data.confidence
+                };
+            } catch (error) {
+                console.error('OCR error:', error);
+                return { text: '', confidence: 0 };
+            }
+        }
+
+        function findAnchorStar(imageData) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const w = imageData.width;
+            const h = imageData.height;
+            
+            canvas.width = w;
+            canvas.height = h;
+            ctx.drawImage(imageData.image, 0, 0);
+            
+            // Search narrow vertical strip through star center (88-92% width, 0-10% height)
+            const searchRegion = {
+                x: Math.floor(w * 0.88),
+                y: 0,
+                width: Math.floor(w * 0.04),
+                height: Math.floor(h * 0.10)
+            };
+            
+            const imageData2 = ctx.getImageData(searchRegion.x, searchRegion.y, searchRegion.width, searchRegion.height);
+            const data = imageData2.data;
+            
+            // Star colors (yellow or gray)
+            const yellowStar = { r: 0xf7, g: 0xc2, b: 0x10 };
+            const grayStar = { r: 0xc8, g: 0xd5, b: 0xdb };
+            
+            function colorMatches(r, g, b, target, tolerance = 30) {
+                return Math.abs(r - target.r) <= tolerance &&
+                       Math.abs(g - target.g) <= tolerance &&
+                       Math.abs(b - target.b) <= tolerance;
+            }
+            
+            // Search bottom to top, left to right (should find edge around y=235)
+            for (let y = searchRegion.height - 1; y >= 0; y--) {
+                for (let x = 0; x < searchRegion.width; x++) {
+                    const idx = (y * searchRegion.width + x) * 4;
+                    const r = data[idx];
+                    const g = data[idx + 1];
+                    const b = data[idx + 2];
+                    
+                    if (colorMatches(r, g, b, yellowStar) || colorMatches(r, g, b, grayStar)) {
+                        // Found star edge! 
+                        // Reference: edge at ~235, center at 200 (offset: -35 + 45 adjustment = +10... wait, user said -45)
+                        const starEdgeY = searchRegion.y + y;
+                        const starCenterY = starEdgeY - 45;
+                        
+                        // Star center X in reference image: 1065 (90.25% of 1180)
+                        const starCenterX = Math.floor(w * 0.9025);
+                        
+                        return { x: starCenterX, y: starCenterY };
+                    }
+                }
+            }
+            
+            // Fallback if not found
+            return { x: Math.floor(w * 0.9025), y: Math.floor(h * 0.078) };
+        }
+
+        async function extractCP(imageData, anchorX, anchorY) {
+            const w = imageData.width;
+            const h = imageData.height;
+            
+            // Reference: star at (1065, 200), CP center at (590, 195)
+            // Offset from star: X: 590-1065=-475, Y: 195-200=-5
+            const refWidth = 1180;
+            const refHeight = 2556;
+            const scale = Math.min(w / refWidth, h / refHeight);
+            
+            const cpX = anchorX + (-475 * scale);
+            const cpY = anchorY + (-5 * scale);
+            
+            const region = {
+                x: Math.floor(cpX - (w * 0.25)),
+                y: Math.floor(cpY - (h * 0.02)),
+                width: Math.floor(w * 0.5),
+                height: Math.floor(h * 0.04)
+            };
+            
+            // Use enhanced preprocessing for CP
+            const processedImage = preprocessImageWithContrast(imageData, region);
+            const result = await performOCR(processedImage, '0123456789');
+            
+            const cpMatch = result.text.match(/\d+/);
+            const cpValue = cpMatch ? cpMatch[0] : '';
+            
+            return {
+                value: cpValue,
+                confidence: cpValue ? result.confidence : 0,
+                region: region,
+                raw: result.text
+            };
+        }
+        
+        function findStatsBoxEdge(imageData) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const w = imageData.width;
+            const h = imageData.height;
+            
+            canvas.width = w;
+            canvas.height = h;
+            ctx.drawImage(imageData.image, 0, 0);
+            
+            // Reference: 1180x2556, name field left edge at X: 145
+            const refWidth = 1180;
+            const scale = w / refWidth;
+            const searchX = Math.floor(145 * scale);
+            
+            // Start from middle of image, search upward
+            const startY = Math.floor(h * 0.5);
+            
+            for (let y = startY; y >= 0; y--) {
+                const pixel = ctx.getImageData(searchX, y, 1, 1).data;
+                const r = pixel[0];
+                const g = pixel[1];
+                const b = pixel[2];
+                
+                // Check if NOT white (white is roughly 240+ for all channels)
+                const isWhite = r > 240 && g > 240 && b > 240;
+                
+                if (!isWhite) {
+                    // Found the colored background! This is top of stats box
+                    return y;
+                }
+            }
+            
+            // Fallback
+            return Math.floor(h * 0.4);
+        }
+
+        function preprocessImageWithContrast(imageData, region) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = region.width;
+            canvas.height = region.height;
+            
+            ctx.drawImage(
+                imageData.image,
+                region.x, region.y, region.width, region.height,
+                0, 0, region.width, region.height
+            );
+            
+            const imgData = ctx.getImageData(0, 0, region.width, region.height);
+            const data = imgData.data;
+            
+            // Find min/max for contrast stretching
+            let min = 255, max = 0;
+            for (let i = 0; i < data.length; i += 4) {
+                const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+                if (avg < min) min = avg;
+                if (avg > max) max = avg;
+            }
+            
+            // Stretch contrast and threshold
+            const range = max - min;
+            for (let i = 0; i < data.length; i += 4) {
+                const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+                
+                // Stretch contrast
+                let stretched = range > 0 ? ((avg - min) / range) * 255 : avg;
+                
+                // Apply threshold
+                const threshold = stretched > 128 ? 255 : 0;
+                data[i] = data[i + 1] = data[i + 2] = threshold;
+            }
+            
+            ctx.putImageData(imgData, 0, 0);
+            
+            return canvas.toDataURL();
+        }
+
+        async function extractNickname(imageData, statsBoxTop) {
+            const w = imageData.width;
+            const h = imageData.height;
+            
+            // Nickname field (formerly name field)
+            // Reduced height to 50%, moved down by 25% of original height to keep center
+            const refHeight = 2556;
+            const scale = h / refHeight;
+            
+            const originalHeight = Math.floor(h * 0.08);
+            const newHeight = Math.floor(originalHeight * 0.5);
+            const yOffset = Math.floor(originalHeight * 0.25);
+            
+            const region = {
+                x: Math.floor(w * 0.05),
+                y: statsBoxTop + Math.floor(60 * scale) + yOffset,
+                width: Math.floor(w * 0.9),
+                height: newHeight
+            };
+            
+            const processedImage = preprocessImage(imageData, region);
+            const result = await performOCR(processedImage);
+            
+            // Accept any characters for nickname
+            let text = result.text.trim();
+            
+            return {
+                value: text,
+                confidence: result.confidence,
+                region: region,
+                raw: text
+            };
+        }
+
+        async function extractPokemonName(imageData) {
+            const w = imageData.width;
+            const h = imageData.height;
+            
+            // Extract from date line: "This [Pokemon] was caught on..."
+            // Anchored to bottom: 176px from bottom (normal case)
+            const refHeight = 2556;
+            const scale = h / refHeight;
+            
+            // Try normal position first
+            const normalY = h - (176 * scale);
+            const normalRegion = {
+                x: Math.floor(w * 0.05),
+                y: Math.floor(normalY - (h * 0.02)),
+                width: Math.floor(w * 0.6),
+                height: Math.floor(h * 0.04)
+            };
+            
+            const processedImage = preprocessImage(imageData, normalRegion);
+            const result = await performOCR(processedImage);
+            
+            // Extract Pokemon name between "This" and "was"
+            let pokemonName = '';
+            const match = result.text.match(/This\s+([A-Za-z]+)\s+was/i);
+            if (match) {
+                pokemonName = match[1];
+            } else {
+                // Try to extract any word that might be the Pokemon name
+                const words = result.text.replace(/[^A-Za-z\s]/g, '').trim().split(/\s+/);
+                // Look for the longest word (likely the Pokemon name)
+                pokemonName = words.reduce((longest, word) => 
+                    word.length > longest.length ? word : longest, '');
+            }
+            
+            if (pokemonName) {
+                const fuzzyMatch = findBestPokemonMatch(pokemonName);
+                return {
+                    value: fuzzyMatch || pokemonName,
+                    confidence: fuzzyMatch ? 90 : result.confidence,
+                    region: normalRegion,
+                    raw: result.text,
+                    usedFallback: false
+                };
+            }
+            
+            // Fallback: try 80px higher (long name case)
+            const fallbackY = normalY - (80 * scale);
+            const fallbackRegion = {
+                x: Math.floor(w * 0.05),
+                y: Math.floor(fallbackY - (h * 0.02)),
+                width: Math.floor(w * 0.6),
+                height: Math.floor(h * 0.04)
+            };
+            
+            const processedImageFallback = preprocessImage(imageData, fallbackRegion);
+            const resultFallback = await performOCR(processedImageFallback);
+            
+            const matchFallback = resultFallback.text.match(/This\s+([A-Za-z]+)\s+was/i);
+            if (matchFallback) {
+                pokemonName = matchFallback[1];
+            } else {
+                const words = resultFallback.text.replace(/[^A-Za-z\s]/g, '').trim().split(/\s+/);
+                pokemonName = words.reduce((longest, word) => 
+                    word.length > longest.length ? word : longest, '');
+            }
+            
+            const fuzzyMatch = findBestPokemonMatch(pokemonName);
+            return {
+                value: fuzzyMatch || pokemonName,
+                confidence: fuzzyMatch ? 90 : resultFallback.confidence,
+                region: fallbackRegion,
+                raw: resultFallback.text,
+                usedFallback: true
+            };
+        }
+
+        async function extractDateCaught(imageData, pokemonNameData) {
+            const w = imageData.width;
+            const h = imageData.height;
+            
+            // Date is anchored to BOTTOM of image
+            // Reference: 2556px tall, date at 2380 = 176px from bottom
+            const refHeight = 2556;
+            const scale = h / refHeight;
+            
+            // Use the same region that Pokemon name used
+            // If Pokemon name used fallback (80px higher), date is also there
+            const dateY = h - (176 * scale);
+            const adjustedY = pokemonNameData.usedFallback ? dateY - (80 * scale) : dateY;
+            
+            // Try right side (where the actual date is)
+            const rightRegion = {
+                x: Math.floor(w * 0.5),
+                y: Math.floor(adjustedY - (h * 0.02)),
+                width: Math.floor(w * 0.45),
+                height: Math.floor(h * 0.04)
+            };
+            
+            const processedImage = preprocessImage(imageData, rightRegion);
+            const result = await performOCR(processedImage);
+            
+            const dateMatch = result.text.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+            
+            if (dateMatch) {
+                const month = dateMatch[1].padStart(2, '0');
+                const day = dateMatch[2].padStart(2, '0');
+                const year = dateMatch[3];
+                return {
+                    value: `${year}-${month}-${day}`,
+                    confidence: result.confidence,
+                    region: rightRegion,
+                    raw: result.text
+                };
+            }
+            
+            return {
+                value: '',
+                confidence: 0,
+                region: rightRegion,
+                raw: result.text
+            };
+        }
+
+        async function extractIVStats(imageData, pokemonNameData) {
+            const w = imageData.width;
+            const h = imageData.height;
+            
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = w;
+            canvas.height = h;
+            ctx.drawImage(imageData.image, 0, 0);
+            
+            // IVs are anchored to BOTTOM of image
+            // If Pokemon name used fallback (long name), shift IVs up 80px
+            const refHeight = 2556;
+            const scale = h / refHeight;
+            
+            const shift = pokemonNameData.usedFallback ? 80 * scale : 0;
+            
+            const atkY = h - (581 * scale) - shift;
+            const defY = h - (466 * scale) - shift;
+            const staY = h - (356 * scale) - shift;
+            
+            // Bar positions from reference
+            const refWidth = 1180;
+            const barStartX = Math.floor((145 / refWidth) * w);
+            const barEndX = Math.floor((530 / refWidth) * w);
+            const barWidth = barEndX - barStartX;
+            
+            // Colors: df7f81 (15/filled), f5a54e (filled), e2e2e4 (empty)
+            const maxColor = { r: 0xdf, g: 0x7f, b: 0x81 };
+            const filledColor = { r: 0xf5, g: 0xa5, b: 0x4e };
+            const emptyColor = { r: 0xe2, g: 0xe2, b: 0xe4 };
+            
+            function colorMatches(r, g, b, target, tolerance = 20) {
+                return Math.abs(r - target.r) <= tolerance &&
+                       Math.abs(g - target.g) <= tolerance &&
+                       Math.abs(b - target.b) <= tolerance;
+            }
+            
+            function readIV(y) {
+                // Sample 15 points evenly distributed across the bar
+                for (let i = 0; i < 15; i++) {
+                    const x = barStartX + (barWidth * (i / 14));
+                    const pixel = ctx.getImageData(Math.floor(x), Math.floor(y), 1, 1).data;
+                    const r = pixel[0];
+                    const g = pixel[1];
+                    const b = pixel[2];
+                    
+                    // If we hit empty color, return current count
+                    if (colorMatches(r, g, b, emptyColor)) {
+                        return i;
+                    }
+                    
+                    // If we hit max color, it's 15
+                    if (colorMatches(r, g, b, maxColor)) {
+                        return 15;
+                    }
+                }
+                
+                // All 15 segments were filled
+                return 15;
+            }
+            
+            const statsRegion = {
+                x: Math.floor(barStartX),
+                y: Math.floor(atkY - 20),
+                width: Math.floor(barWidth),
+                height: Math.floor((staY - atkY) + 40)
+            };
+            
+            return {
+                attack: readIV(atkY),
+                defense: readIV(defY),
+                stamina: readIV(staY),
+                region: statsRegion,
+                shiftApplied: pokemonNameData.usedFallback
+            };
+        }
+
+        function findBestPokemonMatch(ocrText) {
+            if (!ocrText) return null;
+            
+            const lowerOcr = ocrText.toLowerCase();
+            
+            const exactMatch = pokemonNames.find(name => 
+                name.toLowerCase() === lowerOcr
+            );
+            if (exactMatch) return exactMatch;
+            
+            const containsMatch = pokemonNames.find(name => 
+                name.toLowerCase().includes(lowerOcr) || lowerOcr.includes(name.toLowerCase())
+            );
+            if (containsMatch) return containsMatch;
+            
+            let bestMatch = null;
+            let bestScore = 0;
+            
+            for (const name of pokemonNames) {
+                const score = calculateSimilarity(lowerOcr, name.toLowerCase());
+                if (score > bestScore && score > 0.6) {
+                    bestScore = score;
+                    bestMatch = name;
+                }
+            }
+            
+            return bestMatch;
+        }
+
+        function calculateSimilarity(str1, str2) {
+            const longer = str1.length > str2.length ? str1 : str2;
+            const shorter = str1.length > str2.length ? str2 : str1;
+            
+            if (longer.length === 0) return 1.0;
+            
+            const editDistance = levenshteinDistance(longer, shorter);
+            return (longer.length - editDistance) / longer.length;
+        }
+
+        function levenshteinDistance(str1, str2) {
+            const matrix = [];
+            
+            for (let i = 0; i <= str2.length; i++) {
+                matrix[i] = [i];
+            }
+            
+            for (let j = 0; j <= str1.length; j++) {
+                matrix[0][j] = j;
+            }
+            
+            for (let i = 1; i <= str2.length; i++) {
+                for (let j = 1; j <= str1.length; j++) {
+                    if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+                        matrix[i][j] = matrix[i - 1][j - 1];
+                    } else {
+                        matrix[i][j] = Math.min(
+                            matrix[i - 1][j - 1] + 1,
+                            matrix[i][j - 1] + 1,
+                            matrix[i - 1][j] + 1
+                        );
+                    }
+                }
+            }
+            
+            return matrix[str2.length][str1.length];
+        }
+
+        function getConfidenceClass(confidence) {
+            if (confidence >= 75) return 'high';
+            if (confidence >= 50) return 'medium';
+            return 'low';
+        }
+
+        function displayResults(imageData, data) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.style.display = 'grid';
+            
+            // Create image preview with region overlay
+            const previewHtml = `
+                <div class="result-card">
+                    <h3>📸 Screenshot Preview</h3>
+                    <div class="region-overlay">
+                        <img src="${imageData.dataUrl}" class="preview-img" id="previewImg">
+                        <div class="region-box" style="display: none; border-color: #ef4444;" id="anchorRegion">
+                            <div class="region-label" style="background: #ef4444;">⭐ Anchor</div>
+                        </div>
+                        <div class="region-box" style="display: none; border-color: #8b5cf6;" id="nicknameRegion">
+                            <div class="region-label" style="background: #8b5cf6;">Nickname</div>
+                        </div>
+                        <div class="region-box" id="nameRegion" style="display: none;">
+                            <div class="region-label">Pokémon Name</div>
+                        </div>
+                        <div class="region-box" id="cpRegion" style="display: none;">
+                            <div class="region-label">CP</div>
+                        </div>
+                        <div class="region-box" id="dateRegion" style="display: none;">
+                            <div class="region-label">Date</div>
+                        </div>
+                        <div class="region-box" style="display: none; border-color: #10b981;" id="ivRegion">
+                            <div class="region-label" style="background: #10b981;">IVs</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            const extractedHtml = `
+                <div class="result-card">
+                    <h3>📊 Extracted Data</h3>
+                    
+                    <div class="data-field">
+                        <label>⭐ Anchor Star Position</label>
+                        <input type="text" value="X: ${data.anchor.x}, Y: ${data.anchor.y}" readonly>
+                        <div class="confidence high">
+                            Used to position CP (star can move due to scrolling)
+                        </div>
+                    </div>
+                    
+                    <div class="data-field">
+                        <label>📦 Stats Box Top Edge</label>
+                        <input type="text" value="Y: ${data.statsBoxTop}" readonly>
+                        <div class="confidence high">
+                            Used to position Nickname (varies by Pokémon sprite size)
+                        </div>
+                    </div>
+                    
+                    <div class="data-field">
+                        <label>Nickname (Optional)</label>
+                        <input type="text" value="${data.nickname.value || '(none detected)'}" readonly>
+                        <div class="confidence ${getConfidenceClass(data.nickname.confidence)}">
+                            Confidence: ${Math.round(data.nickname.confidence)}%
+                            ${data.nickname.raw ? ` (Raw: "${data.nickname.raw}")` : ''}
+                            <br><em>Accepts any characters - no validation</em>
+                        </div>
+                    </div>
+                    
+                    <div class="data-field">
+                        <label>Pokémon Name (from date line)</label>
+                        <input type="text" value="${data.pokemonName.value}" readonly>
+                        <div class="confidence ${getConfidenceClass(data.pokemonName.confidence)}">
+                            Confidence: ${Math.round(data.pokemonName.confidence)}%
+                            ${data.pokemonName.raw ? ` (Raw: "${data.pokemonName.raw}")` : ''}
+                            ${data.pokemonName.usedFallback ? '<br><strong style="color: #f59e0b;">⚠️ Used 80px higher position (long name)</strong>' : ''}
+                        </div>
+                    </div>
+                    
+                    <div class="data-field">
+                        <label>CP (Combat Power)</label>
+                        <input type="text" value="${data.cp.value}" readonly>
+                        <div class="confidence ${getConfidenceClass(data.cp.confidence)}">
+                            Confidence: ${Math.round(data.cp.confidence)}%
+                            ${data.cp.raw !== data.cp.value ? ` (Raw: "${data.cp.raw}")` : ''}
+                            <br><em>Using enhanced contrast preprocessing</em>
+                        </div>
+                    </div>
+                    
+                    <div class="data-field">
+                        <label>Date Caught</label>
+                        <input type="text" value="${data.dateCaught.value || 'Not detected'}" readonly>
+                        <div class="confidence ${getConfidenceClass(data.dateCaught.confidence)}">
+                            Confidence: ${Math.round(data.dateCaught.confidence)}%
+                            ${data.dateCaught.raw ? ` (Raw: "${data.dateCaught.raw}")` : ''}
+                        </div>
+                    </div>
+                    
+                    <div class="data-field">
+                        <label>IV Stats (from colored bars)</label>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 5px;">
+                            <div style="text-align: center;">
+                                <div style="font-weight: 600; color: #ef4444;">Attack</div>
+                                <div style="font-size: 1.5rem; font-weight: bold;">${data.ivStats.attack}</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-weight: 600; color: #f59e0b;">Defense</div>
+                                <div style="font-size: 1.5rem; font-weight: bold;">${data.ivStats.defense}</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-weight: 600; color: #10b981;">HP</div>
+                                <div style="font-size: 1.5rem; font-weight: bold;">${data.ivStats.stamina}</div>
+                            </div>
+                        </div>
+                        <div class="confidence high">
+                            Anchored to bottom (fixed position)
+                            ${data.ivStats.shiftApplied ? '<br><strong style="color: #f59e0b;">⚠️ Shifted up 80px for long name</strong>' : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            resultsDiv.innerHTML = previewHtml + extractedHtml;
+            
+            // Position region boxes after image loads
+            setTimeout(() => {
+                const img = document.getElementById('previewImg');
+                const imgRect = img.getBoundingClientRect();
+                const imgNaturalWidth = img.naturalWidth;
+                const imgNaturalHeight = img.naturalHeight;
+                const scale = img.width / imgNaturalWidth;
+                
+                function positionRegion(regionId, region) {
+                    const box = document.getElementById(regionId);
+                    box.style.left = (region.x * scale) + 'px';
+                    box.style.top = (region.y * scale) + 'px';
+                    box.style.width = (region.width * scale) + 'px';
+                    box.style.height = (region.height * scale) + 'px';
+                    box.style.display = 'block';
+                }
+                
+                // Show anchor point as a small box
+                const anchorBox = document.getElementById('anchorRegion');
+                anchorBox.style.left = (data.anchor.x * scale - 10) + 'px';
+                anchorBox.style.top = (data.anchor.y * scale - 10) + 'px';
+                anchorBox.style.width = '20px';
+                anchorBox.style.height = '20px';
+                anchorBox.style.borderRadius = '50%';
+                anchorBox.style.display = 'block';
+                
+                positionRegion('nicknameRegion', data.nickname.region);
+                positionRegion('nameRegion', data.pokemonName.region);
+                positionRegion('cpRegion', data.cp.region);
+                positionRegion('dateRegion', data.dateCaught.region);
+                positionRegion('ivRegion', data.ivStats.region);
+            }, 100);
+        }
+    </script>
+</body>
+</html>

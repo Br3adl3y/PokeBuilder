@@ -808,7 +808,7 @@ const GAME_MASTER_URL = 'https://raw.githubusercontent.com/PokeMiners/game_maste
                 };
                 
                 const eligiblePokemon = getEligiblePokemon(allPokemon, leagueConfig, allMoves);
-                
+                console.log('eligiblePokemon result:', eligiblePokemon);
                 if (eligiblePokemon.length === 0) {
                     updateStatus(`⚠️ No eligible Pokemon for ${cup.title}`);
                     continue;
@@ -834,7 +834,6 @@ const GAME_MASTER_URL = 'https://raw.githubusercontent.com/PokeMiners/game_maste
                 
                 // Clear memory after each league
                 eligiblePokemon.length = 0;
-                if (global.gc) global.gc();
                 await new Promise(resolve => setTimeout(resolve, 100));
                 
                 updateStatus(`✅ ${cup.title} complete! (${rankings.length} Pokemon ranked)`);
@@ -844,55 +843,113 @@ const GAME_MASTER_URL = 'https://raw.githubusercontent.com/PokeMiners/game_maste
         }
 
         function getEligiblePokemon(allPokemon, league, allMoves) {
-            const eligible = [];
-            
-            for (const p of allPokemon) {
-                // Check if first stage evolution filter applies
-                if (league.limitToFirstStage) {
-                    // Must have evolutions (can evolve)
-                    if (!p.evolutions || p.evolutions.length === 0) continue;
-                    
-                    // Check if this is a first stage (no pre-evolution)
-                    // Look through all pokemon to see if any evolve INTO this one
-                    const isFirstStage = !allPokemon.some(other => 
-                        other.evolutions && other.evolutions.some(evo => 
-                            evo.name === p.name && (evo.form === p.form || (!evo.form && !p.form))
-                        )
-                    );
-                    
-                    if (!isFirstStage) continue;
+            try {
+                const eligible = [];
+                
+                // Map cup to league property on Pokemon object
+                let leagueProperty;
+                if (league.cpLimit === 500) {
+                    leagueProperty = 'little';
+                } else if (league.cpLimit === 1500) {
+                    leagueProperty = 'great';
+                } else if (league.cpLimit === 2500) {
+                    leagueProperty = 'ultra';
+                } else {
+                    leagueProperty = 'master';
                 }
                 
-                const leagueData = p[league.name.replace('-limited', '').replace('-open', '')];
-                if (!leagueData) continue;
-                
-                if (league.name === 'master') {
-                    const cp = calculateCP(p.stats, { atk: 15, def: 15, sta: 15 }, cpm[99]);
-                    
-                    if (cp < league.cpPrune - 100) continue;
-                    
-                    const variants = [{ ...p, isShadow: false, variantId: `${p.id}` }];
-                    if (p.shadowInfo) {
-                        variants.push({ ...p, isShadow: true, variantId: `${p.id}-shadow` });
-                    }
-                    eligible.push(...variants);
-                } else {
-                    const ivs = leagueData.iv;
-                    const cp = leagueData.cp || calculateCP(p.stats, ivs, cpm[Math.round((leagueData.level - 1) * 2)]);
-                    
-                    if (ivs.atk === 15 && ivs.def === 15 && ivs.sta === 15 && cp < league.cpLimit - 100) {
+                for (const p of allPokemon) {
+                    // Check banned Pokemon
+                    if (league.bannedPokemon && league.bannedPokemon.includes(p.name.toUpperCase())) {
                         continue;
                     }
                     
-                    const variants = [{ ...p, isShadow: false, variantId: `${p.id}` }];
-                    if (p.shadowInfo) {
-                        variants.push({ ...p, isShadow: true, variantId: `${p.id}-shadow` });
+                    // Check type restrictions
+                    if (league.allowedTypes && league.allowedTypes.length > 0) {
+                        const hasAllowedType = p.types.some(t => league.allowedTypes.includes(t));
+                        if (!hasAllowedType) continue;
                     }
-                    eligible.push(...variants);
-                }
+                    
+                    // Check Pokemon whitelist
+                    if (league.allowedPokemon && league.allowedPokemon.length > 0) {
+                        const isAllowed = league.allowedPokemon.some(allowed => 
+                            allowed.id === p.name.toUpperCase() && 
+                            (!allowed.form || allowed.form === p.form?.toUpperCase())
+                        );
+                        if (!isAllowed) continue;
+                    }
+                    
+                    // Check if first stage evolution filter applies
+                    if (league.limitToFirstStage) {
+                        if (!p.evolutions || p.evolutions.length === 0) continue;
+                        
+                        const isFirstStage = !allPokemon.some(other => 
+                            other.evolutions && other.evolutions.some(evo => 
+                                evo.name === p.name && (evo.form === p.form || (!evo.form && !p.form))
+                            )
+                        );
+                        
+                        if (!isFirstStage) continue;
+                    }
+                    
+                    const leagueData = p[leagueProperty];
+                    if (!leagueData) continue;
+                    
+                    if (leagueProperty === 'master') {
+                        const cp = calculateCP(p.stats, { atk: 15, def: 15, sta: 15 }, cpm[99]);
+                        
+                        if (cp < league.cpPrune - 100) continue;
+                        
+                        const variants = [
+                            { 
+                                ...p, 
+                                isShadow: false, 
+                                variantId: `${p.id}`,
+                                leagueData: leagueData
+                            }
+                        ];
+                        if (p.shadowInfo) {
+                            variants.push({ 
+                                ...p, 
+                                isShadow: true, 
+                                variantId: `${p.id}-shadow`,
+                                leagueData: leagueData
+                            });
+                        }
+                        eligible.push(...variants);
+                    } else {
+                        const ivs = leagueData.iv;
+                        const cp = leagueData.cp || calculateCP(p.stats, ivs, cpm[Math.round((leagueData.level - 1) * 2)]);
+                        
+                        if (ivs.atk === 15 && ivs.def === 15 && ivs.sta === 15 && cp < league.cpLimit - 100) {
+                            continue;
+                        }
+                        
+                        const variants = [
+                            { 
+                                ...p, 
+                                isShadow: false, 
+                                variantId: `${p.id}`,
+                                leagueData: leagueData
+                            }
+                        ];
+                        if (p.shadowInfo) {
+                            variants.push({ 
+                                ...p, 
+                                isShadow: true, 
+                                variantId: `${p.id}-shadow`,
+                                leagueData: leagueData
+                            });
+                        }
+                        eligible.push(...variants);
+                    }
+                } // END OF FOR LOOP - this was missing!
+                
+                return eligible;
+            } catch (error) {
+                console.error('Error in getEligiblePokemon:', error);
+                return [];
             }
-            
-            return eligible;
         }
 
         function calculateCP(stats, ivs, cpmValue) {
@@ -1069,7 +1126,7 @@ const GAME_MASTER_URL = 'https://raw.githubusercontent.com/PokeMiners/game_maste
         function simulateBattle(moveset1, moveset2, scenario, league, typeChart, typeOrder) {
             const shields = getShieldsForScenario(scenario);
             
-            const pokemon1 = buildPokemonForSim(moveset1, league);
+            const pokemon1 = buildPokemonForSim(moveset1, league); 
             const pokemon2 = buildPokemonForSim(moveset2, league);
             
             const sim = new BattleSimulator(
@@ -1104,9 +1161,9 @@ const GAME_MASTER_URL = 'https://raw.githubusercontent.com/PokeMiners/game_maste
 
         function buildPokemonForSim(moveset, league) {
             const p = moveset.pokemon;
-            const leagueData = league.name === 'master' ? 
-                { iv: { atk: 15, def: 15, sta: 15 }, level: 50 } : 
-                p[league.name];
+            
+            // Use the leagueData we attached in getEligiblePokemon
+            const leagueData = p.leagueData || { iv: { atk: 15, def: 15, sta: 15 }, level: 50 };
             
             const levelIndex = Math.round((leagueData.level - 1) * 2);
             const cpmValue = cpm[levelIndex];
@@ -1242,15 +1299,16 @@ const GAME_MASTER_URL = 'https://raw.githubusercontent.com/PokeMiners/game_maste
                 const gameMaster = await response.json();
                 updateStatus(`✅ Loaded ${gameMaster.length.toLocaleString()} templates. Parsing...`);
                 
-                const { pokemon, moves, cups, activeCupIds } = await parseGameMaster(gameMaster);
-                
+                const { pokemon, moves, cups, scheduleData } = await parseGameMaster(gameMaster);
                 updateStatus('💾 Saving to IndexedDB...');
                 await saveToDatabase('pokemon', pokemon);
                 await saveToDatabase('moves', moves);
+                await saveToDatabase('cups', cups);
+                // Save the active season schedule
                 await saveToDatabase('metadata', [
                     {
                         key: 'activeSeasonCups',
-                        value: Array.from(activeCupIds)
+                        value: Array.from(scheduleData)
                     },
                     {
                         key: 'seasonSchedule',
@@ -1359,6 +1417,10 @@ const GAME_MASTER_URL = 'https://raw.githubusercontent.com/PokeMiners/game_maste
             updateStatus('⏳ Parsing VS Seeker schedule...');
             const scheduleData = parseVSSeekerSchedule(gameMaster);
             const activeCupIds = scheduleData.activeCupIds;
+
+            updateStatus('⏳ Parsing cup templates...');
+            const parsedCups = parseCups(gameMaster);
+            cups.push(...parsedCups);
 
             for (const item of gameMaster) {
                 if (!item.templateId?.startsWith('V') || !item.data?.pokemonSettings) continue;
@@ -1486,7 +1548,7 @@ const GAME_MASTER_URL = 'https://raw.githubusercontent.com/PokeMiners/game_maste
                 pokemon: sortedPokemon,
                 moves: moves.sort((a, b) => a.name.localeCompare(b.name)),
                 cups: cups,
-                activeCupIds: activeCupIds
+                scheduleData: scheduleData  // Return the whole scheduleData object
             };
         }
 
