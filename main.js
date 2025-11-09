@@ -133,7 +133,7 @@ class PokeApp {
         this.touchEndY = 0;
         this.longPressTimer = null;
         this.screenshotProcessor = new ScreenshotProcessor(this);
-
+        this.userCollection = new UserCollectionManager(this);
         this.loadUserTags();
         this.loadFromIndexedDB();
         this.render();
@@ -367,6 +367,8 @@ class PokeApp {
         
         if (this.currentView === 'menu') {
             app.innerHTML = this.renderMenu();
+        } else if (this.currentView === 'collection') {
+            app.innerHTML = this.userCollection.render();
         } else if (this.currentView === 'pokedex') {
             if (this.selectedPokemon) {
                 app.innerHTML = await renderPokemonDetail.call(this);
@@ -388,7 +390,7 @@ class PokeApp {
             <div class="min-h-screen bg-gradient-to-br from-teal-400 via-teal-500 to-emerald-500 flex flex-col items-center justify-center p-8">
                 <div class="w-full max-w-md space-y-4">
                     ${this.renderMenuItem('fa-solid fa-book', 'POKÉDEX', 'pokedex')}
-                    ${this.renderMenuItem('fa-solid fa-star', 'COLLECTION', null)}
+                    ${this.renderMenuItem('fa-solid fa-star', 'COLLECTION', 'collection')}
                     ${this.renderMenuItem('fa-solid fa-users', 'PVP', null)}
                     ${this.renderMenuItem('fa-solid fa-rocket', 'PVE', null)}
                     ${this.renderMenuItem('fa-solid fa-message', 'FEEDBACK', null)}
@@ -604,6 +606,10 @@ class PokeApp {
         const teamBuilderBtn = document.querySelector('[data-action="team-builder"]');
         if (teamBuilderBtn) {
             teamBuilderBtn.addEventListener('click', () => alert('Team Builder feature coming soon!'));
+        }
+
+        if (this.currentView === 'collection') {
+            this.userCollection.attachEventListeners();
         }
 
         // Swipe gestures
