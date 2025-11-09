@@ -519,9 +519,18 @@
             }
             
             const movesets = generateMovesets(eligiblePokemon, allMoves);
-            const totalMatchups = movesets.length * (movesets.length - 1);
-            let matchupsCompleted = 0;
             
+            // Calculate total matchups correctly
+            const symmetricScenarios = scenarios.filter(s => isScenarioSymmetric(s));
+            const asymmetricScenarios = scenarios.filter(s => !isScenarioSymmetric(s));
+            const n = movesets.length;
+            
+            // Symmetric: only need n*(n-1)/2 matchups per scenario
+            // Asymmetric: need full n*(n-1) matchups per scenario
+            const totalMatchups = (n * (n - 1) / 2) * symmetricScenarios.length + 
+                                (n * (n - 1)) * asymmetricScenarios.length;
+            
+            let matchupsCompleted = 0;
             updateProgress(0, totalMatchups, `${league.name}: 0 / ${totalMatchups.toLocaleString()} matchups`);
             
             for (let i = 0; i < movesets.length; i++) {
@@ -532,34 +541,39 @@
                     if (i === j) continue;
                     
                     const moveset2 = movesets[j];
+                    const p2Data = results.get(moveset2.pokemon.variantId);
                     
-                    // Run all scenarios for this matchup
                     for (const scenario of scenarios) {
                         const isSymmetric = isScenarioSymmetric(scenario);
                         
-                        if (isSymmetric && i > j) {
-                            // Already simulated when j was attacker
-                            continue;
-                        }
-                        
-                        const rating = simulateBattle(moveset1, moveset2, scenario, league, typeChart, typeOrder);
-                        
-                        // Record for P1
-                        recordBestResult(p1Data, scenario, rating, moveset1);
-                        
-                        // For symmetric, also record reverse
                         if (isSymmetric) {
-                            const p2Data = results.get(moveset2.pokemon.variantId);
+                            // For symmetric scenarios, only simulate once per pair (i < j)
+                            if (i > j) continue;
+                            
+                            // Simulate once
+                            const rating = simulateBattle(moveset1, moveset2, scenario, league, typeChart, typeOrder);
+                            
+                            // Record for both Pokemon (inverse ratings)
+                            recordBestResult(p1Data, scenario, rating, moveset1);
                             recordBestResult(p2Data, scenario, 1000 - rating, moveset2);
+                            
+                            matchupsCompleted++;
+                        } else {
+                            // For asymmetric scenarios, simulate EVERY ordered pair
+                            // When i=0, j=1: simulate moveset[0] vs moveset[1] with scenario conditions
+                            // When i=1, j=0: simulate moveset[1] vs moveset[0] with scenario conditions (DIFFERENT battle)
+                            
+                            const rating = simulateBattle(moveset1, moveset2, scenario, league, typeChart, typeOrder);
+                            recordBestResult(p1Data, scenario, rating, moveset1);
+                            
+                            matchupsCompleted++;
                         }
-                    }
-                    
-                    matchupsCompleted++;
-                    
-                    if (matchupsCompleted % 50 === 0) {
-                        updateProgress(matchupsCompleted, totalMatchups, 
-                            `${league.name}: ${matchupsCompleted.toLocaleString()} / ${totalMatchups.toLocaleString()} matchups`);
-                        await new Promise(resolve => setTimeout(resolve, 0));
+                        
+                        if (matchupsCompleted % 100 === 0) {
+                            updateProgress(matchupsCompleted, totalMatchups, 
+                                `${league.name}: ${matchupsCompleted.toLocaleString()} / ${totalMatchups.toLocaleString()} matchups`);
+                            await new Promise(resolve => setTimeout(resolve, 0));
+                        }
                     }
                 }
             }
@@ -569,7 +583,6 @@
             
             const rankings = aggregateResults(results, eligiblePokemon, league);
             
-            // Clear all temporary data
             results.clear();
             movesets.length = 0;
             
@@ -659,10 +672,6 @@
             const asymmetricBattles = n * (n - 1) * asymmetricScenarios;
             
             return symmetricBattles + asymmetricBattles;
-        }
-
-        function isScenarioSymmetric(scenario) {
-            return scenario === 'leads' || scenario === 'leads-baited' || scenario === 'closers';
         }
 
         function simulateBattle(moveset1, moveset2, scenario, league, typeChart, typeOrder) {
