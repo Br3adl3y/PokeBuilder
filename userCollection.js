@@ -11,6 +11,7 @@ class UserCollectionManager {
         this.searchTerm = '';
         this.scrollPosition = 0;
         this.showSortMenu = false;
+        this.initialized = false;
     }
 
     // ====================================
@@ -18,12 +19,16 @@ class UserCollectionManager {
     // ====================================
 
     async initialize() {
+        if (this.initialized) return;
+        
         await this.loadCollection();
         
         // If empty, populate with test data
         if (this.collection.length === 0) {
             await this.populateTestData();
         }
+        
+        this.initialized = true;
     }
 
     async populateTestData() {
@@ -225,21 +230,33 @@ class UserCollectionManager {
     // ====================================
 
     render() {
+        // Show loading if not initialized
+        if (!this.initialized) {
+            this.initialize().then(() => {
+                this.app.render();
+            });
+            return `
+                <div class="min-h-screen bg-white flex items-center justify-center">
+                    <div class="text-gray-800 text-2xl">Loading collection...</div>
+                </div>
+            `;
+        }
+        
         const filtered = this.getFilteredCollection();
         
         return `
-            <div class="min-h-screen pokedex-bg pb-20">
+            <div class="min-h-screen bg-white pb-20">
                 <!-- Search Bar - Pinned -->
-                <div class="bg-white bg-opacity-15 backdrop-blur-sm p-4 sticky top-0 z-20">
+                <div class="bg-gray-100 p-4 sticky top-0 z-20">
                     <div class="max-w-6xl mx-auto">
                         <div class="relative">
-                            <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 transform -translate-y-1/2 text-teal-600"></i>
+                            <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
                             <input
                                 type="text"
                                 placeholder="Search Pokémon..."
                                 value="${this.searchTerm}"
                                 data-action="collection-search"
-                                class="w-full bg-white bg-opacity-90 rounded-full py-3 pl-12 pr-4 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white"
+                                class="w-full bg-white rounded-full py-3 pl-12 pr-4 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-400"
                             />
                         </div>
                     </div>
@@ -248,8 +265,8 @@ class UserCollectionManager {
                 <!-- Collection Grid -->
                 <div class="max-w-6xl mx-auto p-4" data-collection-scroll>
                     ${filtered.length === 0 ? 
-                        '<div class="text-white text-center py-20">No Pokémon found</div>' :
-                        `<div class="grid grid-cols-3 gap-3">
+                        '<div class="text-gray-800 text-center py-20">No Pokémon found</div>' :
+                        `<div class="grid grid-cols-3 gap-4">
                             ${filtered.map(mon => this.renderPokemonCard(mon)).join('')}
                         </div>`
                     }
@@ -310,35 +327,28 @@ class UserCollectionManager {
 
         return `
             <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end justify-end p-4" data-action="close-sort-menu">
-                <div class="bg-gradient-to-br from-teal-400 to-teal-600 rounded-2xl p-6 mb-20 mr-2 shadow-2xl" style="min-width: 250px;" onclick="event.stopPropagation()">
+                <div class="bg-gradient-to-br from-teal-400 to-teal-600 rounded-2xl p-6 mb-20 mr-2 shadow-2xl" style="min-width: 280px;" onclick="event.stopPropagation()">
                     ${sortOptions.map(opt => {
                         const isActive = this.sortMethod === opt.id;
                         const arrow = isActive ? (this.sortDirection === 'desc' ? '↓' : '↑') : '';
                         
                         return `
                             <button 
-                                class="w-full text-right py-3 text-cyan-100 hover:text-white transition-colors flex items-center justify-end gap-3"
+                                class="w-full text-right py-3 text-cyan-100 hover:text-white transition-colors flex items-center justify-between"
                                 data-action="set-sort"
                                 data-sort="${opt.id}"
                             >
                                 <span class="text-sm font-light tracking-wider">${opt.label}</span>
-                                <div class="flex items-center gap-1" style="min-width: 40px; justify-content: flex-end;">
-                                    ${opt.icon ? `<i class="fa-solid ${opt.icon} text-lg"></i>` : 
-                                      `<span class="text-sm font-bold">${opt.text}</span>`}
-                                    ${isActive ? `<span class="text-lg font-bold">${arrow}</span>` : ''}
+                                <div class="flex items-center gap-2">
+                                    <span class="text-lg font-bold" style="min-width: 20px; text-align: center;">${arrow}</span>
+                                    <div style="min-width: 30px; text-align: center;">
+                                        ${opt.icon ? `<i class="fa-solid ${opt.icon} text-lg"></i>` : 
+                                          `<span class="text-sm font-bold">${opt.text}</span>`}
+                                    </div>
                                 </div>
                             </button>
                         `;
                     }).join('')}
-                    
-                    <button 
-                        class="w-full mt-4 pt-4 border-t border-cyan-200 border-opacity-30"
-                        data-action="close-sort-menu"
-                    >
-                        <div class="w-12 h-12 mx-auto bg-cyan-100 bg-opacity-20 rounded-full flex items-center justify-center">
-                            <i class="fa-solid fa-xmark text-cyan-100 text-xl"></i>
-                        </div>
-                    </button>
                 </div>
             </div>
         `;
@@ -350,24 +360,37 @@ class UserCollectionManager {
             `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon.dexNumber}.png`;
         
         const favoriteIcon = pokemon.isFavorite ? 
-            '<i class="fa-solid fa-star text-yellow-400 text-xs absolute top-1 right-1"></i>' : '';
+            '<i class="fa-solid fa-star text-yellow-300 text-xs absolute top-1 right-1 drop-shadow-md"></i>' : '';
 
         return `
             <div 
-                class="bg-white bg-opacity-90 rounded-2xl p-3 shadow-lg cursor-pointer hover:bg-opacity-100 transition-all relative"
+                class="relative cursor-pointer"
                 data-collection-pokemon="${pokemon.id}"
             >
                 ${favoriteIcon}
                 <div class="text-center">
-                    <div class="text-teal-600 text-xs font-bold mb-1">CP ${pokemon.cp}</div>
+                    <!-- CP above sprite -->
+                    <div class="text-gray-700 text-lg font-bold mb-1">
+                        <span class="text-xs">CP </span>${pokemon.cp}
+                    </div>
+                    
+                    <!-- Pokemon sprite -->
                     <img 
                         src="${spriteUrl}" 
                         alt="${pokemon.name}" 
-                        class="pokemon-sprite w-20 h-20 mx-auto mb-2"
+                        class="w-full h-auto mx-auto mb-2"
+                        style="max-width: 120px;"
                     >
-                    <div class="text-gray-800 font-semibold text-sm">${pokemon.name}</div>
-                    ${pokemon.form !== 'Normal' ? 
-                        `<div class="text-gray-500 text-xs">${pokemon.form}</div>` : ''}
+                    
+                    <!-- Name in pill below sprite -->
+                    <div class="flex justify-center">
+                        <div class="bg-white bg-opacity-80 backdrop-blur-sm rounded-full px-3 py-1 inline-block">
+                            <span class="text-gray-800 font-semibold text-sm">${pokemon.name}</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Underline bar like in game -->
+                    <div class="mt-1 mx-auto bg-teal-400 h-1 rounded-full" style="width: 80%;"></div>
                 </div>
             </div>
         `;

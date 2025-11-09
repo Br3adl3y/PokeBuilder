@@ -425,7 +425,7 @@
             return Math.floor(h * 0.35);
         }
 
-        function preprocessImageWithContrast(imageData, region) {
+        function preprocessCPImage(imageData, region) {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             
@@ -438,33 +438,110 @@
                 0, 0, region.width, region.height
             );
             
+            // Sample square: right edge at left edge of CP region, half height
+            const sampleSize = Math.floor(region.height * 0.5);
+            const sampleX = Math.max(0, region.x - sampleSize);
+            const sampleY = region.y + Math.floor((region.height - sampleSize) / 2);
+            
+            const sampleCanvas = document.createElement('canvas');
+            const sampleCtx = sampleCanvas.getContext('2d');
+            sampleCanvas.width = sampleSize;
+            sampleCanvas.height = sampleSize;
+            
+            sampleCtx.drawImage(
+                imageData.image,
+                sampleX, sampleY, sampleSize, sampleSize,
+                0, 0, sampleSize, sampleSize
+            );
+            
+            const sampleData = sampleCtx.getImageData(0, 0, sampleSize, sampleSize);
+            const pixels = sampleData.data;
+            
+            let totalR = 0, totalG = 0, totalB = 0, count = 0;
+            for (let i = 0; i < pixels.length; i += 4) {
+                totalR += pixels[i];
+                totalG += pixels[i + 1];
+                totalB += pixels[i + 2];
+                count++;
+            }
+            
+            const avgR = Math.round(totalR / count);
+            const avgG = Math.round(totalG / count);
+            const avgB = Math.round(totalB / count);
+            const avgBrightness = (avgR + avgG + avgB) / 3;
+            
+            console.log(`CP background sample: rgb(${avgR}, ${avgG}, ${avgB}), brightness: ${Math.round(avgBrightness)}`);
+            
+            // Check if it's the shadow purple color (0a0945)
+            const shadowPurple = { r: 0x0a, g: 0x09, b: 0x45 };
+            const shadowTextColor = { r: 0xc7, g: 0xad, b: 0xdd }; // This should become white
+            
+            const isShadowPurple = 
+                Math.abs(avgR - shadowPurple.r) < 30 &&
+                Math.abs(avgG - shadowPurple.g) < 30 &&
+                Math.abs(avgB - shadowPurple.b) < 30;
+            
+            console.log(`Shadow purple detected: ${isShadowPurple}`);
+            
             const imgData = ctx.getImageData(0, 0, region.width, region.height);
             const data = imgData.data;
             
-            // Find min/max for contrast stretching
-            let min = 255, max = 0;
-            for (let i = 0; i < data.length; i += 4) {
-                const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
-                if (avg < min) min = avg;
-                if (avg > max) max = avg;
-            }
+            // Step background color toward white
+            const stepAmount = 0.4; // Step 40% toward white
+            const targetR = avgR + (255 - avgR) * stepAmount;
+            const targetG = avgG + (255 - avgG) * stepAmount;
+            const targetB = avgB + (255 - avgB) * stepAmount;
+            const targetBrightness = (targetR + targetG + targetB) / 3;
             
-            // Stretch contrast and threshold
-            const range = max - min;
+            console.log(`Target threshold: ${Math.round(targetBrightness)}`);
+            
+            // Process image: anything darker than target becomes black, else white
             for (let i = 0; i < data.length; i += 4) {
-                const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+                const r = data[i];
+                const g = data[i + 1];
+                const b = data[i + 2];
                 
-                // Stretch contrast
-                let stretched = range > 0 ? ((avg - min) / range) * 255 : avg;
-                
-                // Apply threshold
-                const threshold = stretched > 128 ? 255 : 0;
-                data[i] = data[i + 1] = data[i + 2] = threshold;
+                // For shadow purple, special handling
+                if (isShadowPurple) {
+                    // Check if pixel is close to shadow text color
+                    const isShadowText = 
+                        Math.abs(r - shadowTextColor.r) < 40 &&
+                        Math.abs(g - shadowTextColor.g) < 40 &&
+                        Math.abs(b - shadowTextColor.b) < 40;
+                    
+                    if (isShadowText || r > 200 || g > 200 || b > 200) {
+                        // Make it white (text)
+                        data[i] = data[i + 1] = data[i + 2] = 255;
+                    } else {
+                        // Make it black (background)
+                        data[i] = data[i + 1] = data[i + 2] = 0;
+                    }
+                } else {
+                    // Normal case: compare brightness to target
+                    const pixelBrightness = (r + g + b) / 3;
+                    
+                    if (pixelBrightness < targetBrightness) {
+                        // Darker than threshold: black (background)
+                        data[i] = data[i + 1] = data[i + 2] = 0;
+                    } else {
+                        // Lighter than threshold: white (text)
+                        data[i] = data[i + 1] = data[i + 2] = 255;
+                    }
+                }
             }
             
             ctx.putImageData(imgData, 0, 0);
             
-            return canvas.toDataURL();
+            return {
+                processedImage: canvas.toDataURL(),
+                debugInfo: {
+                    sampleColor: `rgb(${avgR}, ${avgG}, ${avgB})`,
+                    sampleBrightness: Math.round(avgBrightness),
+                    targetBrightness: Math.round(targetBrightness),
+                    isShadowPurple: isShadowPurple,
+                    originalImage: canvas.toDataURL()
+                }
+            };
         }
 
         async function extractNickname(imageData, statsBoxTop) {
@@ -497,7 +574,6 @@
             if (cleanedText.toLowerCase().endsWith('i')) {
                 cleanedText = cleanedText.slice(0, -1);
             }
-
             return {
                 value: cleanedText,
                 confidence: result.confidence,
@@ -568,12 +644,12 @@
             const region = {
                 x: Math.floor(cpX - (w * 0.25)),
                 y: Math.floor(cpY - (h * 0.02)),
-                width: Math.floor(w * 0.5),
+                width: Math.floor(w * 0.45),
                 height: Math.floor(h * 0.04)
             };
             
             // Use enhanced preprocessing for CP
-            const processedImage = preprocessImageWithContrast(imageData, region);
+            const { processedImage, debugInfo } = preprocessCPImage(imageData, region);
             const result = await performOCR(processedImage, '0123456789');
             
             const cpMatch = result.text.match(/\d+/);
@@ -583,7 +659,8 @@
                 value: cpValue,
                 confidence: cpValue ? result.confidence : 0,
                 region: region,
-                raw: result.text
+                raw: result.text,
+                debugInfo: debugInfo
             };
         }
 
@@ -874,7 +951,12 @@
                         <div class="confidence ${getConfidenceClass(data.cp.confidence)}">
                             Confidence: ${Math.round(data.cp.confidence)}%
                             ${data.cp.raw !== data.cp.value ? ` (Raw: "${data.cp.raw}")` : ''}
-                            <br><em>Using enhanced contrast preprocessing</em>
+                            <br><em>Sample: ${data.cp.debugInfo.sampleColor}, Brightness: ${data.cp.debugInfo.sampleBrightness}, Target: ${data.cp.debugInfo.targetBrightness}</em>
+                            ${data.cp.debugInfo.isShadowPurple ? '<br><strong style="color: #a855f7;">👻 Shadow purple detected</strong>' : ''}
+                        </div>
+                        <div style="margin-top: 10px;">
+                            <strong>CP Preprocessing Debug:</strong><br>
+                            <img src="${data.cp.debugInfo.originalImage}" style="max-width: 100%; border: 2px solid #667eea; border-radius: 8px; margin-top: 5px;" alt="Preprocessed CP">
                         </div>
                     </div>
                     
