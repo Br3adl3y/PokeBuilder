@@ -50,7 +50,7 @@ async function initializeDatabase() {
                     console.log('Database empty, loading from JSON...');
                     
                     try {
-                        const response = await fetch('./go-database103125.json');
+                        const response = await fetch('./go-database.json');
                         const data = await response.json();
                         
                         console.log('JSON loaded, populating database...');

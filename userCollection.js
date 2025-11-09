@@ -25,7 +25,10 @@ class UserCollectionManager {
         
         // If empty, populate with test data
         if (this.collection.length === 0) {
+            console.log('Populating test data...');
             await this.populateTestData();
+            await this.loadCollection(); // Reload after populating
+            console.log('Test data loaded:', this.collection.length, 'Pokemon');
         }
         
         this.initialized = true;
@@ -52,7 +55,8 @@ class UserCollectionManager {
         for (let i = 0; i < testPokemon.length; i++) {
             const mon = testPokemon[i];
             const dateCaught = new Date(now.getTime() - (i * 86400000)); // Each day older
-            const dateUploaded = new Date(now.getTime() - (i * 43200000)); // Each 12 hours older
+            // Make first 3 pokemon added in last 24 hours to show the glow
+            const dateUploaded = i < 3 ? new Date(now.getTime() - (i * 3600000)) : new Date(now.getTime() - (i * 43200000));
             
             // Fetch sprite as blob
             const spriteUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${mon.dexNumber}.png`;
@@ -236,8 +240,8 @@ class UserCollectionManager {
                 this.app.render();
             });
             return `
-                <div class="min-h-screen bg-white flex items-center justify-center">
-                    <div class="text-gray-800 text-2xl">Loading collection...</div>
+                <div class="min-h-screen bg-gradient-to-br from-teal-400 via-teal-500 to-emerald-500 flex items-center justify-center">
+                    <div class="text-white text-2xl">Loading collection...</div>
                 </div>
             `;
         }
@@ -245,31 +249,34 @@ class UserCollectionManager {
         const filtered = this.getFilteredCollection();
         
         return `
-            <div class="min-h-screen bg-white pb-20">
-                <!-- Search Bar - Pinned -->
-                <div class="bg-gray-100 p-4 sticky top-0 z-20">
-                    <div class="max-w-6xl mx-auto">
-                        <div class="relative">
-                            <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                            <input
-                                type="text"
-                                placeholder="Search Pokémon..."
-                                value="${this.searchTerm}"
-                                data-action="collection-search"
-                                class="w-full bg-white rounded-full py-3 pl-12 pr-4 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-400"
-                            />
+            <div class="min-h-screen bg-gradient-to-br from-teal-400 via-teal-500 to-emerald-500 pb-20">
+                <!-- White Content Area with subtle gradient -->
+                <div class="min-h-screen mx-4" style="background: linear-gradient(to top left, #eeffeb 0%, #ffffff 100%);">
+                    <!-- Search Bar - Pinned -->
+                    <div class="bg-gray-100 bg-opacity-80 backdrop-blur-sm p-4 sticky top-0 z-20">
+                        <div class="max-w-6xl mx-auto">
+                            <div class="relative">
+                                <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg"></i>
+                                <input
+                                    type="text"
+                                    placeholder="Search Pokémon..."
+                                    value="${this.searchTerm}"
+                                    data-action="collection-search"
+                                    class="w-full bg-white rounded-full py-3 pl-12 pr-4 text-gray-800 text-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-400"
+                                />
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Collection Grid -->
-                <div class="max-w-6xl mx-auto p-4" data-collection-scroll>
-                    ${filtered.length === 0 ? 
-                        '<div class="text-gray-800 text-center py-20">No Pokémon found</div>' :
-                        `<div class="grid grid-cols-3 gap-4">
-                            ${filtered.map(mon => this.renderPokemonCard(mon)).join('')}
-                        </div>`
-                    }
+                    <!-- Collection Grid -->
+                    <div class="max-w-6xl mx-auto p-4" data-collection-scroll>
+                        ${filtered.length === 0 ? 
+                            '<div class="text-gray-800 text-center py-20 text-xl">No Pokémon found</div>' :
+                            `<div class="grid grid-cols-3 gap-4">
+                                ${filtered.map(mon => this.renderPokemonCard(mon)).join('')}
+                            </div>`
+                        }
+                    </div>
                 </div>
 
                 <!-- Sort FAB -->
@@ -360,37 +367,40 @@ class UserCollectionManager {
             `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon.dexNumber}.png`;
         
         const favoriteIcon = pokemon.isFavorite ? 
-            '<i class="fa-solid fa-star text-yellow-300 text-xs absolute top-1 right-1 drop-shadow-md"></i>' : '';
+            '<i class="fa-solid fa-star text-yellow-400 text-xl absolute top-2 right-2"></i>' : '';
+
+        // Check if added in last 24 hours
+        const uploadDate = new Date(pokemon.dateUploaded);
+        const now = new Date();
+        const hoursSinceUpload = (now - uploadDate) / (1000 * 60 * 60);
+        const isRecent = hoursSinceUpload < 24;
+        const recentShadow = isRecent ? 'filter: drop-shadow(0 0 12px rgba(20, 184, 166, 0.6));' : '';
 
         return `
             <div 
-                class="relative cursor-pointer"
+                class="relative cursor-pointer py-2"
                 data-collection-pokemon="${pokemon.id}"
             >
                 ${favoriteIcon}
-                <div class="text-center">
-                    <!-- CP above sprite -->
-                    <div class="text-gray-700 text-lg font-bold mb-1">
-                        <span class="text-xs">CP </span>${pokemon.cp}
+                <div class="text-center" style="${recentShadow}">
+                    <!-- CP -->
+                    <div class="text-gray-700 font-bold mb-1">
+                        <span class="text-base text-gray-400">CP </span><span class="text-3xl">${pokemon.cp}</span>
                     </div>
                     
-                    <!-- Pokemon sprite -->
+                    <!-- Sprite -->
                     <img 
                         src="${spriteUrl}" 
                         alt="${pokemon.name}" 
-                        class="w-full h-auto mx-auto mb-2"
-                        style="max-width: 120px;"
+                        class="w-full h-auto mx-auto"
+                        style="max-width: 96px;"
                     >
                     
-                    <!-- Name in pill below sprite -->
-                    <div class="flex justify-center">
-                        <div class="bg-white bg-opacity-80 backdrop-blur-sm rounded-full px-3 py-1 inline-block">
-                            <span class="text-gray-800 font-semibold text-sm">${pokemon.name}</span>
-                        </div>
-                    </div>
+                    <!-- Name -->
+                    <div class="text-gray-800 font-bold text-lg mt-1">${pokemon.name}</div>
                     
-                    <!-- Underline bar like in game -->
-                    <div class="mt-1 mx-auto bg-teal-400 h-1 rounded-full" style="width: 80%;"></div>
+                    <!-- Placeholder line for roles -->
+                    <div class="mt-2 mx-auto bg-teal-400 h-1 rounded-full" style="width: 60%;"></div>
                 </div>
             </div>
         `;
