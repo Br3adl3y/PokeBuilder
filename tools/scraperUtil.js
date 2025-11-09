@@ -1685,7 +1685,9 @@ const GAME_MASTER_URL = 'https://raw.githubusercontent.com/PokeMiners/game_maste
             const metadata = await loadFromDatabase('metadata');
             const seasonData = metadata.find(m => m.key === 'activeSeasonCups');
             const activeCupIds = seasonData ? new Set(seasonData.value) : new Set();
-                       
+            
+            console.log('📋 Populating checkboxes. Active cup IDs:', Array.from(activeCupIds).map(id => id.replace('COMBAT_LEAGUE_', '')));
+            
             // Always check Little League by default (not in schedule but we want it)
             const littleCup = cups.find(c => c.id === 'COMBAT_LEAGUE_VS_SEEKER_GREAT_LITTLE');
             if (littleCup) {
@@ -1707,7 +1709,9 @@ const GAME_MASTER_URL = 'https://raw.githubusercontent.com/PokeMiners/game_maste
                 const isActive = activeCupIds.has(cup.id);
                 const activeLabel = isActive ? ' 🔥' : '';
                 const displayId = cup.id.replace('COMBAT_LEAGUE_', '');
-                               
+                
+                console.log(`  ${cup.title} (${displayId}): ${isActive ? 'CHECKED' : 'unchecked'}`);
+                
                 html += `
                     <label style="display: block; margin: 8px 0; cursor: pointer;" title="${displayId}">
                         <input type="checkbox" value="${cup.id}" ${isActive ? 'checked' : ''} style="margin-right: 8px;">
@@ -1743,11 +1747,18 @@ const GAME_MASTER_URL = 'https://raw.githubusercontent.com/PokeMiners/game_maste
                     const isActive = activeCupIds.has(cup.id);
                     const activeLabel = isActive ? ' 🔥' : '';
                     const displayId = cup.id.replace('COMBAT_LEAGUE_', '');
-                                        
+                    
+                    // Check if this is a catch cup (identical to default league)
+                    const isCatchCup = cup.id.includes('CATCH');
+                    const disabledStyle = isCatchCup ? 'opacity: 0.5; cursor: not-allowed;' : 'cursor: pointer;';
+                    const catchLabel = isCatchCup ? ' ⏭️ (Uses default league rankings)' : '';
+                    
+                    console.log(`  ${cup.title} (${displayId}): ${isActive ? 'CHECKED' : 'unchecked'}${isCatchCup ? ' [CATCH CUP]' : ''}`);
+                    
                     html += `
-                        <label style="display: block; margin: 8px 0; cursor: pointer;" title="${displayId}">
-                            <input type="checkbox" value="${cup.id}" ${isActive ? 'checked' : ''} style="margin-right: 8px;">
-                            <strong>${cup.title}</strong>${activeLabel} - ${cpText}${restrictText}
+                        <label style="display: block; margin: 8px 0; ${disabledStyle}" title="${displayId}">
+                            <input type="checkbox" value="${cup.id}" ${isActive && !isCatchCup ? 'checked' : ''} ${isCatchCup ? 'disabled' : ''} style="margin-right: 8px;">
+                            <strong>${cup.title}</strong>${activeLabel}${catchLabel} - ${cpText}${restrictText}
                             <span style="color: #999; font-size: 11px; margin-left: 5px;">${displayId}</span>
                         </label>
                     `;
