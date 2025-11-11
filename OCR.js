@@ -43,33 +43,6 @@ class OCRProcessor {
         return canvas.toDataURL();
     }
 
-        // Process batch images one by one
-    async processBatch() {
-        if (this.currentBatchIndex >= this.batchImages.length) {
-            this.batchImages = [];
-            this.currentBatchIndex = 0;
-            this.showBatchCompleteModal();
-            return;
-        }
-
-        const file = this.batchImages[this.currentBatchIndex];
-        
-        this.showProcessingModal(`Processing ${this.currentBatchIndex + 1} of ${this.batchImages.length}...`);
-
-        try {
-            const imageData = await this.loadImage(file);
-            const extractedData = await this.processScreenshot(imageData);
-            
-            this.hideProcessingModal();
-            this.showConfirmationModal(extractedData, imageData, true);
-        } catch (error) {
-            console.error('Error processing screenshot:', error);
-            this.hideProcessingModal();
-            
-            this.showSkipImageModal(error.message);
-        }
-    }
-
     loadImage(file) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -610,5 +583,5 @@ class OCRProcessor {
         return matrix[str2.length][str1.length];
     }
 
-    
+
 }

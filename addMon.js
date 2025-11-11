@@ -13,7 +13,32 @@ class ScreenshotProcessor {
         this.tesseractWorker = null;
     }
 
+ // Process batch images one by one
+    async processBatch() {
+        if (this.currentBatchIndex >= this.batchImages.length) {
+            this.batchImages = [];
+            this.currentBatchIndex = 0;
+            this.showBatchCompleteModal();
+            return;
+        }
 
+        const file = this.batchImages[this.currentBatchIndex];
+        
+        this.showProcessingModal(`Processing ${this.currentBatchIndex + 1} of ${this.batchImages.length}...`);
+
+        try {
+            const imageData = await this.loadImage(file);
+            const extractedData = await this.processScreenshot(imageData);
+            
+            this.hideProcessingModal();
+            this.showConfirmationModal(extractedData, imageData, true);
+        } catch (error) {
+            console.error('Error processing screenshot:', error);
+            this.hideProcessingModal();
+            
+            this.showSkipImageModal(error.message);
+        }
+    }
 
     setupNameAutocomplete(modal) {
         const nameInput = modal.querySelector('[data-field="name"]');
