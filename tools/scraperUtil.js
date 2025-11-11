@@ -328,14 +328,23 @@
         async function calculateRankings(allPokemon, allMoves, selectedCups, typeChart, typeOrder) {
             updateStatus('⚔️ Starting battle simulations...');
             
+            console.log('=== CALCULATE RANKINGS DEBUG ===');
+            console.log('Total Pokemon in database:', allPokemon.length);
+            console.log('Selected cups:', selectedCups.map(c => c.title));
+            
+            // Check if any Pokemon have 'little' league data
+            const withLittleData = allPokemon.filter(p => p.little).length;
+            console.log('Pokemon with little league data:', withLittleData);
+            
             const scenarios = [
                 'leads', 'leads-baited', 'switches', 'switches-baited', 
                 'closers', 'attackers', 'attackers-baited', 'underdog'
             ];
             
             for (const cup of selectedCups) {
-                updateStatus(`⚔️ Simulating ${cup.title} (${cup.cpLimit || 'No Limit'} CP)...`);
-                
+                console.log(`\n=== Processing ${cup.title} ===`);
+                updateStatus(`⚔️ Simulating ${cup.title} (${cup.cpLimit || 'No Limit'} CP)...`);                
+
                 // Convert cup to league config format
                 const leagueConfig = {
                     name: cup.id.toLowerCase().replace(/_/g, '-'),
@@ -485,7 +494,7 @@
                         }
                         eligible.push(...variants);
                     }
-                } // END OF FOR LOOP - this was missing!
+                }
                 
                 return eligible;
             } catch (error) {
@@ -520,13 +529,25 @@
             
             const movesets = generateMovesets(eligiblePokemon, allMoves);
             
+            // ⭐ DEBUG: Check Deino movesets
+            const deinoMovesets = movesets.filter(m => m.pokemon.name === 'Deino');
+            console.log('=== DEINO DEBUG ===');
+            console.log('Total Deino movesets:', deinoMovesets.length);
+            if (deinoMovesets.length > 0) {
+                console.log('First Deino moveset:', {
+                    name: deinoMovesets[0].pokemon.name,
+                    leagueData: deinoMovesets[0].pokemon.leagueData,
+                    fast: deinoMovesets[0].fast.name,
+                    charged: deinoMovesets[0].charged.map(m => m.name)
+                });
+            }
+            // ⭐ END DEBUG
+            
             // Calculate total matchups correctly
             const symmetricScenarios = scenarios.filter(s => isScenarioSymmetric(s));
             const asymmetricScenarios = scenarios.filter(s => !isScenarioSymmetric(s));
             const n = movesets.length;
             
-            // Symmetric: only need n*(n-1)/2 matchups per scenario
-            // Asymmetric: need full n*(n-1) matchups per scenario
             const totalMatchups = (n * (n - 1) / 2) * symmetricScenarios.length + 
                                 (n * (n - 1)) * asymmetricScenarios.length;
             
@@ -547,22 +568,15 @@
                         const isSymmetric = isScenarioSymmetric(scenario);
                         
                         if (isSymmetric) {
-                            // For symmetric scenarios, only simulate once per pair (i < j)
                             if (i > j) continue;
                             
-                            // Simulate once
                             const rating = simulateBattle(moveset1, moveset2, scenario, league, typeChart, typeOrder);
                             
-                            // Record for both Pokemon (inverse ratings)
                             recordBestResult(p1Data, scenario, rating, moveset1);
                             recordBestResult(p2Data, scenario, 1000 - rating, moveset2);
                             
                             matchupsCompleted++;
                         } else {
-                            // For asymmetric scenarios, simulate EVERY ordered pair
-                            // When i=0, j=1: simulate moveset[0] vs moveset[1] with scenario conditions
-                            // When i=1, j=0: simulate moveset[1] vs moveset[0] with scenario conditions (DIFFERENT battle)
-                            
                             const rating = simulateBattle(moveset1, moveset2, scenario, league, typeChart, typeOrder);
                             recordBestResult(p1Data, scenario, rating, moveset1);
                             
@@ -581,7 +595,85 @@
             updateProgress(totalMatchups, totalMatchups, 
                 `${league.name}: ${totalMatchups.toLocaleString()} / ${totalMatchups.toLocaleString()} matchups - Aggregating...`);
             
+            // ⭐ DEBUG: Check Deino results before aggregation
+            const deinoResults = results.get('Deino-base');
+            console.log('Deino final results:', {
+                name: deinoResults?.name,
+                bestScores: deinoResults?.bestScores,
+                moveTalliesCount: Object.keys(deinoResults?.moveTallies || {}).length
+            });
+            // ⭐ END DEBUG
+            
             const rankings = aggregateResults(results, eligiblePokemon, league);
+            
+            // ⭐ DEBUG: Comprehensive ranking analysis
+            console.log('=== RANKING DEBUG ===');
+            console.log('Total Pokemon ranked:', rankings.length);
+            
+            // Top 10
+            console.log('Top 10:', rankings.slice(0, 10).map(r => ({
+                name: r.name,
+                form: r.form,
+                shadow: r.isShadow,
+                rawScore: r.rawScore.toFixed(2),
+                displayRank: r.displayRank.toFixed(2)
+            })));
+            
+            // Score distribution
+            const rawScores = rankings.map(r => r.rawScore);
+            const maxRaw = Math.max(...rawScores);
+            const minRaw = Math.min(...rawScores);
+            const avgRaw = rawScores.reduce((a,b) => a+b, 0) / rawScores.length;
+            console.log('Raw score stats:', {
+                max: maxRaw.toFixed(2),
+                min: minRaw.toFixed(2),
+                avg: avgRaw.toFixed(2),
+                range: (maxRaw - minRaw).toFixed(2)
+            });
+            
+            // Check for suspicious scores (too high or too low)
+            const suspiciouslyHigh = rankings.filter(r => r.rawScore > 950);
+            const suspiciouslyLow = rankings.filter(r => r.rawScore < 400);
+            console.log('Suspiciously high scores (>950):', suspiciouslyHigh.length);
+            if (suspiciouslyHigh.length > 0 && suspiciouslyHigh.length < 20) {
+                console.log('High scorers:', suspiciouslyHigh.map(r => ({
+                    name: r.name,
+                    rawScore: r.rawScore.toFixed(2),
+                    scenarios: r.scenarioScores
+                })));
+            }
+            console.log('Suspiciously low scores (<400):', suspiciouslyLow.length);
+            
+            // Deino specific
+            const deinoRank = rankings.findIndex(r => r.name === 'Deino' && !r.isShadow);
+            if (deinoRank !== -1) {
+                const deino = rankings[deinoRank];
+                console.log('Deino details:', {
+                    rank: deinoRank + 1,
+                    displayRank: deino.displayRank.toFixed(2),
+                    rawScore: deino.rawScore.toFixed(2),
+                    scenarioScores: deino.scenarioScores
+                });
+                
+                // Pokemon right above and below Deino
+                console.log('Pokemon ranked around Deino:');
+                for (let i = Math.max(0, deinoRank - 2); i <= Math.min(rankings.length - 1, deinoRank + 2); i++) {
+                    console.log(`  #${i+1}: ${rankings[i].name} - raw: ${rankings[i].rawScore.toFixed(2)}, display: ${rankings[i].displayRank.toFixed(2)}`);
+                }
+            }
+            
+            // Ducklett specific
+            const ducklettRank = rankings.findIndex(r => r.name === 'Ducklett' && !r.isShadow);
+            if (ducklettRank !== -1) {
+                const ducklett = rankings[ducklettRank];
+                console.log('Ducklett details:', {
+                    rank: ducklettRank + 1,
+                    displayRank: ducklett.displayRank.toFixed(2),
+                    rawScore: ducklett.rawScore.toFixed(2),
+                    scenarioScores: ducklett.scenarioScores
+                });
+            }
+            // ⭐ END DEBUG
             
             results.clear();
             movesets.length = 0;
@@ -731,8 +823,23 @@
         }
 
         function aggregateResults(results, eligiblePokemon, league) {
-            const rankings = [];
+            console.log('=== AGGREGATION DEBUG ===');
+            console.log('Total results to aggregate:', results.size);
             
+            // Sample a few random Pokemon to check their data
+            const sampleNames = ['Deino', 'Ducklett', 'Cottonee', 'Wynaut'];
+            for (const name of sampleNames) {
+                const pokemonResult = Array.from(results.values()).find(r => r.name === name && !r.isShadow);
+                if (pokemonResult) {
+                    console.log(`${name} pre-aggregation:`, {
+                        bestScoresCount: Object.keys(pokemonResult.bestScores).length,
+                        moveTalliesCount: Object.keys(pokemonResult.moveTallies).length,
+                        sampleScore: pokemonResult.bestScores['leads']
+                    });
+                }
+            }
+                
+                const rankings = [];            
             for (const [variantId, data] of results.entries()) {
                 // Find the moveset with most wins
                 let bestMoveset = null;

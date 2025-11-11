@@ -134,6 +134,7 @@ class PokeApp {
         this.longPressTimer = null;
         this.screenshotProcessor = new ScreenshotProcessor(this);
         this.userCollection = new UserCollectionManager(this);
+        this.catchReport = new CatchReport(this);
         this.loadUserTags();
         this.loadFromIndexedDB();
         this.render();
