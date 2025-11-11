@@ -362,20 +362,21 @@ class UserCollectionManager {
     }
 
     renderPokemonCard(pokemon) {
-        const spriteUrl = pokemon.spriteThumb ? 
-            URL.createObjectURL(pokemon.spriteThumb) :
+        console.log('Pokemon:', pokemon.name, 'screenshot:', pokemon.screenshot, 'type:', typeof pokemon.screenshot);
+        const spriteUrl = pokemon.screenshot ? 
+            URL.createObjectURL(pokemon.screenshot) :
             `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon.dexNumber}.png`;
         
         const favoriteIcon = pokemon.isFavorite ? 
             '<i class="fa-solid fa-star text-yellow-400 text-xl absolute top-2 right-2"></i>' : '';
-
+        
         // Check if added in last 24 hours
         const uploadDate = new Date(pokemon.dateUploaded);
         const now = new Date();
         const hoursSinceUpload = (now - uploadDate) / (1000 * 60 * 60);
         const isRecent = hoursSinceUpload < 24;
         const recentShadow = isRecent ? 'filter: drop-shadow(0 0 12px rgba(20, 184, 166, 0.6));' : '';
-
+        
         return `
             <div 
                 class="relative cursor-pointer py-2"
