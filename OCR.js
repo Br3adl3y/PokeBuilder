@@ -5,6 +5,7 @@
 class OCRProcessor {
     constructor() {
         this.tesseractWorker = null;
+        this.cpm = [0.094, 0.135137430784308, 0.166397869586944, 0.192650914456886, 0.215732470154762, 0.236572655026622, 0.255720049142837, 0.273530381100769, 0.29024988412857, 0.306057381335773, 0.321087598800659, 0.335445032295077, 0.349212676286697, 0.36245774877879, 0.375235587358474, 0.387592411085168, 0.399567276239395, 0.41119354951725, 0.422500014305114, 0.432926413410414, 0.443107545375824, 0.453059953871985, 0.46279838681221, 0.472336077786704, 0.481684952974319, 0.490855810259008, 0.499858438968658, 0.508701756943992, 0.517393946647644, 0.525942508771329, 0.534354329109191, 0.542635762230353, 0.550792694091796, 0.558830599438087, 0.566754519939422, 0.574569148039264, 0.582278907299041, 0.589887911977272, 0.59740000963211, 0.604823657502073, 0.61215728521347, 0.61940411056605, 0.626567125320434, 0.633649181622743, 0.640652954578399, 0.647580963301656, 0.654435634613037, 0.661219263506722, 0.667934000492096, 0.674581899290818, 0.681164920330047, 0.687684905887771, 0.694143652915954, 0.700542893277978, 0.706884205341339, 0.713169102333341, 0.719399094581604, 0.725575616972598, 0.731700003147125, 0.734741011137376, 0.737769484519958, 0.740785574597326, 0.743789434432983, 0.746781208702482, 0.749761044979095, 0.752729105305821, 0.75568550825119, 0.758630366519684, 0.761563837528228, 0.764486065255226, 0.767397165298461, 0.77029727397159, 0.77318650484085, 0.776064945942412, 0.778932750225067, 0.781790064808426, 0.784636974334716, 0.787473583646825, 0.790300011634826, 0.792803950958807, 0.795300006866455, 0.79780392148697, 0.800300002098083, 0.802803892322847, 0.805299997329711, 0.807803863460723, 0.81029999256134, 0.812803834895026, 0.815299987792968, 0.817803806620319, 0.820299983024597, 0.822803778631297, 0.825299978256225, 0.827803750922782, 0.830299973487854, 0.832803753381377, 0.835300028324127, 0.837803755931569, 0.840300023555755, 0.842803729034748, 0.845300018787384, 0.847803702398935, 0.850300014019012, 0.852803676019539, 0.85530000925064, 0.857803649892077, 0.860300004482269, 0.862803624012168, 0.865299999713897];
         this.canvas = document.createElement('canvas');
         this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
     }
@@ -43,74 +44,74 @@ class OCRProcessor {
         return canvas.toDataURL();
     }
 
-    loadImage(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const img = new Image();
-                img.onload = () => {
-                    this.canvas.width = img.width;
-                    this.canvas.height = img.height;
-                    this.ctx.drawImage(img, 0, 0);
-                    resolve({
-                        image: img,
-                        dataUrl: e.target.result,
-                        width: img.width,
-                        height: img.height
-                    });
-                };
-                img.onerror = () => reject(new Error('Failed to load image'));
-                img.src = e.target.result;
-            };
-            reader.onerror = () => reject(new Error('Failed to read file'));
-            reader.readAsDataURL(file);
-        });
-    }
-
     // Process screenshot and extract data with OCR
-    async processScreenshot(imageData) {
-        // Initialize Tesseract if needed
-        await this.initTesseract();
-
-        // Extract regions from the Pokémon GO screenshot
-        const anchor = this.findAnchorStar(imageData);
-        const statsBoxTop = this.findStatsBoxEdge(imageData);
-        const nickname = await this.extractNickname(imageData, statsBoxTop);
-        const cp = await this.extractCP(imageData, anchor.x, anchor.y);
-        const dateFirstPass = await this.extractDateCaught(imageData, { usedFallback: false });
-        const pokemonName = await this.extractPokemonName(imageData, dateFirstPass);
-        const dateCaught = await this.extractDateCaught(imageData, pokemonName);
-        const stats = await this.extractIVStats(imageData, pokemonName);
-
-        return {
-            name: pokemonName?.value || '',
-            nickname: nickname?.value || '',
-            nameConfidence: pokemonName?.confidence || 0,
-            cp: cp?.value || '',
-            cpConfidence: cp?.confidence || 0,
-            dateCaught: dateCaught?.value || '',
-            dateCaughtConfidence: dateCaught?.confidence || 0,
-            ivAttack: stats.attack !== undefined ? stats.attack.toString() : '',
-            ivAttackConfidence: stats.attack !== undefined ? 95 : 0,
-            ivDefense: stats.defense !== undefined ? stats.defense.toString() : '',
-            ivDefenseConfidence: stats.defense !== undefined ? 95 : 0,
-            ivStamina: stats.stamina !== undefined ? stats.stamina.toString() : '',
-            ivStaminaConfidence: stats.stamina !== undefined ? 95 : 0,
-            screenshot: imageData.dataUrl,
-            form: null,
-            // Toggle states
-            secondChargeUnlocked: false,
-            shiny: false,
-            shadow: false,
-            purified: false,
-            dynamax: false,
-            xxl: false,
-            xxs: false,
-            background: null,
-            costume: null
-        };
+    async processScreenshot(imageData, pokemonList) {
+        console.log('🔍 Starting OCR processing...');
+        console.log('Image dimensions:', imageData.width, 'x', imageData.height);
+        console.log('Pokemon list length:', pokemonList?.length);
+        
+        try {
+            // Extract regions from the Pokémon GO screenshot
+            const anchor = this.findAnchorStar(imageData);
+            console.log('✓ Anchor found:', anchor);
+            
+            const statsBoxTop = this.findStatsBoxEdge(imageData);
+            console.log('✓ Stats box top:', statsBoxTop);
+            
+            const nickname = await this.extractNickname(imageData, statsBoxTop);
+            console.log('✓ Nickname extracted:', nickname);
+            
+            const cp = await this.extractCP(imageData, anchor.x, anchor.y);
+            console.log('✓ CP extracted:', cp);
+            
+            const dateFirstPass = await this.extractDateCaught(imageData, { usedFallback: false });
+            console.log('✓ Date first pass:', dateFirstPass);
+            
+            const pokemonName = await this.extractPokemonName(imageData, dateFirstPass, pokemonList);
+            console.log('✓ Pokemon name extracted:', pokemonName);
+            
+            const dateCaught = await this.extractDateCaught(imageData, pokemonName);
+            console.log('✓ Date caught:', dateCaught);
+            
+            const stats = await this.extractIVStats(imageData, pokemonName);
+            console.log('✓ Stats extracted:', stats);
+            
+            // Crop to just the sprite area
+            const croppedScreenshot = this.cropToSprite(imageData);
+            console.log('✓ Screenshot cropped');
+            
+            return {
+                name: pokemonName?.value || '',
+                nickname: nickname?.value || '',
+                nameConfidence: pokemonName?.confidence || 0,
+                cp: cp?.value || '',
+                cpConfidence: cp?.confidence || 0,
+                dateCaught: dateCaught?.value || '',
+                dateCaughtConfidence: dateCaught?.confidence || 0,
+                ivAttack: stats.attack !== undefined ? stats.attack.toString() : '',
+                ivAttackConfidence: stats.attack !== undefined ? 95 : 0,
+                ivDefense: stats.defense !== undefined ? stats.defense.toString() : '',
+                ivDefenseConfidence: stats.defense !== undefined ? 95 : 0,
+                ivStamina: stats.stamina !== undefined ? stats.stamina.toString() : '',
+                ivStaminaConfidence: stats.stamina !== undefined ? 95 : 0,
+                screenshot: croppedScreenshot,  
+                form: null,
+                // Toggle states
+                secondChargeUnlocked: false,
+                shiny: false,
+                shadow: false,
+                purified: false,
+                dynamax: false,
+                xxl: false,
+                xxs: false,
+                background: null,
+                costume: null
+            };
+        } catch (error) {
+            console.error('❌ OCR processing error:', error);
+            throw error;
+        }
     }
-
 
     preprocessCPImage(imageData, region) {
         const canvas = document.createElement('canvas');
@@ -338,7 +339,7 @@ class OCRProcessor {
         };
     }
 
-    async extractPokemonName(imageData, dateData) {
+    async extractPokemonName(imageData, dateData, pokemonList) {
         const w = imageData.width;
         const h = imageData.height;
         
@@ -368,7 +369,7 @@ class OCRProcessor {
                 word.length > longest.length ? word : longest, '');
         }
         
-        const fuzzyMatch = this.findBestPokemonMatch(pokemonName);
+        const fuzzyMatch = this.findBestPokemonMatch(pokemonName, pokemonList); // ← Pass it here
         return {
             value: fuzzyMatch || pokemonName,
             confidence: fuzzyMatch ? 90 : result.confidence,
@@ -510,13 +511,13 @@ class OCRProcessor {
         };
     }
 
-    findBestPokemonMatch(ocrText) {
+    findBestPokemonMatch(ocrText, pokemonList) {  
         if (!ocrText) return null;
         
         const lowerOcr = ocrText.toLowerCase();
         
-        // Get all unique Pokemon names from database
-        const pokemonNames = [...new Set(this.app.pokemon.map(p => p.name))];
+        // Get all unique Pokemon names from the parameter (not this.app.pokemon)
+        const pokemonNames = [...new Set(pokemonList.map(p => p.name))];
         
         // Exact match
         const exactMatch = pokemonNames.find(name => 
@@ -583,5 +584,36 @@ class OCRProcessor {
         return matrix[str2.length][str1.length];
     }
 
-
+    cropToSprite(imageData) {
+        const w = imageData.width;
+        const h = imageData.height;
+        
+        // Define the sprite region (between CP and stats box)
+        // This captures just the Pokemon visual area
+        const refHeight = 2556;
+        const scale = h / refHeight;
+        
+        // Approximate sprite region
+        const cropRegion = {
+            x: Math.floor(w * 0.1),           // Left edge (10% from left)
+            y: Math.floor(h * 0.15),          // Top (below CP, around 15% down)
+            width: Math.floor(w * 0.8),       // Width (80% of image)
+            height: Math.floor(h * 0.25)      // Height (about 25% - captures sprite area)
+        };
+        
+        // Create a new canvas for the cropped image
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = cropRegion.width;
+        canvas.height = cropRegion.height;
+        
+        // Draw the cropped region
+        ctx.drawImage(
+            imageData.image,
+            cropRegion.x, cropRegion.y, cropRegion.width, cropRegion.height,
+            0, 0, cropRegion.width, cropRegion.height
+        );
+        
+        return canvas.toDataURL();
+    }
 }

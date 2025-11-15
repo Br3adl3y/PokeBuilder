@@ -396,23 +396,6 @@
                 if (!pvpMoveIds.has(id)) debugInfo.pveOnlyMoves.push(id);
             });
 
-            console.group('🔍 Scraping Debug Report');
-            console.log(`Total Pokemon parsed: ${sortedPokemon.length}`);
-            console.log(`Highest Dex Number: ${sortedPokemon[sortedPokemon.length - 1]?.dexNumber || 0}`);
-            
-            if (debugInfo.missingFromDB?.length > 0) {
-                console.group(`❌ In Spreadsheet but Missing from DB (${debugInfo.missingFromDB.length} entries)`);
-                debugInfo.missingFromDB.forEach(entry => {
-                    console.log(`Row ${entry.row}: ${entry.name}${entry.form ? ' (' + entry.form + ')' : ''}`);
-                });
-                console.groupEnd();
-            }
-            
-            if (warnings.length > 0) {
-                console.warn(`⚠️ Parsing warnings (${warnings.length} total):`, warnings.slice(0, 10));
-            }
-            console.groupEnd();
-
             pvpMoves.forEach((move, id) => {
                 moves.push({ ...move, id: `pvp-${move.category}-${id}`, mode: 'pvp' });
             });
@@ -494,7 +477,6 @@
                 cups.push(cup);
             }
             
-            console.log(`🏆 Parsed ${cups.length} cups (${cups.filter(c => c.isStandard).length} standard, ${cups.filter(c => !c.isStandard).length} special)`);
             return cups;
         }
 
@@ -527,7 +509,6 @@
                 }
             }
             
-            console.log('Active Cup IDs:', Array.from(activeCupIds).map(id => id.replace('COMBAT_LEAGUE_', '')));
             return activeCupIds;
         }
 
@@ -560,9 +541,7 @@
             const metadata = await loadFromDatabase('metadata');
             const seasonData = metadata.find(m => m.key === 'activeSeasonCups');
             const activeCupIds = seasonData ? new Set(seasonData.value) : new Set();
-            
-            console.log('📋 Populating checkboxes. Active cup IDs:', Array.from(activeCupIds).map(id => id.replace('COMBAT_LEAGUE_', '')));
-            
+                       
             // Always check Little League by default (not in schedule but we want it)
             const littleCup = cups.find(c => c.id === 'COMBAT_LEAGUE_VS_SEEKER_GREAT_LITTLE');
             if (littleCup) {
@@ -584,8 +563,6 @@
                 const isActive = activeCupIds.has(cup.id);
                 const activeLabel = isActive ? ' 🔥' : '';
                 const displayId = cup.id.replace('COMBAT_LEAGUE_', '');
-                
-                console.log(`  ${cup.title} (${displayId}): ${isActive ? 'CHECKED' : 'unchecked'}`);
                 
                 html += `
                     <label style="display: block; margin: 8px 0; cursor: pointer;" title="${displayId}">
@@ -627,8 +604,6 @@
                     const isCatchCup = cup.id.includes('CATCH');
                     const disabledStyle = isCatchCup ? 'opacity: 0.5; cursor: not-allowed;' : 'cursor: pointer;';
                     const catchLabel = isCatchCup ? ' ⏭️ (Uses default league rankings)' : '';
-                    
-                    console.log(`  ${cup.title} (${displayId}): ${isActive ? 'CHECKED' : 'unchecked'}${isCatchCup ? ' [CATCH CUP]' : ''}`);
                     
                     html += `
                         <label style="display: block; margin: 8px 0; ${disabledStyle}" title="${displayId}">

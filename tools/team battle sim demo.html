@@ -1,0 +1,1276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokemon GO 3v3 Battle Simulator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1600px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 {
+            text-align: center;
+            color: #cc0000;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 18px;
+            color: #666;
+        }
+        .battle-setup {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .team-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .team-card h2 {
+            margin-top: 0;
+            color: #333;
+        }
+        .pokemon-slot {
+            background: #f9f9f9;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border-left: 4px solid #4CAF50;
+        }
+        .pokemon-slot h3 {
+            margin: 0 0 10px 0;
+            color: #555;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .shield-control {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .shield-btn {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .shield-btn:hover {
+            background: #1976D2;
+        }
+        .shield-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .shield-count {
+            min-width: 30px;
+            text-align: center;
+            font-weight: bold;
+        }
+        label {
+            display: block;
+            margin: 8px 0 3px;
+            font-weight: bold;
+            font-size: 12px;
+            color: #666;
+        }
+        select {
+            width: 100%;
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 12px;
+        }
+        .lead-indicator {
+            display: inline-block;
+            background: #ff9800;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            margin-left: 10px;
+        }
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        button.main-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        button.main-btn:hover {
+            background: #45a049;
+        }
+        button.main-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .results {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .winner {
+            font-size: 28px;
+            font-weight: bold;
+            text-align: center;
+            padding: 25px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .winner.team1 {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        .winner.team2 {
+            background: #fce4ec;
+            color: #c2185b;
+        }
+        .team-summary {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .team-result {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 4px;
+        }
+        .team-result h3 {
+            margin-top: 0;
+            color: #666;
+        }
+        .pokemon-result {
+            margin: 10px 0;
+            padding: 10px;
+            background: white;
+            border-radius: 4px;
+        }
+        .hp-bar {
+            background: #ddd;
+            height: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 5px 0;
+        }
+        .hp-fill {
+            background: #4CAF50;
+            height: 100%;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 11px;
+        }
+        .hp-fill.dead {
+            background: #f44336;
+        }
+        .battle-log {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 4px;
+            max-height: 500px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 11px;
+            line-height: 1.6;
+        }
+        .log-charge {
+            color: #2196F3;
+            font-weight: bold;
+        }
+        .log-swap {
+            color: #ff9800;
+            font-weight: bold;
+            background: #fff3e0;
+            padding: 2px 4px;
+            border-radius: 2px;
+        }
+        .error {
+            background: #ffebee;
+            border: 1px solid #ef5350;
+            padding: 15px;
+            border-radius: 4px;
+            color: #c62828;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>⚔️ Pokemon GO 3v3 Battle Simulator</h1>
+
+    <div id="loading" class="loading">Loading database...</div>
+    <div id="error" class="error" style="display:none;"></div>
+
+    <div id="app" style="display:none;">
+        <div class="battle-setup">
+            <!-- Team 1 -->
+            <div class="team-card">
+                <h2>Team 1 (Blue Corner)</h2>
+                <div id="team1-slots"></div>
+            </div>
+
+            <!-- Team 2 -->
+            <div class="team-card">
+                <h2>Team 2 (Red Corner)</h2>
+                <div id="team2-slots"></div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="main-btn" onclick="runBattle()">⚔️ SIMULATE BATTLE</button>
+        </div>
+
+        <div id="results" class="results" style="display:none;">
+            <div id="winner-banner"></div>
+            
+            <div class="team-summary">
+                <div class="team-result">
+                    <h3>Team 1 Final State</h3>
+                    <div id="team1-results"></div>
+                </div>
+                
+                <div class="team-result">
+                    <h3>Team 2 Final State</h3>
+                    <div id="team2-results"></div>
+                </div>
+            </div>
+            
+            <h3>Battle Rating: <span id="battle-rating"></span> | Total Turns: <span id="total-turns"></span></h3>
+            
+            <h3>Battle Log:</h3>
+            <div class="battle-log" id="battle-log"></div>
+        </div>
+    </div>
+
+    <script>
+        let db, allPokemon, allMoves, typeChart;
+        const team1Data = [{}, {}, {}];
+        const team2Data = [{}, {}, {}];
+        const shields = { team1: [0, 0, 0], team2: [0, 0, 0] };
+        let leadIndex = { team1: 0, team2: 0 };
+
+        async function initDatabase() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open('PokemonGoDB', 2);
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async function loadData() {
+            try {
+                db = await initDatabase();
+                
+                const pokemonTx = db.transaction(['pokemon'], 'readonly');
+                allPokemon = await new Promise((resolve, reject) => {
+                    const req = pokemonTx.objectStore('pokemon').getAll();
+                    req.onsuccess = () => resolve(req.result);
+                    req.onerror = () => reject(req.error);
+                });
+                
+                const movesTx = db.transaction(['moves'], 'readonly');
+                allMoves = await new Promise((resolve, reject) => {
+                    const req = movesTx.objectStore('moves').getAll();
+                    req.onsuccess = () => resolve(req.result);
+                    req.onerror = () => reject(req.error);
+                });
+                
+                const typeTx = db.transaction(['typeEffectiveness'], 'readonly');
+                const damageMatrixData = await new Promise((resolve, reject) => {
+                    const req = typeTx.objectStore('typeEffectiveness').get('damageMatrix');
+                    req.onsuccess = () => resolve(req.result);
+                    req.onerror = () => reject(req.error);
+                });
+                
+                typeChart = {};
+                const matrix = damageMatrixData.matrix;
+                const attackerTypes = damageMatrixData.attackerTypes;
+                const defenderTypes = damageMatrixData.defenderTypes;
+                attackerTypes.forEach((attackType, i) => {
+                    typeChart[attackType] = {};
+                    defenderTypes.forEach((defType, j) => {
+                        typeChart[attackType][defType] = matrix[i][j];
+                    });
+                });
+
+                const greatLeague = allPokemon.filter(p => p.maxCP >= 1400);
+                
+                buildTeamUI(greatLeague);
+                
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('app').style.display = 'block';
+                
+            } catch (error) {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('error').textContent = `Error loading database: ${error.message}`;
+            }
+        }
+
+        function buildTeamUI(pokemon) {
+            pokemon.sort((a, b) => a.name.localeCompare(b.name));
+            
+            for (let team = 1; team <= 2; team++) {
+                const container = document.getElementById(`team${team}-slots`);
+                
+                for (let slot = 0; slot < 3; slot++) {
+                    const slotDiv = document.createElement('div');
+                    slotDiv.className = 'pokemon-slot';
+                    slotDiv.innerHTML = `
+                        <h3>
+                            Position ${slot + 1}
+                            ${slot === 0 ? '<span class="lead-indicator">LEAD</span>' : ''}
+                            <div class="shield-control">
+                                <button class="shield-btn" onclick="adjustShields(${team}, ${slot}, -1)">-</button>
+                                <span class="shield-count" id="t${team}s${slot}-shields">0</span>
+                                <button class="shield-btn" onclick="adjustShields(${team}, ${slot}, 1)">+</button>
+                            </div>
+                        </h3>
+                        
+                        <label>Pokemon:</label>
+                        <select id="t${team}s${slot}-select" onchange="loadPokemon(${team}, ${slot})">
+                            <option value="">-- Select Pokemon --</option>
+                        </select>
+                        
+                        <label>Fast Move:</label>
+                        <select id="t${team}s${slot}-fast"></select>
+                        
+                        <label>Charged Move 1:</label>
+                        <select id="t${team}s${slot}-charge1"></select>
+                        
+                        <label>Charged Move 2:</label>
+                        <select id="t${team}s${slot}-charge2"></select>
+                        
+                        <label><input type="checkbox" id="t${team}s${slot}-shadow"> Shadow</label>
+                    `;
+                    container.appendChild(slotDiv);
+                    
+                    const select = document.getElementById(`t${team}s${slot}-select`);
+                    pokemon.forEach(p => {
+                        const label = p.form ? `${p.name} (${p.form})` : p.name;
+                        const opt = document.createElement('option');
+                        opt.value = p.id;
+                        opt.textContent = label;
+                        select.appendChild(opt);
+                    });
+                }
+            }
+            
+            // Set defaults for Team 1
+            document.getElementById('t1s0-select').value = 'Azumarill-base';
+            document.getElementById('t1s1-select').value = 'Registeel-base';
+            document.getElementById('t1s2-select').value = 'Altaria-base';
+            
+            // Set defaults for Team 2
+            document.getElementById('t2s0-select').value = 'Bastiodon-base';
+            document.getElementById('t2s1-select').value = 'Medicham-base';
+            document.getElementById('t2s2-select').value = 'Azumarill-base';
+            
+            // Load defaults
+            for (let i = 0; i < 3; i++) {
+                loadPokemon(1, i);
+                loadPokemon(2, i);
+            }
+            
+            // Set default shields (2 on lead)
+            adjustShields(1, 0, 2);
+            adjustShields(2, 0, 2);
+        }
+
+        function adjustShields(team, slot, delta) {
+            const teamKey = `team${team}`;
+            const totalShields = shields[teamKey].reduce((a, b) => a + b, 0);
+            const current = shields[teamKey][slot];
+            
+            const newValue = current + delta;
+            const newTotal = totalShields + delta;
+            
+            if (newValue < 0 || newValue > 2) return;
+            if (newTotal < 0 || newTotal > 2) return;
+            
+            shields[teamKey][slot] = newValue;
+            document.getElementById(`t${team}s${slot}-shields`).textContent = newValue;
+        }
+
+        function loadPokemon(team, slot) {
+            const selectId = `t${team}s${slot}-select`;
+            const pokemonId = document.getElementById(selectId).value;
+            const pokemon = allPokemon.find(p => p.id === pokemonId);
+            
+            if (!pokemon) return;
+            
+            const dataArray = team === 1 ? team1Data : team2Data;
+            dataArray[slot] = pokemon;
+            
+            const fastSelect = document.getElementById(`t${team}s${slot}-fast`);
+            fastSelect.innerHTML = '';
+            pokemon.moves.fast.forEach(moveName => {
+                const move = allMoves.find(m => m.name === moveName && m.mode === 'pvp' && m.category === 'fast');
+                if (move) {
+                    const opt = document.createElement('option');
+                    opt.value = move.rawId;
+                    opt.textContent = `${move.name} (${move.type}, ${move.power}/${move.energy}, ${move.duration}t)`;
+                    fastSelect.appendChild(opt);
+                }
+            });
+            
+            const charge1Select = document.getElementById(`t${team}s${slot}-charge1`);
+            const charge2Select = document.getElementById(`t${team}s${slot}-charge2`);
+            charge1Select.innerHTML = '';
+            charge2Select.innerHTML = '';
+            
+            const allChargedMoves = [...pokemon.moves.charge, ...pokemon.moves.chargeElite];
+            allChargedMoves.forEach(moveName => {
+                const move = allMoves.find(m => m.name === moveName && m.mode === 'pvp' && m.category === 'charge');
+                if (move) {
+                    const opt1 = document.createElement('option');
+                    opt1.value = move.rawId;
+                    opt1.textContent = `${move.name} (${move.type}, ${move.power}/${move.energy})`;
+                    charge1Select.appendChild(opt1.cloneNode(true));
+                    
+                    const opt2 = document.createElement('option');
+                    opt2.value = move.rawId;
+                    opt2.textContent = `${move.name} (${move.type}, ${move.power}/${move.energy})`;
+                    charge2Select.appendChild(opt2);
+                }
+            });
+        }
+
+        function getMoveByRawId(rawId, category) {
+            return allMoves.find(m => m.rawId === rawId && m.category === category && m.mode === 'pvp');
+        }
+
+        function buildTeam(teamNum) {
+            const team = [];
+            const dataArray = teamNum === 1 ? team1Data : team2Data;
+            const teamShields = shields[`team${teamNum}`];
+            
+            for (let i = 0; i < 3; i++) {
+                const p = dataArray[i];
+                if (!p.id) {
+                    alert(`Please select all Pokemon for Team ${teamNum}!`);
+                    return null;
+                }
+                
+                const fastId = document.getElementById(`t${teamNum}s${i}-fast`).value;
+                const charge1Id = document.getElementById(`t${teamNum}s${i}-charge1`).value;
+                const charge2Id = document.getElementById(`t${teamNum}s${i}-charge2`).value;
+                
+                const pokemon = {
+                    name: p.name,
+                    types: p.types,
+                    stats: p.stats,
+                    ivs: { ...p.great.iv, cpm: p.great.iv.cpm || 0.7317 },
+                    fastMove: getMoveByRawId(fastId, 'fast'),
+                    chargedMoves: [
+                        getMoveByRawId(charge1Id, 'charge'),
+                        getMoveByRawId(charge2Id, 'charge')
+                    ].filter(m => m),
+                    isShadow: document.getElementById(`t${teamNum}s${i}-shadow`).checked,
+                    shields: teamShields[i]
+                };
+                
+                team.push(pokemon);
+            }
+            
+            return team;
+        }
+
+        function runBattle() {
+            const team1 = buildTeam(1);
+            const team2 = buildTeam(2);
+            
+            if (!team1 || !team2) return;
+            
+            const sim = new Battle3v3Simulator(team1, team2, typeChart);
+            const result = sim.simulate();
+            
+            displayResults(result, team1, team2);
+        }
+
+        function displayResults(result, team1, team2) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.style.display = 'block';
+            resultsDiv.scrollIntoView({ behavior: 'smooth' });
+            
+            // Winner banner
+            const winnerBanner = document.getElementById('winner-banner');
+            if (result.winner === 'Team1') {
+                winnerBanner.className = 'winner team1';
+                winnerBanner.textContent = '🏆 TEAM 1 WINS!';
+            } else {
+                winnerBanner.className = 'winner team2';
+                winnerBanner.textContent = '🏆 TEAM 2 WINS!';
+            }
+            
+            // Team 1 results
+            const team1Results = document.getElementById('team1-results');
+            team1Results.innerHTML = '';
+            result.team1State.forEach((mon, i) => {
+                const hpPercent = (mon.hp / mon.maxHP * 100).toFixed(1);
+                const isDead = mon.hp <= 0;
+                team1Results.innerHTML += `
+                    <div class="pokemon-result">
+                        <strong>${team1[i].name}</strong>
+                        <div class="hp-bar">
+                            <div class="hp-fill ${isDead ? 'dead' : ''}" style="width: ${hpPercent}%">
+                                ${mon.hp}/${mon.maxHP}
+                            </div>
+                        </div>
+                        <small>Energy: ${mon.energy} | Shields: ${mon.shields}</small>
+                    </div>
+                `;
+            });
+            
+            // Team 2 results
+            const team2Results = document.getElementById('team2-results');
+            team2Results.innerHTML = '';
+            result.team2State.forEach((mon, i) => {
+                const hpPercent = (mon.hp / mon.maxHP * 100).toFixed(1);
+                const isDead = mon.hp <= 0;
+                team2Results.innerHTML += `
+                    <div class="pokemon-result">
+                        <strong>${team2[i].name}</strong>
+                        <div class="hp-bar">
+                            <div class="hp-fill ${isDead ? 'dead' : ''}" style="width: ${hpPercent}%">
+                                ${mon.hp}/${mon.maxHP}
+                            </div>
+                        </div>
+                        <small>Energy: ${mon.energy} | Shields: ${mon.shields}</small>
+                    </div>
+                `;
+            });
+            
+            document.getElementById('battle-rating').textContent = Math.round(result.rating);
+            document.getElementById('total-turns').textContent = result.turns;
+            
+            // Battle log with color coding
+            const logDiv = document.getElementById('battle-log');
+            logDiv.innerHTML = result.log.map(line => {
+                if (line.includes('CHARGE') || line.includes('SHIELD')) {
+                    return `<span class="log-charge">${line}</span>`;
+                } else if (line.includes('SWAP')) {
+                    return `<span class="log-swap">${line}</span>`;
+                }
+                return line;
+            }).join('<br>');
+        }
+
+        loadData();
+    </script>
+    
+    <!-- 3v3 Battle Simulator -->
+    <script>
+        class Battle3v3Simulator {
+            constructor(team1, team2, typeChart) {
+                this.teams = [team1, team2];
+                this.typeChart = typeChart;
+                this.active = [0, 0]; // Active Pokemon indices
+                this.hp = [[], []];
+                this.maxHP = [[], []];
+                this.energy = [[], []];
+                this.shields = [[], []];
+                this.attackStage = [[], []];
+                this.defenseStage = [[], []];
+                this.fainted = [[], []];
+                this.swapCooldown = [0, 0];
+                this.chargeSwapPending = [false, false]; // Track charge swap decisions
+                this.turn = 0;
+                this.fastMoveCountdown = [0, 0];
+                this.log = [];
+                
+                // Initialize state for all Pokemon
+                for (let t = 0; t < 2; t++) {
+                    for (let i = 0; i < 3; i++) {
+                        const mon = this.teams[t][i];
+                        const hp = this.calculateHP(mon.stats, mon.ivs);
+                        this.hp[t][i] = hp;
+                        this.maxHP[t][i] = hp;
+                        this.energy[t][i] = 0;
+                        this.shields[t][i] = mon.shields;
+                        this.attackStage[t][i] = 0;
+                        this.defenseStage[t][i] = 0;
+                        this.fainted[t][i] = false;
+                    }
+                }
+                
+                // Get type order from typeChart for dual-type lookups
+                this.typeOrder = [
+                    "NORMAL", "FIRE", "WATER", "GRASS", "ELECTRIC", "ICE",
+                    "FIGHTING", "POISON", "GROUND", "FLYING", "PSYCHIC", "BUG",
+                    "ROCK", "GHOST", "DRAGON", "DARK", "STEEL", "FAIRY"
+                ];
+            }
+
+            simulate() {
+                this.log.push('=== BATTLE START ===');
+                this.log.push(`Team 1 Lead: ${this.getActiveMon(0).name}`);
+                this.log.push(`Team 2 Lead: ${this.getActiveMon(1).name}`);
+                
+                // Initial swap decisions
+                this.evaluateSwapDecisions();
+                
+                while (!this.isBattleOver()) {
+                    this.processTurn();
+                    this.turn++;
+                    if (this.turn > 2000) {
+                        this.log.push('Battle timeout!');
+                        break;
+                    }
+                }
+                
+                return this.getBattleResult();
+            }
+
+            processTurn() {
+                // Decrement cooldowns
+                this.swapCooldown[0] = Math.max(0, this.swapCooldown[0] - 1);
+                this.swapCooldown[1] = Math.max(0, this.swapCooldown[1] - 1);
+                
+                // Check for swap cooldown expiry (trigger swap decision)
+                for (let t = 0; t < 2; t++) {
+                    if (this.swapCooldown[t] === 0 && this.turn > 0) {
+                        // Cooldown just expired, evaluate swap
+                        this.evaluateSwapDecision(t);
+                    }
+                }
+                
+                this.fastMoveCountdown[0]--;
+                this.fastMoveCountdown[1]--;
+                
+                if (this.fastMoveCountdown[0] <= 0) {
+                    this.useFastMove(0);
+                    const mon = this.getActiveMon(0);
+                    this.fastMoveCountdown[0] = mon.fastMove.duration + 1; // Add 1 for actual game duration
+                }
+                
+                if (this.fastMoveCountdown[1] <= 0) {
+                    this.useFastMove(1);
+                    const mon = this.getActiveMon(1);
+                    this.fastMoveCountdown[1] = mon.fastMove.duration + 1; // Add 1 for actual game duration
+                }
+                
+                this.checkChargedMoves();
+                
+                // Check for fainted Pokemon
+                for (let t = 0; t < 2; t++) {
+                    const activeIdx = this.active[t];
+                    if (this.hp[t][activeIdx] <= 0 && !this.fainted[t][activeIdx]) {
+                        this.fainted[t][activeIdx] = true;
+                        this.log.push(`Turn ${this.turn}: <span class="log-swap">Team ${t+1} ${this.teams[t][activeIdx].name} FAINTED!</span>`);
+                        
+                        // Force swap to next available
+                        const nextMon = this.findNextMon(t);
+                        if (nextMon !== -1) {
+                            this.performSwap(t, nextMon);
+                        }
+                    }
+                }
+            }
+
+            useFastMove(teamIdx) {
+                const activeIdx = this.active[teamIdx];
+                const attacker = this.teams[teamIdx][activeIdx];
+                const oppTeam = 1 - teamIdx;
+                const oppIdx = this.active[oppTeam];
+                const defender = this.teams[oppTeam][oppIdx];
+                
+                const move = attacker.fastMove;
+                const damage = this.calculateDamage(teamIdx, activeIdx, oppTeam, oppIdx, move);
+                
+                this.hp[oppTeam][oppIdx] -= damage;
+                this.hp[oppTeam][oppIdx] = Math.max(0, this.hp[oppTeam][oppIdx]);
+                
+                this.energy[teamIdx][activeIdx] += move.energy;
+                this.energy[teamIdx][activeIdx] = Math.min(100, this.energy[teamIdx][activeIdx]);
+                
+                this.log.push(`Turn ${this.turn}: Team ${teamIdx+1} ${move.name} → ${damage} dmg to ${defender.name}`);
+            }
+
+            checkChargedMoves() {
+                const t1Ready = this.canUseChargedMove(0);
+                const t2Ready = this.canUseChargedMove(1);
+                
+                if (t1Ready && t2Ready) {
+                    const t1Attack = this.getEffectiveAttack(0, this.active[0]);
+                    const t2Attack = this.getEffectiveAttack(1, this.active[1]);
+                    
+                    if (t1Attack >= t2Attack) {
+                        this.useChargedMove(0);
+                        if (!this.isBattleOver()) this.useChargedMove(1);
+                    } else {
+                        this.useChargedMove(1);
+                        if (!this.isBattleOver()) this.useChargedMove(0);
+                    }
+                } else if (t1Ready) {
+                    this.useChargedMove(0);
+                } else if (t2Ready) {
+                    this.useChargedMove(1);
+                }
+            }
+
+            canUseChargedMove(teamIdx) {
+                const activeIdx = this.active[teamIdx];
+                const mon = this.teams[teamIdx][activeIdx];
+                if (mon.chargedMoves.length === 0) return false;
+                
+                const cheapestMove = mon.chargedMoves.reduce((min, move) => 
+                    move.energy < min.energy ? move : min
+                );
+                
+                return this.energy[teamIdx][activeIdx] >= cheapestMove.energy;
+            }
+
+            useChargedMove(teamIdx) {
+                const activeIdx = this.active[teamIdx];
+                const oppTeam = 1 - teamIdx;
+                const oppIdx = this.active[oppTeam];
+                
+                // Check sac swap condition BEFORE charge move lands
+                this.checkSacSwap(oppTeam);
+                
+                const move = this.selectChargedMove(teamIdx, activeIdx, oppTeam, oppIdx);
+                if (!move) return;
+                
+                this.energy[teamIdx][activeIdx] -= move.energy;
+                this.energy[teamIdx][activeIdx] = Math.max(0, this.energy[teamIdx][activeIdx]);
+                
+                // Charge move minigame (14 turns, swap cooldown ticks)
+                this.swapCooldown[0] = Math.max(0, this.swapCooldown[0] - 14);
+                this.swapCooldown[1] = Math.max(0, this.swapCooldown[1] - 14);
+                
+                let damage = this.calculateDamage(teamIdx, activeIdx, oppTeam, oppIdx, move);
+                
+                const shouldShield = this.shouldUseShield(oppTeam, oppIdx, move);
+                
+                if (shouldShield) {
+                    this.shields[oppTeam][oppIdx]--;
+                    damage = 1;
+                    const defender = this.teams[oppTeam][oppIdx];
+                    this.log.push(`Turn ${this.turn}: <span class="log-charge">Team ${oppTeam+1} ${defender.name} SHIELDS ${move.name}</span>`);
+                }
+                
+                this.hp[oppTeam][oppIdx] -= damage;
+                this.hp[oppTeam][oppIdx] = Math.max(0, this.hp[oppTeam][oppIdx]);
+                
+                const attacker = this.teams[teamIdx][activeIdx];
+                const defender = this.teams[oppTeam][oppIdx];
+                this.log.push(`Turn ${this.turn}: <span class="log-charge">Team ${teamIdx+1} ${attacker.name} uses ${move.name} → ${damage} dmg to ${defender.name}</span>`);
+                
+                // After shield is used, evaluate swap
+                if (shouldShield) {
+                    this.evaluateSwapDecision(oppTeam);
+                }
+            }
+
+            selectChargedMove(teamIdx, monIdx, oppTeam, oppIdx) {
+                const attacker = this.teams[teamIdx][monIdx];
+                const defender = this.teams[oppTeam][oppIdx];
+                
+                if (attacker.chargedMoves.length === 0) return null;
+                
+                const currentEnergy = this.energy[teamIdx][monIdx];
+                const defenderHasShields = this.shields[oppTeam][oppIdx] > 0;
+                
+                // Check urgency
+                const urgencyMode = this.checkUrgency(teamIdx, monIdx, oppTeam, oppIdx);
+                
+                if (urgencyMode) {
+                    const affordable = attacker.chargedMoves
+                        .filter(m => currentEnergy >= m.energy)
+                        .sort((a, b) => a.energy - b.energy);
+                    return affordable.length > 0 ? affordable[0] : null;
+                }
+                
+                // Calculate DPE with shield awareness
+                const moveScores = attacker.chargedMoves.map(move => {
+                    const effectiveness = this.getTypeEffectiveness(move.type, defender.types);
+                    let damage = move.power * effectiveness;
+                    
+                    if (attacker.types.includes(move.type)) {
+                        damage *= 1.2;
+                    }
+                    
+                    if (defenderHasShields) {
+                        damage = Math.min(damage, 1);
+                    }
+                    
+                    const dpe = damage / move.energy;
+                    return { move, dpe };
+                });
+                
+                moveScores.sort((a, b) => b.dpe - a.dpe);
+                
+                const bestMove = moveScores[0];
+                const bestAffordable = moveScores.find(ms => currentEnergy >= ms.move.energy);
+                
+                if (!bestAffordable) return null;
+                if (currentEnergy >= bestMove.move.energy) return bestMove.move;
+                
+                return bestAffordable.move;
+            }
+
+            checkUrgency(myTeam, myIdx, oppTeam, oppIdx) {
+                const opponent = this.teams[oppTeam][oppIdx];
+                const myHP = this.hp[myTeam][myIdx];
+                
+                for (const move of opponent.chargedMoves) {
+                    const potentialDamage = this.calculateDamage(oppTeam, oppIdx, myTeam, myIdx, move);
+                    if (potentialDamage >= myHP) return true;
+                }
+                
+                return false;
+            }
+
+            shouldUseShield(teamIdx, monIdx, move) {
+                if (this.shields[teamIdx][monIdx] === 0) return false;
+                return true;
+            }
+
+            checkSacSwap(teamIdx) {
+                const activeIdx = this.active[teamIdx];
+                const oppTeam = 1 - teamIdx;
+                
+                // Check ALL conditions:
+                // 1. My team has exactly 2 alive
+                const myAliveCount = this.getAliveCount(teamIdx);
+                if (myAliveCount !== 2) return false;
+                
+                // 2. Opponent team has exactly 1 alive
+                const oppAliveCount = this.getAliveCount(oppTeam);
+                if (oppAliveCount !== 1) return false;
+                
+                // 3. ALL shields used (both teams, all Pokemon)
+                let allShieldsUsed = true;
+                for (let t = 0; t < 2; t++) {
+                    for (let i = 0; i < 3; i++) {
+                        if (this.shields[t][i] > 0) {
+                            allShieldsUsed = false;
+                            break;
+                        }
+                    }
+                    if (!allShieldsUsed) break;
+                }
+                if (!allShieldsUsed) return false;
+                
+                // 4. Swap is available
+                if (this.swapCooldown[teamIdx] > 0) return false;
+                
+                // 5. Current mon would win if it had a shield
+                // Simulate: if current mon had 1 shield, would rating > 500?
+                const oppIdx = this.active[oppTeam];
+                const savedShields = this.shields[teamIdx][activeIdx];
+                this.shields[teamIdx][activeIdx] = 1; // Temporarily give shield
+                const ratingWithShield = this.simulateMatchup(teamIdx, activeIdx, oppTeam, oppIdx);
+                this.shields[teamIdx][activeIdx] = savedShields; // Restore
+                
+                if (ratingWithShield <= 500) return false;
+                
+                // All conditions met - find weakest alive mon to sacrifice
+                let weakestIdx = -1;
+                let lowestHP = Infinity;
+                for (let i = 0; i < 3; i++) {
+                    if (!this.fainted[teamIdx][i] && i !== activeIdx && this.hp[teamIdx][i] < lowestHP) {
+                        lowestHP = this.hp[teamIdx][i];
+                        weakestIdx = i;
+                    }
+                }
+                
+                if (weakestIdx !== -1) {
+                    this.log.push(`Turn ${this.turn}: <span class="log-swap">Team ${teamIdx+1} SAC SWAP! ${this.teams[teamIdx][weakestIdx].name} in to tank charge move</span>`);
+                    this.performSwap(teamIdx, weakestIdx);
+                    return true;
+                }
+                
+                return false;
+            }
+
+            evaluateSwapDecisions() {
+                // Both teams evaluate simultaneously at battle start
+                for (let t = 0; t < 2; t++) {
+                    if (this.swapCooldown[t] === 0) {
+                        this.evaluateSwapDecision(t);
+                    }
+                }
+            }
+
+            evaluateSwapDecision(teamIdx) {
+                if (this.swapCooldown[teamIdx] > 0) return;
+                if (this.chargeSwapPending[teamIdx]) return; // Already committed to charge swap
+                
+                const activeIdx = this.active[teamIdx];
+                const oppTeam = 1 - teamIdx;
+                const oppIdx = this.active[oppTeam];
+                
+                // Get available swap options
+                const swapOptions = [];
+                for (let i = 0; i < 3; i++) {
+                    if (i !== activeIdx && !this.fainted[teamIdx][i]) {
+                        swapOptions.push(i);
+                    }
+                }
+                
+                if (swapOptions.length === 0) return; // No swap available
+                
+                // Evaluate current matchup
+                const currentRating = this.simulateMatchup(teamIdx, activeIdx, oppTeam, oppIdx);
+                
+                // Determine swap decision
+                const decision = this.getSwapDecision(currentRating, teamIdx, activeIdx);
+                
+                if (decision === 'STAY' || decision === 'WAIT') {
+                    return; // Don't swap
+                }
+                
+                if (decision === 'CHARGE_SWAP') {
+                    // Mark as pending, will execute when energy threshold reached
+                    this.chargeSwapPending[teamIdx] = true;
+                    return;
+                }
+                
+                // QUICK_SWAP: Execute immediately
+                const bestSwapIdx = this.findBestSwapTarget(teamIdx);
+                if (bestSwapIdx !== -1) {
+                    this.performSwap(teamIdx, bestSwapIdx);
+                }
+            }
+
+            findBestSwapTarget(teamIdx) {
+                const activeIdx = this.active[teamIdx];
+                const oppTeam = 1 - teamIdx;
+                
+                const swapOptions = [];
+                for (let i = 0; i < 3; i++) {
+                    if (i !== activeIdx && !this.fainted[teamIdx][i]) {
+                        swapOptions.push(i);
+                    }
+                }
+                
+                if (swapOptions.length === 0) return -1;
+                
+                // If all options are losing, pick highest rating
+                let bestIdx = -1;
+                let bestRating = -Infinity;
+                
+                for (const swapIdx of swapOptions) {
+                    const rating = this.evaluateSwapOutcome(teamIdx, swapIdx, oppTeam);
+                    
+                    if (rating > bestRating || (rating === bestRating && this.hp[teamIdx][swapIdx] > this.hp[teamIdx][bestIdx])) {
+                        bestRating = rating;
+                        bestIdx = swapIdx;
+                    }
+                }
+                
+                return bestIdx;
+            }
+
+            getSwapDecision(rating, teamIdx, monIdx) {
+                // STAY: winning matchup
+                if (rating > 500) return 'STAY';
+                
+                // Check if can reach charge move before taking significant damage
+                const currentEnergy = this.energy[teamIdx][monIdx];
+                const mon = this.teams[teamIdx][monIdx];
+                const cheapestMove = mon.chargedMoves.reduce((min, m) => 
+                    m.energy < min.energy ? m : min, mon.chargedMoves[0]);
+                
+                if (cheapestMove) {
+                    const energyNeeded = cheapestMove.energy - currentEnergy;
+                    const turnsNeeded = Math.ceil(energyNeeded / mon.fastMove.energy) * (mon.fastMove.duration + 1); // Add 1 for actual duration
+                    const currentHP = this.hp[teamIdx][monIdx];
+                    const maxHP = this.maxHP[teamIdx][monIdx];
+                    const hpPercent = currentHP / maxHP;
+                    
+                    // CHARGE SWAP: Can charge up before taking 40% HP
+                    if (turnsNeeded > 0 && hpPercent > 0.4) {
+                        return 'CHARGE_SWAP';
+                    }
+                    
+                    // QUICK SWAP: Will take >40% before charging
+                    if (hpPercent <= 0.4) {
+                        return 'QUICK_SWAP';
+                    }
+                }
+                
+                // WAIT: Close matchup with shield available
+                if (rating > 400 && this.shields[teamIdx][monIdx] > 0) {
+                    return 'WAIT';
+                }
+                
+                // Default: QUICK SWAP
+                return 'QUICK_SWAP';
+            }
+
+            evaluateSwapOutcome(teamIdx, swapIdx, oppTeam) {
+                const oppIdx = this.active[oppTeam];
+                const oppCanSwap = this.swapCooldown[oppTeam] === 0;
+                
+                if (!oppCanSwap) {
+                    // Opponent can't swap - just evaluate against current opponent
+                    return this.simulateMatchup(teamIdx, swapIdx, oppTeam, oppIdx);
+                }
+                
+                // Opponent can swap - use minimax
+                // Find opponent's best response to our swap
+                let worstCaseRating = Infinity;
+                
+                // Opponent stays
+                const stayRating = this.simulateMatchup(teamIdx, swapIdx, oppTeam, oppIdx);
+                worstCaseRating = Math.min(worstCaseRating, stayRating);
+                
+                // Opponent swaps to each available mon
+                for (let i = 0; i < 3; i++) {
+                    if (i !== oppIdx && !this.fainted[oppTeam][i]) {
+                        const swapRating = this.simulateMatchup(teamIdx, swapIdx, oppTeam, i);
+                        worstCaseRating = Math.min(worstCaseRating, swapRating);
+                    }
+                }
+                
+                return worstCaseRating;
+            }
+
+            simulateMatchup(team1Idx, mon1Idx, team2Idx, mon2Idx) {
+                // Quick 1v1 simulation to get rating
+                const mon1 = this.teams[team1Idx][mon1Idx];
+                const mon2 = this.teams[team2Idx][mon2Idx];
+                
+                const hp1 = this.hp[team1Idx][mon1Idx];
+                const hp2 = this.hp[team2Idx][mon2Idx];
+                const energy1 = this.energy[team1Idx][mon1Idx];
+                const energy2 = this.energy[team2Idx][mon2Idx];
+                
+                // Simple heuristic: type effectiveness + HP ratio + energy advantage
+                const typeAdv = this.getMatchupAdvantage(mon1, mon2);
+                const hpRatio = hp1 / hp2;
+                const energyAdv = (energy1 - energy2) / 100;
+                
+                const rating = 500 + (typeAdv * 200) + (hpRatio * 150) + (energyAdv * 100);
+                return Math.max(0, Math.min(1000, rating));
+            }
+
+            getMatchupAdvantage(mon1, mon2) {
+                let advantage = 0;
+                
+                // Check mon1's moves against mon2
+                if (mon1.fastMove) {
+                    advantage += this.getTypeEffectiveness(mon1.fastMove.type, mon2.types) - 1;
+                }
+                if (mon1.chargedMoves.length > 0) {
+                    const bestCharge = mon1.chargedMoves.reduce((best, move) => {
+                        const eff = this.getTypeEffectiveness(move.type, mon2.types);
+                        return eff > best ? eff : best;
+                    }, 0);
+                    advantage += bestCharge - 1;
+                }
+                
+                // Check mon2's moves against mon1
+                if (mon2.fastMove) {
+                    advantage -= this.getTypeEffectiveness(mon2.fastMove.type, mon1.types) - 1;
+                }
+                if (mon2.chargedMoves.length > 0) {
+                    const bestCharge = mon2.chargedMoves.reduce((best, move) => {
+                        const eff = this.getTypeEffectiveness(move.type, mon1.types);
+                        return eff > best ? eff : best;
+                    }, 0);
+                    advantage -= bestCharge - 1;
+                }
+                
+                return advantage;
+            }
+
+            performSwap(teamIdx, newIdx) {
+                const oldIdx = this.active[teamIdx];
+                this.active[teamIdx] = newIdx;
+                
+                // Clear stat stages on swap
+                this.attackStage[teamIdx][newIdx] = 0;
+                this.defenseStage[teamIdx][newIdx] = 0;
+                
+                // Set swap cooldown (90 turns = 45 seconds)
+                this.swapCooldown[teamIdx] = 90;
+                
+                // Swap animation (24 turns = 12 seconds, invulnerable)
+                this.turn += 24;
+                
+                const oldMon = this.teams[teamIdx][oldIdx];
+                const newMon = this.teams[teamIdx][newIdx];
+                this.log.push(`Turn ${this.turn}: <span class="log-swap">Team ${teamIdx+1} SWAPS! ${oldMon.name} out, ${newMon.name} in</span>`);
+                
+                // Reset fast move countdown for new Pokemon
+                this.fastMoveCountdown[teamIdx] = newMon.fastMove.duration + 1; // Add 1 for actual game duration
+                
+                // Opponent re-evaluates after swap
+                const oppTeam = 1 - teamIdx;
+                if (this.swapCooldown[oppTeam] === 0) {
+                    this.evaluateSwapDecision(oppTeam);
+                }
+            }
+
+            getAliveCount(teamIdx) {
+                let count = 0;
+                for (let i = 0; i < 3; i++) {
+                    if (!this.fainted[teamIdx][i]) count++;
+                }
+                return count;
+            }
+
+            isBattleOver() {
+                return this.getAliveCount(0) === 0 || this.getAliveCount(1) === 0;
+            }
+
+            getActiveMon(teamIdx) {
+                return this.teams[teamIdx][this.active[teamIdx]];
+            }
+
+            calculateDamage(atkTeam, atkIdx, defTeam, defIdx, move) {
+                const attacker = this.teams[atkTeam][atkIdx];
+                const defender = this.teams[defTeam][defIdx];
+                
+                const attackStat = this.getEffectiveAttack(atkTeam, atkIdx);
+                const defenseStat = this.getEffectiveDefense(defTeam, defIdx);
+                const effectiveness = this.getTypeEffectiveness(move.type, defender.types);
+                const stabMultiplier = attacker.types.includes(move.type) ? 1.2 : 1.0;
+                
+                const baseDamage = 0.5 * move.power * (attackStat / defenseStat) * effectiveness * stabMultiplier;
+                const damage = Math.max(1, Math.floor(baseDamage));
+                
+                return damage;
+            }
+
+            getEffectiveAttack(teamIdx, monIdx) {
+                const mon = this.teams[teamIdx][monIdx];
+                const baseAttack = this.calculateAttack(mon.stats, mon.ivs);
+                const shadowMultiplier = mon.isShadow ? 1.2 : 1.0;
+                const stageMultiplier = this.getStageMultiplier(this.attackStage[teamIdx][monIdx]);
+                
+                return baseAttack * shadowMultiplier * stageMultiplier;
+            }
+
+            getEffectiveDefense(teamIdx, monIdx) {
+                const mon = this.teams[teamIdx][monIdx];
+                const baseDefense = this.calculateDefense(mon.stats, mon.ivs);
+                const shadowMultiplier = mon.isShadow ? 0.833 : 1.0;
+                const stageMultiplier = this.getStageMultiplier(this.defenseStage[teamIdx][monIdx]);
+                
+                return baseDefense * shadowMultiplier * stageMultiplier;
+            }
+
+            getStageMultiplier(stage) {
+                const multipliers = {
+                    '-4': 0.5, '-3': 0.5714, '-2': 0.6667, '-1': 0.8,
+                    '0': 1.0,
+                    '1': 1.25, '2': 1.5, '3': 1.75, '4': 2.0
+                };
+                return multipliers[stage.toString()] || 1.0;
+            }
+
+            calculateAttack(stats, ivs) {
+                const cpm = ivs.cpm || 0.84030001;
+                return (stats.attack + ivs.atk) * cpm;
+            }
+
+            calculateDefense(stats, ivs) {
+                const cpm = ivs.cpm || 0.84030001;
+                return (stats.defense + ivs.def) * cpm;
+            }
+
+            calculateHP(stats, ivs) {
+                const cpm = ivs.cpm || 0.84030001;
+                return Math.max(10, Math.floor((stats.hp + ivs.sta) * cpm));
+            }
+
+            getTypeEffectiveness(attackType, defenderTypes) {
+                if (!this.typeChart) return 1.0;
+                
+                const types = Array.isArray(defenderTypes) ? defenderTypes : [defenderTypes];
+                
+                // For dual types, look up the combined type in correct order
+                if (types.length === 2) {
+                    const sortedTypes = [...types].sort((a, b) => 
+                        this.typeOrder.indexOf(a) - this.typeOrder.indexOf(b)
+                    );
+                    const combinedType = sortedTypes.join('/');
+                    
+                    if (this.typeChart[attackType] && this.typeChart[attackType][combinedType] !== undefined) {
+                        return this.typeChart[attackType][combinedType];
+                    }
+                }
+                
+                // For single type
+                if (types.length === 1) {
+                    const singleType = types[0];
+                    if (this.typeChart[attackType] && this.typeChart[attackType][singleType] !== undefined) {
+                        return this.typeChart[attackType][singleType];
+                    }
+                }
+                
+                return 1.0;
+            }
+
+            getBattleResult() {
+                const winner = this.getAliveCount(0) > 0 ? 'Team1' : 'Team2';
+                const winnerIdx = winner === 'Team1' ? 0 : 1;
+                
+                // Calculate rating based on remaining HP
+                let totalRemainingHP = 0;
+                let totalMaxHP = 0;
+                
+                for (let i = 0; i < 3; i++) {
+                    totalRemainingHP += this.hp[winnerIdx][i];
+                    totalMaxHP += this.maxHP[winnerIdx][i];
+                }
+                
+                const hpPercent = totalRemainingHP / totalMaxHP;
+                const rating = winner === 'Team1' ? 
+                    500 + (hpPercent * 500) : 
+                    500 - (hpPercent * 500);
+                
+                return {
+                    winner: winner,
+                    rating: rating,
+                    turns: this.turn,
+                    team1State: this.teams[0].map((mon, i) => ({
+                        hp: this.hp[0][i],
+                        maxHP: this.maxHP[0][i],
+                        energy: this.energy[0][i],
+                        shields: this.shields[0][i]
+                    })),
+                    team2State: this.teams[1].map((mon, i) => ({
+                        hp: this.hp[1][i],
+                        maxHP: this.maxHP[1][i],
+                        energy: this.energy[1][i],
+                        shields: this.shields[1][i]
+                    })),
+                    log: this.log
+                };
+            }
+        }
+    </script>
+</body>
+</html>

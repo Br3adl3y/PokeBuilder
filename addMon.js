@@ -5,12 +5,37 @@
 class ScreenshotProcessor {
     constructor(app) {
         this.app = app;
+        this.ocr = new OCRProcessor();
         this.canvas = document.createElement('canvas');
         this.ctx = this.canvas.getContext('2d', { willReadFrequently: true }); // ADD THIS
         this.batchImages = [];
         this.currentBatchIndex = 0;
         this.isDesktop = !('ontouchstart' in window);
         this.tesseractWorker = null;
+    }
+
+    loadImage(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    this.canvas.width = img.width;
+                    this.canvas.height = img.height;
+                    this.ctx.drawImage(img, 0, 0);
+                    resolve({
+                        image: img,
+                        dataUrl: e.target.result,
+                        width: img.width,
+                        height: img.height
+                    });
+                };
+                img.onerror = () => reject(new Error('Failed to load image'));
+                img.src = e.target.result;
+            };
+            reader.onerror = () => reject(new Error('Failed to read file'));
+            reader.readAsDataURL(file);
+        });
     }
 
  // Process batch images one by one
@@ -24,11 +49,17 @@ class ScreenshotProcessor {
 
         const file = this.batchImages[this.currentBatchIndex];
         
+        // Initialize on first image
+        if (this.currentBatchIndex === 0) {
+            this.showProcessingModal('Initializing OCR...');
+            await this.ocr.initTesseract();
+        }
+        
         this.showProcessingModal(`Processing ${this.currentBatchIndex + 1} of ${this.batchImages.length}...`);
 
         try {
             const imageData = await this.loadImage(file);
-            const extractedData = await this.processScreenshot(imageData);
+            const extractedData = await this.ocr.processScreenshot(imageData, this.app.pokemon);
             
             this.hideProcessingModal();
             this.showConfirmationModal(extractedData, imageData, true);
@@ -379,20 +410,38 @@ class ScreenshotProcessor {
         });
     }
 
+    
     // Handle single image upload
     async handleSingleImage(file) {
         if (!file) return;
 
-        this.showProcessingModal();
+        console.log('📤 handleSingleImage called');
+        console.log('   File:', file.name, file.type, file.size);
+        
+        this.showProcessingModal('Initializing OCR...');
 
         try {
+            console.log('   Calling ocr.initTesseract()...');
+            await this.ocr.initTesseract();
+            console.log('   initTesseract() completed');
+            console.log('   OCR worker state:', this.ocr.tesseractWorker);
+            
+            this.showProcessingModal('Processing screenshot...');
+            
+            console.log('   Loading image...');
             const imageData = await this.loadImage(file);
-            const extractedData = await this.processScreenshot(imageData);
+            console.log('   Image loaded:', imageData.width, 'x', imageData.height);
+            
+            console.log('   Calling processScreenshot()...');
+            const extractedData = await this.ocr.processScreenshot(imageData, this.app.pokemon);
+            console.log('   processScreenshot() completed');
+            console.log('   Extracted data:', extractedData);
             
             this.hideProcessingModal();
             this.showConfirmationModal(extractedData, imageData);
         } catch (error) {
-            console.error('Error processing screenshot:', error);
+            console.error('❌ Error in handleSingleImage:', error);
+            console.error('   Error stack:', error.stack);
             this.hideProcessingModal();
             this.showErrorModal(error.message);
         }
@@ -457,10 +506,10 @@ class ScreenshotProcessor {
     let minDiff = Infinity;
     
     // Check each level (array index * 0.5 + 1 = level)
-    for (let i = 0; i < cpm.length; i++) {
+    for (let i = 0; i < this.cpm.length; i++) {
         const level = (i * 0.5) + 1;
         const calculatedCP = Math.max(10, Math.floor(
-            totalAtk * Math.sqrt(totalDef) * Math.sqrt(totalSta) * cpm[i] * cpm[i] / 10
+            totalAtk * Math.sqrt(totalDef) * Math.sqrt(totalSta) * this.cpm[i] * this.cpm[i] / 10
         ));
         
         const diff = Math.abs(calculatedCP - cp);
@@ -1050,7 +1099,7 @@ class ScreenshotProcessor {
                 return; // Don't save if there are errors
             }
             
-            const formData = this.gatherFormData(modal);
+            const formData = this.gatherFormData(modal, imageData, initialData);
             
             modal.remove();
             await this.savePokemon(formData);
@@ -1099,7 +1148,14 @@ class ScreenshotProcessor {
         }
     }
 
-    async gatherFormData(modal, imageData) {
+    gatherFormData(modal, imageData) {
+        // DEBUG: Check what the modal actually contains
+        console.log('Name field value:', modal.querySelector('[data-field="name"]')?.value);
+        console.log('CP field value:', modal.querySelector('[data-field="cp"]')?.value);
+        console.log('IV Attack value:', modal.querySelector('[data-field="ivAttack"]')?.value);
+        console.log('Date Caught value:', modal.querySelector('[data-field="dateCaught"]')?.value);
+        console.log('Modal element:', modal);
+        
         // Find which shadow state button is active
         let shadowState = 'normal';
         modal.querySelectorAll('[data-shadow-state]').forEach(btn => {
@@ -1147,7 +1203,8 @@ class ScreenshotProcessor {
                 fast: null,
                 charge1: null,
                 charge2: null
-            }
+            },
+            screenshot: imageData ? imageData.dataUrl : null
         };
     }
 

@@ -1,35 +1,59 @@
 // ====================================
-// DATABASE FUNCTIONS
+// POKEMON GO TEAM BUILDER - MAIN APP
+// ====================================
+// Main application controller and database initialization
+// Handles app state, navigation, search, and data loading
+
+// ====================================
+// DATABASE INITIALIZATION
 // ====================================
 
+/**
+ * Initialize IndexedDB with all required object stores
+ * Creates stores for: pokemon, moves, metadata, typeEffectiveness, rankings, userPokemon
+ * Loads initial data from go-database.json if database is empty
+ * @returns {Promise<IDBDatabase>} The initialized database instance
+ */
 async function initializeDatabase() {
     return new Promise((resolve, reject) => {
         const request = indexedDB.open('PokemonGoDB', 5);
         
         request.onerror = () => reject(request.error);
         
+        // Create/upgrade database schema
         request.onupgradeneeded = (event) => {
             const db = event.target.result;
             
+            // Pokemon data store with dexNumber index for lookups
             if (!db.objectStoreNames.contains('pokemon')) {
                 const pokemonStore = db.createObjectStore('pokemon', { keyPath: 'id' });
                 pokemonStore.createIndex('dexNumber', 'dexNumber', { unique: false });
             }
+            
+            // Move data store (Fast Moves & Charged Moves)
             if (!db.objectStoreNames.contains('moves')) {
                 db.createObjectStore('moves', { keyPath: 'id' });
             }
+            
+            // Metadata store (game constants, version info, etc.)
             if (!db.objectStoreNames.contains('metadata')) {
                 db.createObjectStore('metadata', { keyPath: 'key' });
             }
+            
+            // Type effectiveness matrix
             if (!db.objectStoreNames.contains('typeEffectiveness')) {
                 db.createObjectStore('typeEffectiveness', { keyPath: 'id' });
             }
+            
+            // PVP rankings data (Great League, Ultra League, Master League, Cups)
             if (!db.objectStoreNames.contains('rankings')) {
                 const rankingsStore = db.createObjectStore('rankings', { keyPath: 'id' });
                 rankingsStore.createIndex('league', 'league', { unique: false });
                 rankingsStore.createIndex('cupName', 'cupName', { unique: false });
                 rankingsStore.createIndex('timestamp', 'timestamp', { unique: false });
             }
+            
+            // User's pokemon collection
             if (!db.objectStoreNames.contains('userPokemon')) {
                 const userPokemonStore = db.createObjectStore('userPokemon', { keyPath: 'id' });
                 userPokemonStore.createIndex('name', 'name', { unique: false });
@@ -38,9 +62,11 @@ async function initializeDatabase() {
             }
         };
         
+        // Once database is ready, check if we need to load initial data
         request.onsuccess = async (event) => {
             const db = event.target.result;
             
+            // Check if pokemon store is empty (first run)
             const tx = db.transaction(['pokemon'], 'readonly');
             const store = tx.objectStore('pokemon');
             const countRequest = store.count();
@@ -50,21 +76,28 @@ async function initializeDatabase() {
                     console.log('Database empty, loading from JSON...');
                     
                     try {
+                        // Fetch and parse the game database
                         const response = await fetch('./go-database.json');
                         const data = await response.json();
                         
                         console.log('JSON loaded, populating database...');
                         
+                        // Write all data to IndexedDB
                         const writeTx = db.transaction(['pokemon', 'moves', 'metadata', 'typeEffectiveness'], 'readwrite');
                         
+                        // Populate pokemon
                         if (data.pokemon && Array.isArray(data.pokemon)) {
                             const pokemonStore = writeTx.objectStore('pokemon');
                             data.pokemon.forEach(p => pokemonStore.add(p));
                         }
+                        
+                        // Populate moves
                         if (data.moves && Array.isArray(data.moves)) {
                             const movesStore = writeTx.objectStore('moves');
                             data.moves.forEach(m => movesStore.add(m));
                         }
+                        
+                        // Populate metadata (handle both array and object formats)
                         if (data.metadata) {
                             const metadataStore = writeTx.objectStore('metadata');
                             if (Array.isArray(data.metadata)) {
@@ -75,6 +108,8 @@ async function initializeDatabase() {
                                 });
                             }
                         }
+                        
+                        // Populate type effectiveness
                         if (data.typeEffectiveness && Array.isArray(data.typeEffectiveness)) {
                             const typeStore = writeTx.objectStore('typeEffectiveness');
                             data.typeEffectiveness.forEach(t => typeStore.add(t));
@@ -95,6 +130,7 @@ async function initializeDatabase() {
                         resolve(db);
                     }
                 } else {
+                    // Database already populated
                     resolve(db);
                 }
             };
@@ -106,35 +142,49 @@ async function initializeDatabase() {
 // MAIN APP CLASS
 // ====================================
 
+/**
+ * PokeApp - Main application controller
+ * Manages app state, navigation, data loading, and rendering
+ */
 class PokeApp {
     constructor() {
-        this.currentView = 'menu';
-        this.currentList = 'pokemon';
-        this.searchTerm = '';
-        this.loading = false;
+        // ---- VIEW STATE ----
+        this.currentView = 'menu';              // Current screen: 'menu', 'pokedex', 'collection'
+        this.currentList = 'pokemon';           // Current list type: 'pokemon', 'fast', 'charge'
+        this.searchTerm = '';                   // Current search query
+        this.loading = false;                   // Loading state for data fetch
         
-        this.pokemon = [];
-        this.moves = [];
+        // ---- DATA CACHES ----
+        this.pokemon = [];                      // All pokemon data from IndexedDB
+        this.moves = [];                        // All moves data from IndexedDB
         
-        this.selectedPokemon = null;
-        this.selectedForm = null;
-        this.selectedMove = null;
+        // ---- SELECTION STATE ----
+        this.selectedPokemon = null;            // Currently selected pokemon for detail view
+        this.selectedForm = null;               // Currently selected form variant
+        this.selectedMove = null;               // Currently selected move for detail view
         
-        this.expandedSections = {};
-        this.expandedMoves = {};
-        this.moveMode = 'pvp';
-        this.showTagInput = false;
+        // ---- UI STATE ----
+        this.expandedSections = {};             // Track which detail sections are expanded
+        this.expandedMoves = {};                // Track which move cards are expanded
+        this.moveMode = 'pvp';                  // Move display mode: 'pvp' or 'pve'
+        this.showTagInput = false;              // Show/hide tag input field
         
-        this.userTags = {};
-        this.moveTags = {};
+        // ---- USER DATA (localStorage) ----
+        this.userTags = {};                     // User tags for pokemon {pokemonId: [tag1, tag2]}
+        this.moveTags = {};                     // User tags for moves {moveId: [tag1, tag2]}
         
-        this.touchStartX = 0;
-        this.touchStartY = 0;
-        this.touchEndY = 0;
-        this.longPressTimer = null;
-        this.screenshotProcessor = new ScreenshotProcessor(this);
-        this.userCollection = new UserCollectionManager(this);
-        this.catchReport = new CatchReport(this);
+        // ---- TOUCH INTERACTION STATE ----
+        this.touchStartX = 0;                   // Touch start X coordinate
+        this.touchStartY = 0;                   // Touch start Y coordinate
+        this.touchEndY = 0;                     // Touch end Y coordinate
+        this.longPressTimer = null;             // Timer for long-press detection
+        
+        // ---- FEATURE MODULES ----
+        this.screenshotProcessor = new ScreenshotProcessor(this);   // OCR screenshot handler
+        this.userCollection = new UserCollectionManager(this);      // User collection manager
+        this.catchReport = new CatchReport(this);                   // Catch report generator
+        
+        // Initialize app
         this.loadUserTags();
         this.loadFromIndexedDB();
         this.render();
@@ -144,6 +194,10 @@ class PokeApp {
     // DATABASE LOADING
     // ====================================
 
+    /**
+     * Load pokemon and moves data from IndexedDB
+     * Sets loading state and triggers render when complete
+     */
     loadFromIndexedDB() {
         this.loading = true;
         this.render();
@@ -153,6 +207,7 @@ class PokeApp {
         dbRequest.onsuccess = (event) => {
             const db = event.target.result;
             
+            // Load all pokemon
             const pokemonTransaction = db.transaction(['pokemon'], 'readonly');
             const pokemonStore = pokemonTransaction.objectStore('pokemon');
             const pokemonRequest = pokemonStore.getAll();
@@ -162,6 +217,7 @@ class PokeApp {
                 this.checkLoadComplete();
             };
 
+            // Load all moves
             const movesTransaction = db.transaction(['moves'], 'readonly');
             const movesStore = movesTransaction.objectStore('moves');
             const movesRequest = movesStore.getAll();
@@ -178,6 +234,10 @@ class PokeApp {
         };
     }
 
+    /**
+     * Check if both pokemon and moves data have loaded
+     * Triggers render when both datasets are ready
+     */
     checkLoadComplete() {
         if (this.pokemon.length > 0 && this.moves.length > 0) {
             this.loading = false;
@@ -188,7 +248,13 @@ class PokeApp {
     // ====================================
     // USER TAGS (localStorage)
     // ====================================
+    // Tags are stored in localStorage for quick access
+    // Format: {itemId: [tag1, tag2, ...]}
 
+    /**
+     * Load user tags from localStorage
+     * Loads both pokemon tags and move tags
+     */
     loadUserTags() {
         const stored = localStorage.getItem('pokemonTags');
         if (stored) this.userTags = JSON.parse(stored);
@@ -197,14 +263,26 @@ class PokeApp {
         if (moveTags) this.moveTags = JSON.parse(moveTags);
     }
 
+    /**
+     * Save pokemon tags to localStorage
+     */
     saveUserTags() {
         localStorage.setItem('pokemonTags', JSON.stringify(this.userTags));
     }
 
+    /**
+     * Save move tags to localStorage
+     */
     saveMoveTags() {
         localStorage.setItem('moveTags', JSON.stringify(this.moveTags));
     }
 
+    /**
+     * Add a tag to a pokemon or move
+     * @param {string} itemId - The pokemon or move ID
+     * @param {string} tag - The tag text to add
+     * @param {boolean} isMove - Whether this is a move tag (default: false for pokemon)
+     */
     addTag(itemId, tag, isMove = false) {
         const tags = isMove ? this.moveTags : this.userTags;
         if (!tags[itemId]) tags[itemId] = [];
@@ -216,6 +294,12 @@ class PokeApp {
         }
     }
 
+    /**
+     * Remove a tag from a pokemon or move
+     * @param {string} itemId - The pokemon or move ID
+     * @param {string} tag - The tag text to remove
+     * @param {boolean} isMove - Whether this is a move tag (default: false for pokemon)
+     */
     removeTag(itemId, tag, isMove = false) {
         const tags = isMove ? this.moveTags : this.userTags;
         if (tags[itemId]) {
@@ -229,11 +313,19 @@ class PokeApp {
     // SEARCH & FILTERING
     // ====================================
 
+    /**
+     * Update search term and refresh the current view
+     * @param {string} term - The search query
+     */
     setSearchTerm(term) {
         this.searchTerm = term;
         this.updateCurrentView();
     }
 
+    /**
+     * Group pokemon by dex number (handles multiple forms)
+     * @returns {Array<Array>} Array of pokemon form groups
+     */
     getGroupedPokemon() {
         const grouped = {};
         this.pokemon.forEach(p => {
@@ -243,6 +335,11 @@ class PokeApp {
         return Object.values(grouped);
     }
 
+    /**
+     * Filter pokemon groups by search term
+     * Searches both name and dex number
+     * @returns {Array<Array>} Filtered array of pokemon form groups
+     */
     getFilteredPokemonGroups() {
         if (!this.searchTerm) return this.getGroupedPokemon();
         const term = this.searchTerm.toLowerCase();
@@ -252,6 +349,10 @@ class PokeApp {
         );
     }
 
+    /**
+     * Get search results across all categories (fast moves, charge moves, pokemon)
+     * @returns {Object|null} Object with fast, charge, and pokemon arrays, or null if no search
+     */
     getSearchResults() {
         if (!this.searchTerm) return null;
         
@@ -266,6 +367,11 @@ class PokeApp {
         };
     }
 
+    /**
+     * Get unique moves by category (removes duplicates by name)
+     * @param {string} category - Move category: 'fast' or 'charge'
+     * @returns {Array} Array of unique move objects
+     */
     getUniqueMoves(category) {
         const unique = new Map();
         this.moves.filter(m => m.category === category && m.mode === this.moveMode)
@@ -273,6 +379,11 @@ class PokeApp {
         return Array.from(unique.values());
     }
 
+    /**
+     * Get filtered moves by category and search term
+     * @param {string} category - Move category: 'fast' or 'charge'
+     * @returns {Array} Filtered array of move objects
+     */
     getFilteredMoves(category) {
         const moves = this.getUniqueMoves(category);
         if (!this.searchTerm) return moves;
@@ -280,6 +391,10 @@ class PokeApp {
         return moves.filter(m => m.name.toLowerCase().includes(term));
     }
 
+    /**
+     * Update the current view's content (without full re-render)
+     * Used for search updates to avoid losing scroll position
+     */
     updateCurrentView() {
         const gridContainer = document.querySelector('[data-content-grid]');
         if (gridContainer && !this.selectedPokemon && !this.selectedMove) {
@@ -300,6 +415,10 @@ class PokeApp {
     // NAVIGATION & VIEW MANAGEMENT
     // ====================================
 
+    /**
+     * Change the main view and reset selection state
+     * @param {string} view - View name: 'menu', 'pokedex', 'collection'
+     */
     setView(view) {
         this.currentView = view;
         this.selectedPokemon = null;
@@ -314,12 +433,21 @@ class PokeApp {
         this.render();
     }
 
+    /**
+     * Change the current list type in pokedex view
+     * @param {string} list - List type: 'pokemon', 'fast', 'charge'
+     */
     setList(list) {
         this.currentList = list;
         this.searchTerm = '';
         this.render();
     }
 
+    /**
+     * Get all forms for a specific pokemon by dex number
+     * @param {number} dexNumber - The pokemon's dex number
+     * @returns {Array} Array of pokemon form objects
+     */
     getPokemonForms(dexNumber) {
         return this.pokemon.filter(p => p.dexNumber === dexNumber);
     }
@@ -328,10 +456,17 @@ class PokeApp {
     // TOUCH HANDLING
     // ====================================
 
+    /**
+     * Handle touch start event
+     * Records touch position and starts long-press timer for moves
+     * @param {TouchEvent} e - Touch event
+     * @param {string} context - Context: 'detail', 'move', etc.
+     */
     handleTouchStart(e, context) {
         this.touchStartX = e.changedTouches[0].screenX;
         this.touchStartY = e.changedTouches[0].screenY;
         
+        // Long-press on move card opens move detail
         if (context === 'move') {
             this.longPressTimer = setTimeout(() => {
                 const moveCard = e.target.closest('[data-move-name]');
@@ -341,17 +476,24 @@ class PokeApp {
                     const moveData = this.getMoveDetails(moveName, category, this.moveMode);
                     if (moveData) selectMove.call(this, moveData);
                 }
-            }, 500);
+            }, 500); // 500ms long-press threshold
         }
     }
 
+    /**
+     * Handle touch end event
+     * Clears long-press timer and detects swipe gestures
+     * @param {TouchEvent} e - Touch event
+     * @param {string} context - Context: 'detail', 'move', etc.
+     */
     handleTouchEnd(e, context) {
         clearTimeout(this.longPressTimer);
         this.touchEndY = e.changedTouches[0].screenY;
         
+        // Swipe down on detail view to close
         if (context === 'detail' && this.selectedPokemon) {
             const diffY = this.touchStartY - this.touchEndY;
-            if (diffY < -100) {
+            if (diffY < -100) { // 100px swipe down threshold
                 this.selectedPokemon = null;
                 this.selectedForm = null;
                 this.render();
@@ -360,9 +502,12 @@ class PokeApp {
     }
 
     // ====================================
-    // RENDERING
+    // RENDERING - MAIN VIEWS
     // ====================================
 
+    /**
+     * Main render function - routes to appropriate view renderer
+     */
     async render() {
         const app = document.getElementById('app');
         
@@ -383,9 +528,14 @@ class PokeApp {
         this.attachEventListeners();
     }
 
+    /**
+     * Render main menu view
+     * Shows 5 menu items and 2 FAB buttons
+     * @returns {string} HTML string
+     */
     renderMenu() {
         const buildTime = document.lastModified || new Date().toISOString();
-        const commitHash = '{{COMMIT_HASH}}'; // Will be replaced by GitHub Actions
+        const commitHash = '{{COMMIT_HASH}}'; // Replaced by GitHub Actions during build
         
         return `
             <div class="min-h-screen bg-gradient-to-br from-teal-400 via-teal-500 to-emerald-500 flex flex-col items-center justify-center p-8">
@@ -397,14 +547,17 @@ class PokeApp {
                     ${this.renderMenuItem('fa-solid fa-message', 'FEEDBACK', null)}
                 </div>
                 
+                <!-- FAB: Team Builder (left) - may change -->
                 <button class="fab-button fab-left bg-blue-500 text-white" data-action="team-builder">
                     <i class="fa-solid fa-calculator text-xl"></i>
                 </button>
+                
+                <!-- FAB: Add Pokemon (right) - primary action -->
                 <button class="fab-button fab-right bg-purple-500 text-white" data-action="add-pokemon">
                     <i class="fa-solid fa-plus text-xl"></i>
                 </button>
                 
-                <!-- Build Info Badge -->
+                <!-- Build timestamp (dev purposes) -->
                 <div class="fixed bottom-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded backdrop-blur-sm font-mono">
                     ${buildTime.split(' ')[0]} ${buildTime.split(' ')[1]?.substring(0,5) || ''}
                     ${commitHash !== '{{COMMIT_HASH}}' ? `<br>${commitHash}` : ''}
@@ -413,6 +566,13 @@ class PokeApp {
         `;
     }
 
+    /**
+     * Render a single menu item button
+     * @param {string} icon - FontAwesome icon class
+     * @param {string} label - Button label text
+     * @param {string|null} view - View to navigate to, null for disabled items
+     * @returns {string} HTML string
+     */
     renderMenuItem(icon, label, view) {
         const disabled = view === null;
         return `
@@ -426,9 +586,15 @@ class PokeApp {
         `;
     }
 
+    /**
+     * Render pokedex view (list view with search and FABs)
+     * Shows pokemon grid, fast moves, or charge moves based on currentList
+     * @returns {string} HTML string
+     */
     renderPokedexView() {
         const fabsHidden = this.searchTerm ? 'hidden' : '';
         
+        // Determine FAB button configuration based on current list
         let leftFab, rightFab;
         if (this.currentList === 'pokemon') {
             leftFab = { icon: 'fa-bolt', color: 'bg-yellow-500', action: 'fast' };
@@ -443,6 +609,7 @@ class PokeApp {
 
         return `
             <div class="min-h-screen pokedex-bg pb-20">
+                <!-- Search header (sticky) -->
                 <div class="bg-white bg-opacity-15 backdrop-blur-sm p-4 sticky top-0 z-20">
                     <div class="max-w-6xl mx-auto">
                         <div class="relative">
@@ -461,6 +628,7 @@ class PokeApp {
                     </div>
                 </div>
 
+                <!-- Content grid -->
                 <div class="max-w-6xl mx-auto p-4" data-content-grid>
                     ${this.loading ? 
                         '<div class="text-black text-center py-20">Loading...</div>' :
@@ -471,6 +639,7 @@ class PokeApp {
                     }
                 </div>
                 
+                <!-- FAB buttons (hidden during search) -->
                 <button class="fab-button fab-left ${leftFab.color} text-white ${fabsHidden}" data-action="set-list" data-list="${leftFab.action}">
                     <i class="fa-solid ${leftFab.icon} text-xl"></i>
                 </button>
@@ -484,12 +653,18 @@ class PokeApp {
         `;
     }
 
+    /**
+     * Render search results (grouped by category)
+     * Shows fast moves, charge moves, and pokemon that match search term
+     * @returns {string} HTML string
+     */
     renderSearchResults() {
         const results = this.getSearchResults();
         if (!results) return '';
 
         let html = '';
         
+        // Fast moves section
         if (results.fast.length > 0) {
             html += `<div class="mb-6">
                 <h2 class="text-white text-xl font-bold mb-3">Fast Moves</h2>
@@ -497,6 +672,7 @@ class PokeApp {
             </div>`;
         }
         
+        // Charge moves section
         if (results.charge.length > 0) {
             html += `<div class="mb-6">
                 <h2 class="text-white text-xl font-bold mb-3">Charge Moves</h2>
@@ -504,6 +680,7 @@ class PokeApp {
             </div>`;
         }
         
+        // Pokemon section
         if (results.pokemon.length > 0) {
             html += `<div class="mb-6">
                 <h2 class="text-white text-xl font-bold mb-3">Pokémon</h2>
@@ -513,6 +690,7 @@ class PokeApp {
             </div>`;
         }
         
+        // No results message
         if (!html) {
             html = '<div class="text-white text-center py-12">No results found</div>';
         }
@@ -520,6 +698,10 @@ class PokeApp {
         return html;
     }
 
+    /**
+     * Render pokemon grid (grouped by dex number)
+     * @returns {string} HTML string
+     */
     renderPokemonGrid() {
         const filtered = this.getFilteredPokemonGroups();
         return `
@@ -533,34 +715,50 @@ class PokeApp {
     // EVENT LISTENERS
     // ====================================
 
+    /**
+     * Attach all event listeners after render
+     * Central hub for all click, input, and touch event handlers
+     */
     attachEventListeners() {
+        // Menu navigation buttons
         document.querySelectorAll('[data-view]').forEach(btn => {
             btn.addEventListener('click', () => this.setView(btn.dataset.view));
         });
 
+        // Back to menu button
         const backBtn = document.querySelector('[data-action="back"]');
         if (backBtn) {
             backBtn.addEventListener('click', () => this.setView('menu'));
         }
 
+        // Search input
         const searchInput = document.querySelector('[data-action="search"]');
         if (searchInput) {
             searchInput.addEventListener('input', (e) => this.setSearchTerm(e.target.value));
         }
 
+        // List toggle FAB buttons
         document.querySelectorAll('[data-action="set-list"]').forEach(btn => {
             btn.addEventListener('click', () => this.setList(btn.dataset.list));
         });
 
+        // Advanced filters button (TBD)
         document.querySelectorAll('[data-action="advanced-filters"]').forEach(btn => {
             btn.addEventListener('click', () => alert('Advanced Filters - Under Construction'));
         });
 
+        // Attach list-specific listeners (pokemon cards, move cards, etc.)
         this.attachListListeners();
+        
+        // Attach pokemon detail view listeners (from Pokedex.js)
         attachPokemonEventListeners.call(this);
+        
+        // Attach move detail view listeners (from Pokedex.js)
         attachMoveEventListeners.call(this);
 
-        // Tags
+        // ---- TAG MANAGEMENT ----
+        
+        // Show tag input button
         const showTagInput = document.querySelector('[data-action="show-tag-input"]');
         if (showTagInput) {
             showTagInput.addEventListener('click', () => {
@@ -569,6 +767,7 @@ class PokeApp {
             });
         }
 
+        // Add tag button and input field
         const addTagBtn = document.querySelector('[data-action="add-tag"]');
         const tagInput = document.querySelector('[data-action="tag-input"]');
         if (addTagBtn && tagInput) {
@@ -586,6 +785,7 @@ class PokeApp {
             });
         }
 
+        // Remove tag buttons
         document.querySelectorAll('[data-action="remove-tag"]').forEach(btn => {
             btn.addEventListener('click', () => {
                 const isMove = btn.dataset.isMove === 'true';
@@ -596,7 +796,9 @@ class PokeApp {
             });
         });
 
-        // FAB buttons
+        // ---- FAB BUTTONS ----
+        
+        // Add Pokemon FAB (OCR screenshot)
         const addPokemonBtn = document.querySelector('[data-action="add-pokemon"]');
         if (addPokemonBtn) {
             addPokemonBtn.addEventListener('click', () => {
@@ -604,29 +806,41 @@ class PokeApp {
             });
         }
 
+        // Team Builder FAB (TBD)
         const teamBuilderBtn = document.querySelector('[data-action="team-builder"]');
         if (teamBuilderBtn) {
             teamBuilderBtn.addEventListener('click', () => alert('Team Builder feature coming soon!'));
         }
 
+        // ---- COLLECTION VIEW ----
+        
+        // If we're in collection view, attach its specific listeners
         if (this.currentView === 'collection') {
             this.userCollection.attachEventListeners();
         }
 
-        // Swipe gestures
+        // ---- TOUCH GESTURES ----
+        
+        // Swipe down to close detail view
         const detailContainer = document.querySelector('[data-detail-container]');
         if (detailContainer) {
             detailContainer.addEventListener('touchstart', (e) => this.handleTouchStart(e, 'detail'), false);
             detailContainer.addEventListener('touchend', (e) => this.handleTouchEnd(e, 'detail'), false);
         }
 
-        // IV spread buttons
+        // ---- IV SPREAD BUTTONS (TBD) ----
+        
         document.querySelectorAll('[data-action="iv-spread"]').forEach(btn => {
             btn.addEventListener('click', () => alert('IV Spreads - Under Construction'));
         });
     }
 
+    /**
+     * Attach listeners for list items (pokemon cards, move cards)
+     * These need to be reattached after search updates
+     */
     attachListListeners() {
+        // Pokemon card click handlers
         document.querySelectorAll('[data-pokemon-id]').forEach(card => {
             card.addEventListener('click', () => {
                 const pokemon = this.pokemon.find(p => p.id === card.dataset.pokemonId);
@@ -634,6 +848,7 @@ class PokeApp {
             });
         });
 
+        // Move card expand/collapse toggles
         document.querySelectorAll('[data-toggle-move]').forEach(toggle => {
             toggle.addEventListener('click', () => {
                 const moveId = toggle.dataset.toggleMove;
@@ -643,6 +858,17 @@ class PokeApp {
         });
     }
 
+    // ====================================
+    // UTILITY FUNCTIONS
+    // ====================================
+
+    /**
+     * Get detailed move data by name, category, and mode
+     * @param {string} moveName - Move name
+     * @param {string} category - Move category: 'fast' or 'charge'
+     * @param {string} mode - Move mode: 'pvp' or 'pve'
+     * @returns {Object|undefined} Move object or undefined if not found
+     */
     getMoveDetails(moveName, category, mode) {
         return this.moves.find(m => 
             m.name === moveName && 
@@ -656,6 +882,10 @@ class PokeApp {
 // SHARED CONSTANTS AND UTILITIES
 // ====================================
 
+/**
+ * Type color mapping for UI display
+ * Maps Pokemon types to their official hex colors
+ */
 const TYPE_COLORS = {
     NORMAL: '#A8A878', 
     FIRE: '#F08030', 
@@ -677,14 +907,27 @@ const TYPE_COLORS = {
     FAIRY: '#EE99AC'
 };
 
-// Format numbers to 2 decimal places
+/**
+ * Format numbers to 2 decimal places
+ * Handles null/undefined gracefully
+ * @param {number} num - Number to format
+ * @returns {string|number} Formatted number or 'N/A' if invalid
+ */
 function formatNumber(num) {
     if (num === undefined || num === null) return 'N/A';
     return Number(num.toFixed(2));
 }
 
-// Get Showdown sprite ID for Pokemon with forms
+/**
+ * Get Showdown sprite ID for Pokemon with forms
+ * Fetches the correct sprite ID from PokeAPI for form variants
+ * Falls back to dex number if form lookup fails
+ * 
+ * @param {Object} pokemon - Pokemon object with dexNumber, name, and form
+ * @returns {Promise<number>} The sprite ID to use in sprite URL
+ */
 async function getShowdownSpriteId(pokemon) {
+    // Base form - use dex number directly
     if (!pokemon.form) {
         return pokemon.dexNumber;
     }
@@ -694,7 +937,8 @@ async function getShowdownSpriteId(pokemon) {
         .replace(/\s+/g, '-')
         .replace(/%/g, '');
     
-    // Special case: "Galarian" -> "galar", "Alolan" -> "alola", etc.
+    // Handle regional form naming conventions
+    // PokeAPI uses "galar" instead of "galarian", etc.
     if (formName === 'galarian') formName = 'galar';
     if (formName === 'alolan') formName = 'alola';
     if (formName === 'hisuian') formName = 'hisui';
@@ -709,6 +953,6 @@ async function getShowdownSpriteId(pokemon) {
         return data.id;
     } catch (error) {
         console.warn(`Could not fetch sprite ID for ${pokemon.name} (${pokemon.form})`, error);
-        return pokemon.dexNumber;
+        return pokemon.dexNumber; // Fallback to base dex number
     }
 }

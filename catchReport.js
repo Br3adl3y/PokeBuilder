@@ -76,6 +76,7 @@ class CatchReport {
     showQueueCompleteModal() {
         const modal = document.createElement('div');
         modal.className = 'fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4';
+        modal.setAttribute('data-modal', 'queue-complete');
         modal.innerHTML = `
             <div class="bg-white rounded-2xl max-w-md w-full p-8 text-center space-y-4">
                 <div class="text-green-500">
@@ -83,12 +84,19 @@ class CatchReport {
                     <h2 class="text-2xl font-bold text-gray-800">Queue Complete!</h2>
                 </div>
                 <p class="text-gray-600">All Pokémon have been analyzed</p>
-                <button class="w-full bg-blue-500 text-white rounded-xl py-3 hover:bg-blue-600 transition" onclick="this.closest('div').remove()">
+                <button class="w-full bg-blue-500 text-white rounded-xl py-3 hover:bg-blue-600 transition" data-action="close-queue-modal">
                     Done
                 </button>
             </div>
         `;
         document.body.appendChild(modal);
+        
+        // Add event listener
+        modal.querySelector('[data-action="close-queue-modal"]').addEventListener('click', () => {
+            modal.remove();
+            // Re-render the collection
+            this.app.render();
+        });
     }
 
     // ====================================
@@ -248,8 +256,13 @@ class CatchReport {
                 
                 const id = form ? `${name}-${form}` : `${name}-base`;
                 
+                console.log('Looking for Pokemon with ID:', id);  // ADD THIS
+                
                 const request = store.get(id);
-                request.onsuccess = () => resolve(request.result);
+                request.onsuccess = () => {
+                    console.log('Found Pokemon:', request.result);  // ADD THIS
+                    resolve(request.result);
+                };
                 request.onerror = () => reject(request.error);
             };
             
@@ -306,9 +319,10 @@ class CatchReport {
         const cpmIndex = Math.round((level - 1) * 2);
         const cpmValue = this.cpm[cpmIndex];
         
-        const totalAtk = pokemon.attack + ivs.attack;
-        const totalDef = pokemon.defense + ivs.defense;
-        const totalSta = pokemon.stamina + ivs.stamina;
+        // FIX: Use pokemon.stats instead of direct properties
+        const totalAtk = pokemon.stats.attack + ivs.attack;
+        const totalDef = pokemon.stats.defense + ivs.defense;
+        const totalSta = pokemon.stats.hp + ivs.stamina;  // Note: hp not stamina
         
         return Math.max(10, Math.floor(
             totalAtk * Math.sqrt(totalDef) * Math.sqrt(totalSta) * cpmValue * cpmValue / 10
@@ -365,7 +379,7 @@ class CatchReport {
                 const request = store.delete(this.currentMon.id);
                 
                 tx.oncomplete = () => {
-                    document.querySelector('[data-modal="catch-report"]').remove();
+                    document.querySelectorAll('[data-modal="catch-report"]').forEach(m => m.remove());
                     this.showNextInQueue();
                     resolve();
                 };
@@ -400,7 +414,7 @@ class CatchReport {
                 const request = store.put(this.currentMon);
                 
                 tx.oncomplete = () => {
-                    document.querySelector('[data-modal="catch-report"]').remove();
+                    document.querySelectorAll('[data-modal="catch-report"]').forEach(m => m.remove());
                     this.showNextInQueue();
                     resolve();
                 };
