@@ -52,12 +52,12 @@ class BattleSimulator {
         
         if (this.fastMoveCountdown[0] <= 0) {
             this.useFastMove(0);
-            this.fastMoveCountdown[0] = this.p1.fastMove.duration;
+            this.fastMoveCountdown[0] = this.p1.fastMove.duration + 1;
         }
         
         if (this.fastMoveCountdown[1] <= 0) {
             this.useFastMove(1);
-            this.fastMoveCountdown[1] = this.p2.fastMove.duration;
+            this.fastMoveCountdown[1] = this.p2.fastMove.duration + 1;
         }
         
         this.checkChargedMoves();
@@ -182,7 +182,7 @@ class BattleSimulator {
             }
             
             const dpe = damage / move.energy;
-            return { move, dpe, effectiveness };
+            return { move, dpe, effectiveness, canAfford: currentEnergy >= move.energy };
         });
         
         moveScores.sort((a, b) => b.dpe - a.dpe);
@@ -192,13 +192,11 @@ class BattleSimulator {
         
         if (!bestAffordable) return null;
         
-        if (currentEnergy >= bestMove.move.energy) {
+        if (bestMove.canAfford) {
             return bestMove.move;
         }
-        
-        
-        
-        return bestAffordable.move;
+
+        return null;
     }
     
     checkUrgency(attackerIndex, defenderIndex) {

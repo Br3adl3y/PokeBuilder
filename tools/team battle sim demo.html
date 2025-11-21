@@ -229,13 +229,11 @@
 
     <div id="app" style="display:none;">
         <div class="battle-setup">
-            <!-- Team 1 -->
             <div class="team-card">
                 <h2>Team 1 (Blue Corner)</h2>
                 <div id="team1-slots"></div>
             </div>
 
-            <!-- Team 2 -->
             <div class="team-card">
                 <h2>Team 2 (Red Corner)</h2>
                 <div id="team2-slots"></div>
@@ -382,23 +380,19 @@
                 }
             }
             
-            // Set defaults for Team 1
             document.getElementById('t1s0-select').value = 'Azumarill-base';
             document.getElementById('t1s1-select').value = 'Registeel-base';
             document.getElementById('t1s2-select').value = 'Altaria-base';
             
-            // Set defaults for Team 2
             document.getElementById('t2s0-select').value = 'Bastiodon-base';
             document.getElementById('t2s1-select').value = 'Medicham-base';
             document.getElementById('t2s2-select').value = 'Azumarill-base';
             
-            // Load defaults
             for (let i = 0; i < 3; i++) {
                 loadPokemon(1, i);
                 loadPokemon(2, i);
             }
             
-            // Set default shields (2 on lead)
             adjustShields(1, 0, 2);
             adjustShields(2, 0, 2);
         }
@@ -519,7 +513,6 @@
             resultsDiv.style.display = 'block';
             resultsDiv.scrollIntoView({ behavior: 'smooth' });
             
-            // Winner banner
             const winnerBanner = document.getElementById('winner-banner');
             if (result.winner === 'Team1') {
                 winnerBanner.className = 'winner team1';
@@ -529,7 +522,6 @@
                 winnerBanner.textContent = '🏆 TEAM 2 WINS!';
             }
             
-            // Team 1 results
             const team1Results = document.getElementById('team1-results');
             team1Results.innerHTML = '';
             result.team1State.forEach((mon, i) => {
@@ -548,7 +540,6 @@
                 `;
             });
             
-            // Team 2 results
             const team2Results = document.getElementById('team2-results');
             team2Results.innerHTML = '';
             result.team2State.forEach((mon, i) => {
@@ -570,7 +561,6 @@
             document.getElementById('battle-rating').textContent = Math.round(result.rating);
             document.getElementById('total-turns').textContent = result.turns;
             
-            // Battle log with color coding
             const logDiv = document.getElementById('battle-log');
             logDiv.innerHTML = result.log.map(line => {
                 if (line.includes('CHARGE') || line.includes('SHIELD')) {
@@ -585,13 +575,12 @@
         loadData();
     </script>
     
-    <!-- 3v3 Battle Simulator -->
     <script>
         class Battle3v3Simulator {
             constructor(team1, team2, typeChart) {
                 this.teams = [team1, team2];
                 this.typeChart = typeChart;
-                this.active = [0, 0]; // Active Pokemon indices
+                this.active = [0, 0];
                 this.hp = [[], []];
                 this.maxHP = [[], []];
                 this.energy = [[], []];
@@ -600,12 +589,14 @@
                 this.defenseStage = [[], []];
                 this.fainted = [[], []];
                 this.swapCooldown = [0, 0];
-                this.chargeSwapPending = [false, false]; // Track charge swap decisions
+                this.swapPending = [false, false];
+                this.swapPendingType = ['', ''];
+                this.lastSwapEvalTurn = [-1, -1];
                 this.turn = 0;
                 this.fastMoveCountdown = [0, 0];
                 this.log = [];
+                this.matchupCache = {};
                 
-                // Initialize state for all Pokemon
                 for (let t = 0; t < 2; t++) {
                     for (let i = 0; i < 3; i++) {
                         const mon = this.teams[t][i];
@@ -620,7 +611,6 @@
                     }
                 }
                 
-                // Get type order from typeChart for dual-type lookups
                 this.typeOrder = [
                     "NORMAL", "FIRE", "WATER", "GRASS", "ELECTRIC", "ICE",
                     "FIGHTING", "POISON", "GROUND", "FLYING", "PSYCHIC", "BUG",
@@ -633,8 +623,11 @@
                 this.log.push(`Team 1 Lead: ${this.getActiveMon(0).name}`);
                 this.log.push(`Team 2 Lead: ${this.getActiveMon(1).name}`);
                 
-                // Initial swap decisions
-                this.evaluateSwapDecisions();
+                for (let t = 0; t < 2; t++) {
+                    if (this.swapCooldown[t] === 0) {
+                        this.evaluateSwapDecision(t);
+                    }
+                }
                 
                 while (!this.isBattleOver()) {
                     this.processTurn();
@@ -649,17 +642,8 @@
             }
 
             processTurn() {
-                // Decrement cooldowns
                 this.swapCooldown[0] = Math.max(0, this.swapCooldown[0] - 1);
                 this.swapCooldown[1] = Math.max(0, this.swapCooldown[1] - 1);
-                
-                // Check for swap cooldown expiry (trigger swap decision)
-                for (let t = 0; t < 2; t++) {
-                    if (this.swapCooldown[t] === 0 && this.turn > 0) {
-                        // Cooldown just expired, evaluate swap
-                        this.evaluateSwapDecision(t);
-                    }
-                }
                 
                 this.fastMoveCountdown[0]--;
                 this.fastMoveCountdown[1]--;
@@ -667,28 +651,52 @@
                 if (this.fastMoveCountdown[0] <= 0) {
                     this.useFastMove(0);
                     const mon = this.getActiveMon(0);
-                    this.fastMoveCountdown[0] = mon.fastMove.duration + 1; // Add 1 for actual game duration
+                    this.fastMoveCountdown[0] = mon.fastMove.duration + 1;
                 }
                 
                 if (this.fastMoveCountdown[1] <= 0) {
                     this.useFastMove(1);
                     const mon = this.getActiveMon(1);
-                    this.fastMoveCountdown[1] = mon.fastMove.duration + 1; // Add 1 for actual game duration
+                    this.fastMoveCountdown[1] = mon.fastMove.duration + 1;
                 }
                 
                 this.checkChargedMoves();
                 
-                // Check for fainted Pokemon
+                for (let t = 0; t < 2; t++) {
+                    if (this.swapPending[t] && this.swapPendingType[t] === 'CHARGE_SWAP') {
+                        const activeIdx = this.active[t];
+                        const mon = this.teams[t][activeIdx];
+                        const currentEnergy = this.energy[t][activeIdx];
+                        
+                        if (mon.chargedMoves.length > 0) {
+                            const cheapestMove = mon.chargedMoves.reduce((min, m) => 
+                                m.energy < min.energy ? m : min);
+                            
+                            if (currentEnergy >= cheapestMove.energy) {
+                                this.swapPending[t] = false;
+                                this.swapPendingType[t] = '';
+                                
+                                const bestSwapIdx = this.findBestSwapTarget(t);
+                                if (bestSwapIdx !== -1) {
+                                    this.log.push(`Turn ${this.turn}: Team ${t+1} CHARGE_SWAP executing (${currentEnergy} energy farmed)`);
+                                    this.performSwap(t, bestSwapIdx);
+                                }
+                            }
+                        }
+                    }
+                }
+                
                 for (let t = 0; t < 2; t++) {
                     const activeIdx = this.active[t];
                     if (this.hp[t][activeIdx] <= 0 && !this.fainted[t][activeIdx]) {
                         this.fainted[t][activeIdx] = true;
+                        this.swapPending[t] = false;
+                        this.swapPendingType[t] = '';
                         this.log.push(`Turn ${this.turn}: <span class="log-swap">Team ${t+1} ${this.teams[t][activeIdx].name} FAINTED!</span>`);
                         
-                        // Force swap to next available
-                        const nextMon = this.findNextMon(t);
+                        const nextMon = this.findBestSwapTarget(t);
                         if (nextMon !== -1) {
-                            this.performSwap(t, nextMon);
+                            this.performSwap(t, nextMon, true);
                         }
                     }
                 }
@@ -752,7 +760,6 @@
                 const oppTeam = 1 - teamIdx;
                 const oppIdx = this.active[oppTeam];
                 
-                // Check sac swap condition BEFORE charge move lands
                 this.checkSacSwap(oppTeam);
                 
                 const move = this.selectChargedMove(teamIdx, activeIdx, oppTeam, oppIdx);
@@ -761,7 +768,6 @@
                 this.energy[teamIdx][activeIdx] -= move.energy;
                 this.energy[teamIdx][activeIdx] = Math.max(0, this.energy[teamIdx][activeIdx]);
                 
-                // Charge move minigame (14 turns, swap cooldown ticks)
                 this.swapCooldown[0] = Math.max(0, this.swapCooldown[0] - 14);
                 this.swapCooldown[1] = Math.max(0, this.swapCooldown[1] - 14);
                 
@@ -783,8 +789,16 @@
                 const defender = this.teams[oppTeam][oppIdx];
                 this.log.push(`Turn ${this.turn}: <span class="log-charge">Team ${teamIdx+1} ${attacker.name} uses ${move.name} → ${damage} dmg to ${defender.name}</span>`);
                 
-                // After shield is used, evaluate swap
-                if (shouldShield) {
+                if (shouldShield && this.swapPending[teamIdx] && this.swapPendingType[teamIdx] === 'WAIT') {
+                    this.swapPending[teamIdx] = false;
+                    this.swapPendingType[teamIdx] = '';
+                    
+                    const bestSwapIdx = this.findBestSwapTarget(teamIdx);
+                    if (bestSwapIdx !== -1) {
+                        this.log.push(`Turn ${this.turn}: Team ${teamIdx+1} WAIT executing (shield burned)`);
+                        this.performSwap(teamIdx, bestSwapIdx);
+                    }
+                } else if (shouldShield) {
                     this.evaluateSwapDecision(oppTeam);
                 }
             }
@@ -798,17 +812,24 @@
                 const currentEnergy = this.energy[teamIdx][monIdx];
                 const defenderHasShields = this.shields[oppTeam][oppIdx] > 0;
                 
-                // Check urgency
-                const urgencyMode = this.checkUrgency(teamIdx, monIdx, oppTeam, oppIdx);
+                const affordableMoves = attacker.chargedMoves.filter(m => currentEnergy >= m.energy);
+                if (affordableMoves.length === 0) return null;
                 
-                if (urgencyMode) {
-                    const affordable = attacker.chargedMoves
-                        .filter(m => currentEnergy >= m.energy)
-                        .sort((a, b) => a.energy - b.energy);
-                    return affordable.length > 0 ? affordable[0] : null;
+                const koMoves = affordableMoves.filter(move => {
+                    const damage = this.calculateDamage(teamIdx, monIdx, oppTeam, oppIdx, move);
+                    const effectiveDamage = defenderHasShields ? 1 : damage;
+                    return effectiveDamage >= this.hp[oppTeam][oppIdx];
+                });
+                
+                if (koMoves.length > 0) {
+                    return koMoves.reduce((min, m) => m.energy < min.energy ? m : min);
                 }
                 
-                // Calculate DPE with shield awareness
+                const urgencyMode = this.checkUrgency(teamIdx, monIdx, oppTeam, oppIdx);
+                if (urgencyMode) {
+                    return affordableMoves.reduce((min, m) => m.energy < min.energy ? m : min);
+                }
+                
                 const moveScores = attacker.chargedMoves.map(move => {
                     const effectiveness = this.getTypeEffectiveness(move.type, defender.types);
                     let damage = move.power * effectiveness;
@@ -822,18 +843,17 @@
                     }
                     
                     const dpe = damage / move.energy;
-                    return { move, dpe };
+                    return { move, dpe, canAfford: currentEnergy >= move.energy };
                 });
                 
                 moveScores.sort((a, b) => b.dpe - a.dpe);
                 
                 const bestMove = moveScores[0];
-                const bestAffordable = moveScores.find(ms => currentEnergy >= ms.move.energy);
+                if (bestMove.canAfford) {
+                    return bestMove.move;
+                }
                 
-                if (!bestAffordable) return null;
-                if (currentEnergy >= bestMove.move.energy) return bestMove.move;
-                
-                return bestAffordable.move;
+                return null;
             }
 
             checkUrgency(myTeam, myIdx, oppTeam, oppIdx) {
@@ -854,19 +874,15 @@
             }
 
             checkSacSwap(teamIdx) {
-                const activeIdx = this.active[teamIdx];
-                const oppTeam = 1 - teamIdx;
-                
-                // Check ALL conditions:
-                // 1. My team has exactly 2 alive
                 const myAliveCount = this.getAliveCount(teamIdx);
                 if (myAliveCount !== 2) return false;
                 
-                // 2. Opponent team has exactly 1 alive
+                const oppTeam = 1 - teamIdx;
                 const oppAliveCount = this.getAliveCount(oppTeam);
                 if (oppAliveCount !== 1) return false;
                 
-                // 3. ALL shields used (both teams, all Pokemon)
+                if (this.swapCooldown[teamIdx] > 0) return false;
+                
                 let allShieldsUsed = true;
                 for (let t = 0; t < 2; t++) {
                     for (let i = 0; i < 3; i++) {
@@ -879,20 +895,15 @@
                 }
                 if (!allShieldsUsed) return false;
                 
-                // 4. Swap is available
-                if (this.swapCooldown[teamIdx] > 0) return false;
-                
-                // 5. Current mon would win if it had a shield
-                // Simulate: if current mon had 1 shield, would rating > 500?
+                const activeIdx = this.active[teamIdx];
                 const oppIdx = this.active[oppTeam];
                 const savedShields = this.shields[teamIdx][activeIdx];
-                this.shields[teamIdx][activeIdx] = 1; // Temporarily give shield
+                this.shields[teamIdx][activeIdx] = 1;
                 const ratingWithShield = this.simulateMatchup(teamIdx, activeIdx, oppTeam, oppIdx);
-                this.shields[teamIdx][activeIdx] = savedShields; // Restore
+                this.shields[teamIdx][activeIdx] = savedShields;
                 
                 if (ratingWithShield <= 500) return false;
                 
-                // All conditions met - find weakest alive mon to sacrifice
                 let weakestIdx = -1;
                 let lowestHP = Infinity;
                 for (let i = 0; i < 3; i++) {
@@ -911,24 +922,14 @@
                 return false;
             }
 
-            evaluateSwapDecisions() {
-                // Both teams evaluate simultaneously at battle start
-                for (let t = 0; t < 2; t++) {
-                    if (this.swapCooldown[t] === 0) {
-                        this.evaluateSwapDecision(t);
-                    }
-                }
-            }
-
             evaluateSwapDecision(teamIdx) {
                 if (this.swapCooldown[teamIdx] > 0) return;
-                if (this.chargeSwapPending[teamIdx]) return; // Already committed to charge swap
+                if (this.swapPending[teamIdx]) return;
                 
                 const activeIdx = this.active[teamIdx];
                 const oppTeam = 1 - teamIdx;
                 const oppIdx = this.active[oppTeam];
                 
-                // Get available swap options
                 const swapOptions = [];
                 for (let i = 0; i < 3; i++) {
                     if (i !== activeIdx && !this.fainted[teamIdx][i]) {
@@ -936,25 +937,31 @@
                     }
                 }
                 
-                if (swapOptions.length === 0) return; // No swap available
+                if (swapOptions.length === 0) return;
                 
-                // Evaluate current matchup
                 const currentRating = this.simulateMatchup(teamIdx, activeIdx, oppTeam, oppIdx);
                 
-                // Determine swap decision
+                const mon = this.teams[teamIdx][activeIdx];
+                this.log.push(`Turn ${this.turn}: DEBUG Team ${teamIdx+1} ${mon.name} matchup rating: ${currentRating.toFixed(0)}`);
+                
                 const decision = this.getSwapDecision(currentRating, teamIdx, activeIdx);
                 
-                if (decision === 'STAY' || decision === 'WAIT') {
-                    return; // Don't swap
-                }
-                
-                if (decision === 'CHARGE_SWAP') {
-                    // Mark as pending, will execute when energy threshold reached
-                    this.chargeSwapPending[teamIdx] = true;
+                if (decision === 'STAY') {
                     return;
                 }
                 
-                // QUICK_SWAP: Execute immediately
+                if (decision === 'WAIT') {
+                    this.swapPending[teamIdx] = true;
+                    this.swapPendingType[teamIdx] = 'WAIT';
+                    return;
+                }
+                
+                if (decision === 'CHARGE_SWAP') {
+                    this.swapPending[teamIdx] = true;
+                    this.swapPendingType[teamIdx] = 'CHARGE_SWAP';
+                    return;
+                }
+                
                 const bestSwapIdx = this.findBestSwapTarget(teamIdx);
                 if (bestSwapIdx !== -1) {
                     this.performSwap(teamIdx, bestSwapIdx);
@@ -974,7 +981,6 @@
                 
                 if (swapOptions.length === 0) return -1;
                 
-                // If all options are losing, pick highest rating
                 let bestIdx = -1;
                 let bestRating = -Infinity;
                 
@@ -991,39 +997,75 @@
             }
 
             getSwapDecision(rating, teamIdx, monIdx) {
-                // STAY: winning matchup
-                if (rating > 500) return 'STAY';
-                
-                // Check if can reach charge move before taking significant damage
-                const currentEnergy = this.energy[teamIdx][monIdx];
                 const mon = this.teams[teamIdx][monIdx];
-                const cheapestMove = mon.chargedMoves.reduce((min, m) => 
-                    m.energy < min.energy ? m : min, mon.chargedMoves[0]);
+                const oppTeam = 1 - teamIdx;
+                const oppIdx = this.active[oppTeam];
+                const opponent = this.teams[oppTeam][oppIdx];
                 
-                if (cheapestMove) {
-                    const energyNeeded = cheapestMove.energy - currentEnergy;
-                    const turnsNeeded = Math.ceil(energyNeeded / mon.fastMove.energy) * (mon.fastMove.duration + 1); // Add 1 for actual duration
-                    const currentHP = this.hp[teamIdx][monIdx];
-                    const maxHP = this.maxHP[teamIdx][monIdx];
-                    const hpPercent = currentHP / maxHP;
-                    
-                    // CHARGE SWAP: Can charge up before taking 40% HP
-                    if (turnsNeeded > 0 && hpPercent > 0.4) {
-                        return 'CHARGE_SWAP';
+                if (rating > 500) {
+                    this.log.push(`Turn ${this.turn}: Team ${teamIdx+1} ${mon.name} STAY (rating ${rating.toFixed(0)})`);
+                    return 'STAY';
+                }
+                
+                if (rating >= 400 && rating <= 500 && this.shields[teamIdx][monIdx] > 0) {
+                    this.log.push(`Turn ${this.turn}: Team ${teamIdx+1} ${mon.name} WAIT (close, burn opp shield then swap)`);
+                    return 'WAIT';
+                }
+                
+                const myHP = this.hp[teamIdx][monIdx];
+                const oppEnergy = this.energy[oppTeam][oppIdx];
+                
+                let oppCanCharge = false;
+                for (const move of opponent.chargedMoves) {
+                    if (oppEnergy >= move.energy) {
+                        oppCanCharge = true;
+                        break;
+                    }
+                }
+                
+                if (oppCanCharge) {
+                    let maxOppDamage = 0;
+                    for (const move of opponent.chargedMoves) {
+                        if (oppEnergy >= move.energy) {
+                            const damage = this.calculateDamage(oppTeam, oppIdx, teamIdx, monIdx, move);
+                            maxOppDamage = Math.max(maxOppDamage, damage);
+                        }
                     }
                     
-                    // QUICK SWAP: Will take >40% before charging
-                    if (hpPercent <= 0.4) {
+                    if (maxOppDamage >= myHP) {
+                        this.log.push(`Turn ${this.turn}: Team ${teamIdx+1} ${mon.name} QUICK_SWAP (will faint to charge move)`);
                         return 'QUICK_SWAP';
                     }
                 }
                 
-                // WAIT: Close matchup with shield available
-                if (rating > 400 && this.shields[teamIdx][monIdx] > 0) {
-                    return 'WAIT';
+                if (mon.chargedMoves.length > 0) {
+                    const currentEnergy = this.energy[teamIdx][monIdx];
+                    const cheapestMove = mon.chargedMoves.reduce((min, m) => 
+                        m.energy < min.energy ? m : min);
+                    const energyNeeded = cheapestMove.energy - currentEnergy;
+                    
+                    if (energyNeeded > 0) {
+                        const turnsNeeded = Math.ceil(energyNeeded / mon.fastMove.energy) * (mon.fastMove.duration + 1);
+                        
+                        const oppFastDamage = this.calculateDamage(oppTeam, oppIdx, teamIdx, monIdx, opponent.fastMove);
+                        const oppFastDuration = opponent.fastMove.duration + 1;
+                        const oppFastMovesInPeriod = Math.floor(turnsNeeded / oppFastDuration);
+                        const estimatedDamage = oppFastDamage * oppFastMovesInPeriod;
+                        
+                        const maxHP = this.maxHP[teamIdx][monIdx];
+                        const damagePercent = estimatedDamage / maxHP;
+                        
+                        if (damagePercent > 0.25) {
+                            this.log.push(`Turn ${this.turn}: Team ${teamIdx+1} ${mon.name} QUICK_SWAP (will lose ${(damagePercent*100).toFixed(0)}% HP)`);
+                            return 'QUICK_SWAP';
+                        }
+                        
+                        this.log.push(`Turn ${this.turn}: Team ${teamIdx+1} ${mon.name} CHARGE_SWAP (farm ${energyNeeded} energy)`);
+                        return 'CHARGE_SWAP';
+                    }
                 }
                 
-                // Default: QUICK SWAP
+                this.log.push(`Turn ${this.turn}: Team ${teamIdx+1} ${mon.name} QUICK_SWAP (default, rating ${rating.toFixed(0)})`);
                 return 'QUICK_SWAP';
             }
 
@@ -1032,19 +1074,14 @@
                 const oppCanSwap = this.swapCooldown[oppTeam] === 0;
                 
                 if (!oppCanSwap) {
-                    // Opponent can't swap - just evaluate against current opponent
                     return this.simulateMatchup(teamIdx, swapIdx, oppTeam, oppIdx);
                 }
                 
-                // Opponent can swap - use minimax
-                // Find opponent's best response to our swap
                 let worstCaseRating = Infinity;
                 
-                // Opponent stays
                 const stayRating = this.simulateMatchup(teamIdx, swapIdx, oppTeam, oppIdx);
                 worstCaseRating = Math.min(worstCaseRating, stayRating);
                 
-                // Opponent swaps to each available mon
                 for (let i = 0; i < 3; i++) {
                     if (i !== oppIdx && !this.fainted[oppTeam][i]) {
                         const swapRating = this.simulateMatchup(teamIdx, swapIdx, oppTeam, i);
@@ -1055,79 +1092,237 @@
                 return worstCaseRating;
             }
 
+            canUseChargedMoveInSim(energy, mon) {
+                if (mon.chargedMoves.length === 0) return false;
+                const cheapestMove = mon.chargedMoves.reduce((min, m) => m.energy < min.energy ? m : min);
+                return energy >= cheapestMove.energy;
+            }
+
+            selectChargedMoveInSim(atkTeam, atkIdx, defTeam, defIdx, currentEnergy, defenderShields) {
+                const attacker = this.teams[atkTeam][atkIdx];
+                const defender = this.teams[defTeam][defIdx];
+                
+                if (attacker.chargedMoves.length === 0) return null;
+                
+                const defenderHasShields = defenderShields > 0;
+                const affordableMoves = attacker.chargedMoves.filter(m => currentEnergy >= m.energy);
+                if (affordableMoves.length === 0) return null;
+                
+                const moveScores = attacker.chargedMoves.map(move => {
+                    const effectiveness = this.getTypeEffectiveness(move.type, defender.types);
+                    let damage = move.power * effectiveness;
+                    
+                    if (attacker.types.includes(move.type)) {
+                        damage *= 1.2;
+                    }
+                    
+                    if (defenderHasShields) {
+                        damage = Math.min(damage, 1);
+                    }
+                    
+                    const dpe = damage / move.energy;
+                    return { move, dpe, canAfford: currentEnergy >= move.energy };
+                });
+                
+                moveScores.sort((a, b) => b.dpe - a.dpe);
+                
+                const bestMove = moveScores[0];
+                if (bestMove.canAfford) {
+                    return bestMove.move;
+                }
+                
+                return null;
+            }
+
             simulateMatchup(team1Idx, mon1Idx, team2Idx, mon2Idx) {
-                // Quick 1v1 simulation to get rating
+                const cacheKey = `${team1Idx}-${mon1Idx}-${team2Idx}-${mon2Idx}-${this.hp[team1Idx][mon1Idx]}-${this.hp[team2Idx][mon2Idx]}-${this.energy[team1Idx][mon1Idx]}-${this.energy[team2Idx][mon2Idx]}-${this.shields[team1Idx][mon1Idx]}-${this.shields[team2Idx][mon2Idx]}`;
+                
+                if (this.matchupCache[cacheKey] !== undefined) {
+                    return this.matchupCache[cacheKey];
+                }
+                
+                const isTeam1Perspective = team1Idx === 0;
+                const actualTeam1Idx = isTeam1Perspective ? team1Idx : team2Idx;
+                const actualMon1Idx = isTeam1Perspective ? mon1Idx : mon2Idx;
+                const actualTeam2Idx = isTeam1Perspective ? team2Idx : team1Idx;
+                const actualMon2Idx = isTeam1Perspective ? mon2Idx : mon1Idx;
+                
+                const rating = this.runMatchupSim(actualTeam1Idx, actualMon1Idx, actualTeam2Idx, actualMon2Idx);
+                
+                this.matchupCache[cacheKey] = rating;
+                
+                const flippedKey = `${team2Idx}-${mon2Idx}-${team1Idx}-${mon1Idx}-${this.hp[team2Idx][mon2Idx]}-${this.hp[team1Idx][mon1Idx]}-${this.energy[team2Idx][mon2Idx]}-${this.energy[team1Idx][mon1Idx]}-${this.shields[team2Idx][mon2Idx]}-${this.shields[team1Idx][mon1Idx]}`;
+                this.matchupCache[flippedKey] = 1000 - rating;
+                
+                return isTeam1Perspective ? rating : (1000 - rating);
+            }
+
+            runMatchupSim(team1Idx, mon1Idx, team2Idx, mon2Idx) {
                 const mon1 = this.teams[team1Idx][mon1Idx];
                 const mon2 = this.teams[team2Idx][mon2Idx];
                 
-                const hp1 = this.hp[team1Idx][mon1Idx];
-                const hp2 = this.hp[team2Idx][mon2Idx];
-                const energy1 = this.energy[team1Idx][mon1Idx];
-                const energy2 = this.energy[team2Idx][mon2Idx];
+                let hp = [this.hp[team1Idx][mon1Idx], this.hp[team2Idx][mon2Idx]];
+                let energy = [this.energy[team1Idx][mon1Idx], this.energy[team2Idx][mon2Idx]];
+                let shields = [this.shields[team1Idx][mon1Idx], this.shields[team2Idx][mon2Idx]];
                 
-                // Simple heuristic: type effectiveness + HP ratio + energy advantage
-                const typeAdv = this.getMatchupAdvantage(mon1, mon2);
-                const hpRatio = hp1 / hp2;
-                const energyAdv = (energy1 - energy2) / 100;
+                const maxHP = [this.maxHP[team1Idx][mon1Idx], this.maxHP[team2Idx][mon2Idx]];
                 
-                const rating = 500 + (typeAdv * 200) + (hpRatio * 150) + (energyAdv * 100);
+                let fastCountdown = [mon1.fastMove.duration + 1, mon2.fastMove.duration + 1];
+                
+                let turns = 0;
+                const maxTurns = 500;
+                
+                while (hp[0] > 0 && hp[1] > 0 && turns < maxTurns) {
+                    turns++;
+                    
+                    fastCountdown[0]--;
+                    fastCountdown[1]--;
+                    
+                    if (fastCountdown[0] <= 0) {
+                        const damage = this.calculateDamage(team1Idx, mon1Idx, team2Idx, mon2Idx, mon1.fastMove);
+                        hp[1] -= damage;
+                        energy[0] = Math.min(100, energy[0] + mon1.fastMove.energy);
+                        fastCountdown[0] = mon1.fastMove.duration + 1;
+                    }
+                    
+                    if (fastCountdown[1] <= 0) {
+                        const damage = this.calculateDamage(team2Idx, mon2Idx, team1Idx, mon1Idx, mon2.fastMove);
+                        hp[0] -= damage;
+                        energy[1] = Math.min(100, energy[1] + mon2.fastMove.energy);
+                        fastCountdown[1] = mon2.fastMove.duration + 1;
+                    }
+                    
+                    const canCharge1 = this.canUseChargedMoveInSim(energy[0], mon1);
+                    const canCharge2 = this.canUseChargedMoveInSim(energy[1], mon2);
+                    
+                    if (canCharge1 && canCharge2) {
+                        const attack1 = this.getEffectiveAttack(team1Idx, mon1Idx);
+                        const attack2 = this.getEffectiveAttack(team2Idx, mon2Idx);
+                        
+                        const team1GoesFirst = (team1Idx < team2Idx && attack1 === attack2) || attack1 > attack2;
+                        
+                        if (team1GoesFirst) {
+                            const move = this.selectChargedMoveInSim(team1Idx, mon1Idx, team2Idx, mon2Idx, energy[0], shields[1]);
+                            if (move) {
+                                energy[0] -= move.energy;
+                                let damage = this.calculateDamage(team1Idx, mon1Idx, team2Idx, mon2Idx, move);
+                                if (shields[1] > 0) {
+                                    shields[1]--;
+                                    damage = 1;
+                                }
+                                hp[1] -= damage;
+                            }
+                            
+                            if (hp[1] > 0) {
+                                const move2 = this.selectChargedMoveInSim(team2Idx, mon2Idx, team1Idx, mon1Idx, energy[1], shields[0]);
+                                if (move2) {
+                                    energy[1] -= move2.energy;
+                                    let damage2 = this.calculateDamage(team2Idx, mon2Idx, team1Idx, mon1Idx, move2);
+                                    if (shields[0] > 0) {
+                                        shields[0]--;
+                                        damage2 = 1;
+                                    }
+                                    hp[0] -= damage2;
+                                }
+                            }
+                        } else {
+                            const move = this.selectChargedMoveInSim(team2Idx, mon2Idx, team1Idx, mon1Idx, energy[1], shields[0]);
+                            if (move) {
+                                energy[1] -= move.energy;
+                                let damage = this.calculateDamage(team2Idx, mon2Idx, team1Idx, mon1Idx, move);
+                                if (shields[0] > 0) {
+                                    shields[0]--;
+                                    damage = 1;
+                                }
+                                hp[0] -= damage;
+                            }
+                            
+                            if (hp[0] > 0) {
+                                const move2 = this.selectChargedMoveInSim(team1Idx, mon1Idx, team2Idx, mon2Idx, energy[0], shields[1]);
+                                if (move2) {
+                                    energy[0] -= move2.energy;
+                                    let damage2 = this.calculateDamage(team1Idx, mon1Idx, team2Idx, mon2Idx, move2);
+                                    if (shields[1] > 0) {
+                                        shields[1]--;
+                                        damage2 = 1;
+                                    }
+                                    hp[1] -= damage2;
+                                }
+                            }
+                        }
+                    } else if (canCharge1) {
+                        const move = this.selectChargedMoveInSim(team1Idx, mon1Idx, team2Idx, mon2Idx, energy[0], shields[1]);
+                        if (move) {
+                            energy[0] -= move.energy;
+                            let damage = this.calculateDamage(team1Idx, mon1Idx, team2Idx, mon2Idx, move);
+                            if (shields[1] > 0) {
+                                shields[1]--;
+                                damage = 1;
+                            }
+                            hp[1] -= damage;
+                        }
+                    } else if (canCharge2) {
+                        const move = this.selectChargedMoveInSim(team2Idx, mon2Idx, team1Idx, mon1Idx, energy[1], shields[0]);
+                        if (move) {
+                            energy[1] -= move.energy;
+                            let damage = this.calculateDamage(team2Idx, mon2Idx, team1Idx, mon1Idx, move);
+                            if (shields[0] > 0) {
+                                shields[0]--;
+                                damage = 1;
+                            }
+                            hp[0] -= damage;
+                        }
+                    }
+                }
+                
+                if (hp[0] <= 0 && hp[1] <= 0) return 500;
+                
+                const hp1Percent = Math.max(0, hp[0]) / maxHP[0];
+                const hp2Percent = Math.max(0, hp[1]) / maxHP[1];
+                const differential = hp1Percent - hp2Percent;
+                const rating = 500 + (differential * 500);
+                
+                if (this.turn === 0) {
+                    const winner = hp[0] > 0 ? mon1.name : mon2.name;
+                    const winnerHP = Math.max(hp[0], hp[1]);
+                    const winnerMaxHP = hp[0] > 0 ? maxHP[0] : maxHP[1];
+                    this.log.push(`DEBUG SIM: ${mon1.name} (T${team1Idx+1}) vs ${mon2.name} (T${team2Idx+1}) → Winner: ${winner} (${winnerHP}/${winnerMaxHP}), Rating: ${rating.toFixed(0)}`);
+                }
+                
                 return Math.max(0, Math.min(1000, rating));
             }
 
-            getMatchupAdvantage(mon1, mon2) {
-                let advantage = 0;
-                
-                // Check mon1's moves against mon2
-                if (mon1.fastMove) {
-                    advantage += this.getTypeEffectiveness(mon1.fastMove.type, mon2.types) - 1;
-                }
-                if (mon1.chargedMoves.length > 0) {
-                    const bestCharge = mon1.chargedMoves.reduce((best, move) => {
-                        const eff = this.getTypeEffectiveness(move.type, mon2.types);
-                        return eff > best ? eff : best;
-                    }, 0);
-                    advantage += bestCharge - 1;
-                }
-                
-                // Check mon2's moves against mon1
-                if (mon2.fastMove) {
-                    advantage -= this.getTypeEffectiveness(mon2.fastMove.type, mon1.types) - 1;
-                }
-                if (mon2.chargedMoves.length > 0) {
-                    const bestCharge = mon2.chargedMoves.reduce((best, move) => {
-                        const eff = this.getTypeEffectiveness(move.type, mon1.types);
-                        return eff > best ? eff : best;
-                    }, 0);
-                    advantage -= bestCharge - 1;
-                }
-                
-                return advantage;
-            }
-
-            performSwap(teamIdx, newIdx) {
+            performSwap(teamIdx, newIdx, isFaintSwap = false) {
                 const oldIdx = this.active[teamIdx];
                 this.active[teamIdx] = newIdx;
                 
-                // Clear stat stages on swap
                 this.attackStage[teamIdx][newIdx] = 0;
                 this.defenseStage[teamIdx][newIdx] = 0;
                 
-                // Set swap cooldown (90 turns = 45 seconds)
-                this.swapCooldown[teamIdx] = 90;
+                if (!isFaintSwap) {
+                    this.swapCooldown[teamIdx] = 90;
+                }
                 
-                // Swap animation (24 turns = 12 seconds, invulnerable)
                 this.turn += 24;
                 
                 const oldMon = this.teams[teamIdx][oldIdx];
                 const newMon = this.teams[teamIdx][newIdx];
                 this.log.push(`Turn ${this.turn}: <span class="log-swap">Team ${teamIdx+1} SWAPS! ${oldMon.name} out, ${newMon.name} in</span>`);
                 
-                // Reset fast move countdown for new Pokemon
-                this.fastMoveCountdown[teamIdx] = newMon.fastMove.duration + 1; // Add 1 for actual game duration
+                this.fastMoveCountdown[teamIdx] = newMon.fastMove.duration + 1;
                 
-                // Opponent re-evaluates after swap
                 const oppTeam = 1 - teamIdx;
-                if (this.swapCooldown[oppTeam] === 0) {
+                this.swapPending[oppTeam] = false;
+                this.swapPendingType[oppTeam] = '';
+                
+                if (this.canUseChargedMove(teamIdx)) {
+                    this.useChargedMove(teamIdx);
+                } else {
+                    this.useFastMove(teamIdx);
+                    this.fastMoveCountdown[teamIdx] = newMon.fastMove.duration + 1;
+                }
+                
+                if (this.swapCooldown[oppTeam] === 0 && !this.isBattleOver()) {
                     this.evaluateSwapDecision(oppTeam);
                 }
             }
@@ -1210,7 +1405,6 @@
                 
                 const types = Array.isArray(defenderTypes) ? defenderTypes : [defenderTypes];
                 
-                // For dual types, look up the combined type in correct order
                 if (types.length === 2) {
                     const sortedTypes = [...types].sort((a, b) => 
                         this.typeOrder.indexOf(a) - this.typeOrder.indexOf(b)
@@ -1222,7 +1416,6 @@
                     }
                 }
                 
-                // For single type
                 if (types.length === 1) {
                     const singleType = types[0];
                     if (this.typeChart[attackType] && this.typeChart[attackType][singleType] !== undefined) {
@@ -1237,7 +1430,6 @@
                 const winner = this.getAliveCount(0) > 0 ? 'Team1' : 'Team2';
                 const winnerIdx = winner === 'Team1' ? 0 : 1;
                 
-                // Calculate rating based on remaining HP
                 let totalRemainingHP = 0;
                 let totalMaxHP = 0;
                 

@@ -7,11 +7,14 @@ class ScreenshotProcessor {
         this.app = app;
         this.ocr = new OCRProcessor();
         this.canvas = document.createElement('canvas');
-        this.ctx = this.canvas.getContext('2d', { willReadFrequently: true }); // ADD THIS
+        this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
         this.batchImages = [];
         this.currentBatchIndex = 0;
         this.isDesktop = !('ontouchstart' in window);
         this.tesseractWorker = null;
+        
+        // CP Multiplier array for level calculations
+        this.cpm = [0.094, 0.135137430784308, 0.166397869586944, 0.192650914456886, 0.215732470154762, 0.236572655026622, 0.255720049142837, 0.273530381100769, 0.29024988412857, 0.306057381335773, 0.321087598800659, 0.335445032295077, 0.349212676286697, 0.36245774877879, 0.375235587358474, 0.387592411085168, 0.399567276239395, 0.41119354951725, 0.422500014305114, 0.432926413410414, 0.443107545375824, 0.453059953871985, 0.46279838681221, 0.472336077786704, 0.481684952974319, 0.490855810259008, 0.499858438968658, 0.508701756943992, 0.517393946647644, 0.525942508771329, 0.534354329109191, 0.542635762230353, 0.550792694091796, 0.558830599438087, 0.566754519939422, 0.574569148039264, 0.582278907299041, 0.589887911977272, 0.59740000963211, 0.604823657502073, 0.61215728521347, 0.61940411056605, 0.626567125320434, 0.633649181622743, 0.640652954578399, 0.647580963301656, 0.654435634613037, 0.661219263506722, 0.667934000492096, 0.674581899290818, 0.681164920330047, 0.687684905887771, 0.694143652915954, 0.700542893277978, 0.706884205341339, 0.713169102333341, 0.719399094581604, 0.725575616972598, 0.731700003147125, 0.734741011137376, 0.737769484519958, 0.740785574597326, 0.743789434432983, 0.746781208702482, 0.749761044979095, 0.752729105305821, 0.75568550825119, 0.758630366519684, 0.761563837528228, 0.764486065255226, 0.767397165298461, 0.77029727397159, 0.77318650484085, 0.776064945942412, 0.778932750225067, 0.781790064808426, 0.784636974334716, 0.787473583646825, 0.790300011634826, 0.792803950958807, 0.795300006866455, 0.79780392148697, 0.800300002098083, 0.802803892322847, 0.805299997329711, 0.807803863460723, 0.81029999256134, 0.812803834895026, 0.815299987792968, 0.817803806620319, 0.820299983024597, 0.822803778631297, 0.825299978256225, 0.827803750922782, 0.830299973487854, 0.832803753381377, 0.835300028324127, 0.837803755931569, 0.840300023555755, 0.842803729034748, 0.845300018787384, 0.847803702398935, 0.850300014019012, 0.852803676019539, 0.85530000925064, 0.857803649892077, 0.860300004482269, 0.862803624012168, 0.865299999713897];
     }
 
     loadImage(file) {
@@ -38,7 +41,7 @@ class ScreenshotProcessor {
         });
     }
 
- // Process batch images one by one
+    // Process batch images one by one
     async processBatch() {
         if (this.currentBatchIndex >= this.batchImages.length) {
             this.batchImages = [];
@@ -343,6 +346,14 @@ class ScreenshotProcessor {
                                 <span>Continue Batch (${this.currentBatchIndex + 1}/${this.batchImages.length})</span>
                             </button>
                         ` : ''}
+                        
+                        <button 
+                            class="w-full bg-blue-500 text-white rounded-xl py-4 flex items-center justify-center gap-3 hover:bg-blue-600 transition font-semibold shadow-lg"
+                            data-action="analyze-queue"
+                        >
+                            <i class="fa-solid fa-chart-line text-xl"></i>
+                            <span>Analyze Caught Pokémon</span>
+                        </button>
                     </div>
                     
                     <button 
@@ -393,6 +404,14 @@ class ScreenshotProcessor {
                 this.processBatch();
             });
         }
+        
+        const analyzeBtn = modal.querySelector('[data-action="analyze-queue"]');
+        if (analyzeBtn) {
+            analyzeBtn.addEventListener('click', () => {
+                modal.remove();
+                this.app.catchReport.startQueue();
+            });
+        }
 
         modal.querySelector('[data-input="file-upload"]').addEventListener('change', (e) => {
             const files = Array.from(e.target.files);
@@ -415,33 +434,20 @@ class ScreenshotProcessor {
     async handleSingleImage(file) {
         if (!file) return;
 
-        console.log('📤 handleSingleImage called');
-        console.log('   File:', file.name, file.type, file.size);
-        
         this.showProcessingModal('Initializing OCR...');
 
         try {
-            console.log('   Calling ocr.initTesseract()...');
             await this.ocr.initTesseract();
-            console.log('   initTesseract() completed');
-            console.log('   OCR worker state:', this.ocr.tesseractWorker);
             
             this.showProcessingModal('Processing screenshot...');
             
-            console.log('   Loading image...');
             const imageData = await this.loadImage(file);
-            console.log('   Image loaded:', imageData.width, 'x', imageData.height);
-            
-            console.log('   Calling processScreenshot()...');
             const extractedData = await this.ocr.processScreenshot(imageData, this.app.pokemon);
-            console.log('   processScreenshot() completed');
-            console.log('   Extracted data:', extractedData);
             
             this.hideProcessingModal();
             this.showConfirmationModal(extractedData, imageData);
         } catch (error) {
-            console.error('❌ Error in handleSingleImage:', error);
-            console.error('   Error stack:', error.stack);
+            console.error('Error processing screenshot:', error);
             this.hideProcessingModal();
             this.showErrorModal(error.message);
         }
@@ -469,9 +475,9 @@ class ScreenshotProcessor {
         
         // Populate fast moves
         fastSelect.innerHTML = '<option value="" class="bg-teal-600">None</option>';
-        if (pokemon.fastMoves) {
-            pokemon.fastMoves.forEach(moveId => {
-                const move = this.app.moves.find(m => m.id === moveId || m.rawId === moveId);
+        if (pokemon.moves && pokemon.moves.fast) {
+            pokemon.moves.fast.forEach(moveId => {
+                const move = this.app.moves.find(m => m.id === `pvp-fast-${moveId}` || m.rawId === moveId);
                 if (move) {
                     fastSelect.innerHTML += `<option value="${moveId}" class="bg-teal-600">${move.name}</option>`;
                 }
@@ -479,51 +485,61 @@ class ScreenshotProcessor {
         }
         
         // Populate charged moves
-        const chargeOptions = '<option value="" class="bg-teal-600">None</option>' + 
-            (pokemon.chargedMoves || []).map(moveId => {
-                const move = this.app.moves.find(m => m.id === moveId || m.rawId === moveId);
-                return move ? `<option value="${moveId}" class="bg-teal-600">${move.name}</option>` : '';
-            }).join('');
+        charge1Select.innerHTML = '<option value="" class="bg-teal-600">None</option>';
+        charge2Select.innerHTML = '<option value="" class="bg-teal-600">None</option>';
         
-        charge1Select.innerHTML = chargeOptions;
-        charge2Select.innerHTML = chargeOptions;
+        if (pokemon.moves && pokemon.moves.charge) {
+            pokemon.moves.charge.forEach(moveId => {
+                const move = this.app.moves.find(m => m.id === `pvp-charge-${moveId}` || m.rawId === moveId);
+                if (move) {
+                    const option = `<option value="${moveId}" class="bg-teal-600">${move.name}</option>`;
+                    charge1Select.innerHTML += option;
+                    charge2Select.innerHTML += option;
+                }
+            });
+        }
     }
 
     calculateLevel(pokemon, cp, ivAttack, ivDefense, ivStamina) {
-    if (!pokemon || !cp || ivAttack === '' || ivDefense === '' || ivStamina === '') {
-        return null;
-    }
-        
-    const baseAtk = pokemon.attack;
-    const baseDef = pokemon.defense;
-    const baseSta = pokemon.stamina;
-    
-    const totalAtk = baseAtk + ivAttack;
-    const totalDef = baseDef + ivDefense;
-    const totalSta = baseSta + ivStamina;
-    
-    let closestLevel = 1;
-    let minDiff = Infinity;
-    
-    // Check each level (array index * 0.5 + 1 = level)
-    for (let i = 0; i < this.cpm.length; i++) {
-        const level = (i * 0.5) + 1;
-        const calculatedCP = Math.max(10, Math.floor(
-            totalAtk * Math.sqrt(totalDef) * Math.sqrt(totalSta) * this.cpm[i] * this.cpm[i] / 10
-        ));
-        
-        const diff = Math.abs(calculatedCP - cp);
-        
-        if (diff < minDiff) {
-            minDiff = diff;
-            closestLevel = level;
+        if (!pokemon || !cp || ivAttack === '' || ivDefense === '' || ivStamina === '') {
+            return null;
         }
         
-        if (diff === 0) break;
+        // Use pokemon.stats for base stats (from database schema)
+        const baseAtk = pokemon.stats.attack;
+        const baseDef = pokemon.stats.defense;
+        const baseHp = pokemon.stats.hp;
+        
+        const totalAtk = baseAtk + ivAttack;
+        const totalDef = baseDef + ivDefense;
+        const totalHp = baseHp + ivStamina;
+        
+        let closestLevel = 1;
+        let minDifference = Infinity;
+        
+        // Check each level (array index * 0.5 + 1 = level)
+        for (let i = 0; i < this.cpm.length; i++) {
+            const level = (i * 0.5) + 1;
+            const cpm = this.cpm[i];
+            
+            // CP Formula: (ATK + ivATK) * sqrt(DEF + ivDEF) * sqrt(HP + ivHP) * CPM² / 10
+            const calculatedCP = Math.max(10, Math.floor(
+                (totalAtk * Math.sqrt(totalDef) * Math.sqrt(totalHp) * Math.pow(cpm, 2)) / 10
+            ));
+            
+            const difference = Math.abs(calculatedCP - cp);
+            
+            // Only update if this is strictly better (not equal)
+            if (difference < minDifference) {
+                minDifference = difference;
+                closestLevel = level;
+                
+                if (minDifference === 0) break;
+            }
+        }
+        
+        return closestLevel;
     }
-    
-    return closestLevel;
-}
 
     // Show processing modal
     showProcessingModal(message = 'Processing Screenshot...') {
@@ -547,6 +563,9 @@ class ScreenshotProcessor {
     // Show confirmation/edit modal
     showConfirmationModal(data, imageData, isBatch = false) {
         const needsAttention = this.getFieldsNeedingAttention(data);
+        
+        // Determine initial shadow state based on OCR detection
+        const initialShadowState = data.shadow ? 'shadow' : 'normal';
         
         const modalHtml = `
             <div class="fixed inset-0 bg-black bg-opacity-50 z-50 overflow-y-auto py-8" data-modal="confirmation">
@@ -761,14 +780,14 @@ class ScreenshotProcessor {
                                             <button 
                                                 type="button"
                                                 data-shadow-state="normal"
-                                                class="px-3 py-1 text-xs rounded-lg transition bg-white text-teal-600"
+                                                class="px-3 py-1 text-xs rounded-lg transition ${initialShadowState === 'normal' ? 'bg-white text-teal-600' : 'bg-white bg-opacity-20 text-white'}"
                                             >
                                                 Normal
                                             </button>
                                             <button 
                                                 type="button"
                                                 data-shadow-state="shadow"
-                                                class="px-3 py-1 text-xs rounded-lg transition bg-white bg-opacity-20 text-white"
+                                                class="px-3 py-1 text-xs rounded-lg transition ${initialShadowState === 'shadow' ? 'bg-purple-600 text-white' : 'bg-white bg-opacity-20 text-white'}"
                                             >
                                                 Shadow
                                             </button>
@@ -891,6 +910,14 @@ class ScreenshotProcessor {
 
         // Setup autocomplete
         this.setupNameAutocomplete(modal);
+        
+        // Initialize form and moves based on extracted name
+        if (initialData.name) {
+            const formSelect = modal.querySelector('[data-field="form"]');
+            this.updateFormOptions(initialData.name, formSelect);
+            this.updateMoveOptions(initialData.name, formSelect.value, modal);
+            this.updateCalculatedLevel(modal);
+        }
         
         // Cancel button
         modal.querySelector('[data-action="cancel-confirmation"]').addEventListener('click', () => {
@@ -1149,13 +1176,6 @@ class ScreenshotProcessor {
     }
 
     gatherFormData(modal, imageData) {
-        // DEBUG: Check what the modal actually contains
-        console.log('Name field value:', modal.querySelector('[data-field="name"]')?.value);
-        console.log('CP field value:', modal.querySelector('[data-field="cp"]')?.value);
-        console.log('IV Attack value:', modal.querySelector('[data-field="ivAttack"]')?.value);
-        console.log('Date Caught value:', modal.querySelector('[data-field="dateCaught"]')?.value);
-        console.log('Modal element:', modal);
-        
         // Find which shadow state button is active
         let shadowState = 'normal';
         modal.querySelectorAll('[data-shadow-state]').forEach(btn => {
@@ -1197,8 +1217,8 @@ class ScreenshotProcessor {
                 charge2: modal.querySelector('[data-field="currentChargeMove2"]').value || null
             },
             // Placeholders for future features
-            roles: [], // Will be populated when role assignment is implemented
-            ivEfficiency: null, // Will be calculated when IV ranking is implemented
+            roles: [],
+            ivEfficiency: null,
             assignedMoveset: {
                 fast: null,
                 charge1: null,
@@ -1373,8 +1393,6 @@ class ScreenshotProcessor {
                 screenshot: formData.screenshot || null
             };
             
-            console.log('Saving Pokemon with full data:', pokemonEntry); // Debug log
-            
             const dbRequest = indexedDB.open('PokemonGoDB');
             
             dbRequest.onsuccess = (event) => {
@@ -1400,6 +1418,4 @@ class ScreenshotProcessor {
             this.showErrorModal('Failed to save Pokémon: ' + error.message);
         }
     }
-
-    
 }
