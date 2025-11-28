@@ -241,7 +241,11 @@
         </div>
 
         <div class="controls">
+            <button class="main-btn" onclick="randomizeTeams()" style="background: #9C27B0; margin-right: 10px;">🎲 RANDOMIZE TEAMS</button>
             <button class="main-btn" onclick="runBattle()">⚔️ SIMULATE BATTLE</button>
+            <div style="margin-top: 15px; font-size: 14px; color: #666;">
+                <strong>Complexity Score:</strong> <span id="complexity-score">Calculating...</span>
+            </div>
         </div>
 
         <div id="results" class="results" style="display:none;">
@@ -395,6 +399,8 @@
             
             adjustShields(1, 0, 2);
             adjustShields(2, 0, 2);
+            
+            calculateComplexity();
         }
 
         function adjustShields(team, slot, delta) {
@@ -410,6 +416,63 @@
             
             shields[teamKey][slot] = newValue;
             document.getElementById(`t${team}s${slot}-shields`).textContent = newValue;
+        }
+
+        function randomizeTeams() {
+            const greatLeague = allPokemon.filter(p => p.maxCP >= 1400);
+            
+            for (let team = 1; team <= 2; team++) {
+                const teamKey = `team${team}`;
+                shields[teamKey] = [0, 0, 0];
+                
+                const totalShields = 2;
+                for (let i = 0; i < totalShields; i++) {
+                    const randomSlot = Math.floor(Math.random() * 3);
+                    if (shields[teamKey][randomSlot] < 2) {
+                        shields[teamKey][randomSlot]++;
+                    } else {
+                        const availableSlot = shields[teamKey].findIndex(s => s < 2);
+                        if (availableSlot !== -1) shields[teamKey][availableSlot]++;
+                    }
+                }
+                
+                for (let slot = 0; slot < 3; slot++) {
+                    const randomPokemon = greatLeague[Math.floor(Math.random() * greatLeague.length)];
+                    document.getElementById(`t${team}s${slot}-select`).value = randomPokemon.id;
+                    loadPokemon(team, slot);
+                    
+                    const fastSelect = document.getElementById(`t${team}s${slot}-fast`);
+                    if (fastSelect.options.length > 0) {
+                        fastSelect.selectedIndex = Math.floor(Math.random() * fastSelect.options.length);
+                    }
+                    
+                    const charge1Select = document.getElementById(`t${team}s${slot}-charge1`);
+                    if (charge1Select.options.length > 0) {
+                        charge1Select.selectedIndex = Math.floor(Math.random() * charge1Select.options.length);
+                    }
+                    
+                    const charge2Select = document.getElementById(`t${team}s${slot}-charge2`);
+                    if (charge2Select.options.length > 1) {
+                        let idx = Math.floor(Math.random() * charge2Select.options.length);
+                        while (idx === charge1Select.selectedIndex && charge2Select.options.length > 1) {
+                            idx = Math.floor(Math.random() * charge2Select.options.length);
+                        }
+                        charge2Select.selectedIndex = idx;
+                    }
+                    
+                    const shadowCheckbox = document.getElementById(`t${team}s${slot}-shadow`);
+                    shadowCheckbox.checked = Math.random() < 0.1;
+                    
+                    document.getElementById(`t${team}s${slot}-shields`).textContent = shields[teamKey][slot];
+                }
+            }
+            
+            calculateComplexity();
+        }
+
+        function calculateComplexity() {
+            document.getElementById('complexity-score').innerHTML = 
+                'Run a battle to see actual simulation count';
         }
 
         function loadPokemon(team, slot) {
@@ -502,8 +565,12 @@
             
             if (!team1 || !team2) return;
             
+            const startTime = performance.now();
             const sim = new Battle3v3Simulator(team1, team2, typeChart);
             const result = sim.simulate();
+            const endTime = performance.now();
+            
+            result.executionTime = endTime - startTime;
             
             displayResults(result, team1, team2);
         }
@@ -512,6 +579,17 @@
             const resultsDiv = document.getElementById('results');
             resultsDiv.style.display = 'block';
             resultsDiv.scrollIntoView({ behavior: 'smooth' });
+            
+            const timePerBattle = result.executionTime;
+            const battlesIn15s = Math.floor(15000 / timePerBattle);
+            const battlesIn30s = Math.floor(30000 / timePerBattle);
+            
+            const complexityMultiplier = result.simulationCount / 1;
+            document.getElementById('complexity-score').innerHTML = 
+                `<strong>${result.simulationCount} matchup simulations</strong> performed in 
+                <strong>${timePerBattle.toFixed(1)}ms</strong><br>
+                Estimated opponent space: <strong>${battlesIn15s}-${battlesIn30s} teams</strong> 
+                (for 15-30s wait time)`;
             
             const winnerBanner = document.getElementById('winner-banner');
             if (result.winner === 'Team1') {
@@ -596,6 +674,7 @@
                 this.fastMoveCountdown = [0, 0];
                 this.log = [];
                 this.matchupCache = {};
+                this.simulationCount = 0;
                 
                 for (let t = 0; t < 2; t++) {
                     for (let i = 0; i < 3; i++) {
@@ -1158,6 +1237,8 @@
             }
 
             runMatchupSim(team1Idx, mon1Idx, team2Idx, mon2Idx) {
+                this.simulationCount++;
+                
                 const mon1 = this.teams[team1Idx][mon1Idx];
                 const mon2 = this.teams[team2Idx][mon2Idx];
                 
@@ -1447,6 +1528,7 @@
                     winner: winner,
                     rating: rating,
                     turns: this.turn,
+                    simulationCount: this.simulationCount,
                     team1State: this.teams[0].map((mon, i) => ({
                         hp: this.hp[0][i],
                         maxHP: this.maxHP[0][i],
