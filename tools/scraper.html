@@ -498,47 +498,6 @@
         }
 
         function parseCups(gameMaster) {
-            const cups = [];
-            const nineMonthsAgo = Date.now() - (270 * 24 * 60 * 60 * 1000);
-            for (const item of gameMaster) {
-                if (!item.templateId?.startsWith('COMBAT_LEAGUE_') || !item.data?.combatLeague) continue;
-                const id = item.templateId;
-                const league = item.data.combatLeague;
-                if (id.includes('SAFARI') || id.includes('GO_FEST') || id.includes('POKEMON_GO_TOUR')) continue;
-                const yearMatch = id.match(/_(\d{4})_/);
-                if (yearMatch && parseInt(yearMatch[1]) <= 2024) continue;
-                const conditions = league.pokemonCondition || [];
-                const timestampCondition = conditions.find(c => c.pokemonCaughtTimestamp);
-                if (timestampCondition) {
-                    const beforeMs = parseInt(timestampCondition.pokemonCaughtTimestamp.beforeTimestamp);
-                    if (beforeMs < nineMonthsAgo) continue;
-                }
-                const cup = {
-                    id: id,
-                    title: cleanCupTitle(league.title || id),
-                    cpLimit: null,
-                    allowedTypes: [],
-                    allowedPokemon: [],
-                    bannedPokemon: league.bannedPokemon || [],
-                    maxLevel: null,
-                    isStandard: isStandardLeague(id)
-                };
-                for (const condition of conditions) {
-                    if (condition.type === 'WITH_POKEMON_CP_LIMIT') {
-                        cup.cpLimit = condition.withPokemonCpLimit?.maxCp || null;
-                    }
-                    if (condition.type === 'WITH_POKEMON_TYPE') {
-                        cup.allowedTypes = (condition.withPokemonType?.pokemonType || []).map(t => t.replace('POKEMON_TYPE_', ''));
-                    }
-                    if (condition.type === 'POKEMON_WHITELIST') {
-                        cup.allowedPokemon = (condition.pokemonWhiteList?.pokemon || []).map(p => ({ id: p.id, form: p.form || null }));
-                    }
-                    if (condition.type === 'POKEMON_LEVEL_RANGE') {
-                        cup.maxLevel = condition.pokemonLevelRange?.maxLevel || null;
-                    }
-                }
-                cups.push(cup);
-            }
             return cups;
         }
 
@@ -1476,7 +1435,7 @@
                     let slotIndex = 1;
                     for (const slot of slots) {
                         const slotKey = `slot${slotIndex}`;
-                        const isEncounter = slot.classList.contains('encounter');
+                        const isEncounter = slot.querySelector('.encounter-icon') !== null;
                         
                         const shadowPokemon = slot.querySelectorAll('.shadow-pokemon');
                         
