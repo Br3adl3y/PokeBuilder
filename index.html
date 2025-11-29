@@ -1658,6 +1658,18 @@
             }, 3000);
         }
         }
+
+        // Initialize app after all scripts are loaded
+        document.addEventListener('DOMContentLoaded', async () => {
+            const db = await initializeDatabase();
+            
+            // Run auto-update
+            const autoUpdate = new AutoUpdateManager();
+            await autoUpdate.initialize(db);
+            
+            // Then start the app
+            new PokeApp();
+        });
     </script>
 </body>
 </html>
