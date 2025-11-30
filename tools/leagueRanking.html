@@ -820,7 +820,9 @@
                             (r.form || null) === (pokemon2.form || null)
                         )?.name || pokemon2.name;
                         
+                        const opponentKey = `${opponentName}|${pokemon2.form || 'base'}|${pokemon2.isShadow}`;
                         p1Data.bestMatchups.push({
+                            opponentKey: opponentKey,
                             opponent: opponentName,
                             opponentForm: pokemon2.form || null,
                             opponentShadow: pokemon2.isShadow,
@@ -986,7 +988,9 @@
                         p1Data.scenarioRatings[scenario].push(finalP1Rating);
                         
                         // Track best/worst matchups for P1
+                        const opponentKey = `${pokemon2.name}|${pokemon2.form || 'base'}|${pokemon2.isShadow}`;
                         p1Data.bestMatchups.push({
+                            opponentKey: opponentKey,
                             opponent: pokemon2.name,
                             opponentForm: pokemon2.form || null,
                             opponentShadow: pokemon2.isShadow,
@@ -1008,8 +1012,9 @@
                         
                         if (isSymmetric) {
                             // Track best/worst matchups for P2
-                            const finalP2Rating = 1000 - finalP1Rating;
+                            const opponentKey2 = `${pokemon1.name}|${pokemon1.form || 'base'}|${pokemon1.isShadow}`;
                             p2Data.bestMatchups.push({
+                                opponentKey: opponentKey2,
                                 opponent: pokemon1.name,
                                 opponentForm: pokemon1.form || null,
                                 opponentShadow: pokemon1.isShadow,
@@ -1185,10 +1190,32 @@
                 }
                 
                 if (recommendedMoveset) {
-                    // Sort and get top 10 best and worst matchups
-                    const sortedMatchups = [...data.bestMatchups].sort((a, b) => b.rating - a.rating);
-                    const top10Best = sortedMatchups.slice(0, 10);
-                    const top10Worst = sortedMatchups.slice(-10).reverse();
+                    // Deduplicate matchups - keep best rating per opponent for best matchups,
+                    // keep worst rating per opponent for worst matchups
+                    const matchupsByOpponent = new Map();
+                    
+                    for (const matchup of data.bestMatchups) {
+                        const existing = matchupsByOpponent.get(matchup.opponentKey);
+                        
+                        if (!existing || matchup.rating > existing.rating || 
+                            (matchup.rating === existing.rating && matchup.scenario < existing.scenario)) {
+                            matchupsByOpponent.set(matchup.opponentKey, matchup);
+                        }
+                    }
+                    
+                    // Get best 10 and worst 10 unique opponents
+                    const deduplicatedMatchups = Array.from(matchupsByOpponent.values());
+                    const sortedMatchups = deduplicatedMatchups.sort((a, b) => b.rating - a.rating);
+                    
+                    const top10Best = sortedMatchups.slice(0, 10).map(m => {
+                        const { opponentKey, ...rest } = m;
+                        return rest;
+                    });
+                    
+                    const top10Worst = sortedMatchups.slice(-10).reverse().map(m => {
+                        const { opponentKey, ...rest } = m;
+                        return rest;
+                    });
                     
                     rankings.push({
                         speciesId: data.speciesId,

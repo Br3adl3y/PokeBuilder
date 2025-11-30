@@ -591,103 +591,80 @@ class ScreenshotProcessor {
                             
                             <!-- Form Fields Column -->
                             <div class="space-y-3">
-                                ${needsAttention.length > 0 ? `
-                                    <div class="bg-yellow-500 bg-opacity-20 backdrop-blur-sm border border-yellow-300 border-opacity-50 rounded-lg p-4">
-                                        <div class="flex items-start gap-2">
-                                            <i class="fa-solid fa-triangle-exclamation text-yellow-100 mt-1"></i>
-                                            <div>
-                                                <p class="font-semibold text-white">Attention Required</p>
-                                                <ul class="text-sm text-teal-50 mt-1 space-y-1">
-                                                    ${needsAttention.map(field => `<li>• ${field}</li>`).join('')}
-                                                </ul>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ` : ''}
-                                
-                                <div>
-                                    <label class="block text-sm font-medium text-white mb-1">
-                                        Pokémon Name ${this.getConfidenceBadge(data.nameConfidence)}
-                                    </label>
-                                    <input 
-                                        type="text" 
-                                        value="${data.name}" 
-                                        data-field="name"
-                                        class="w-full px-3 py-2 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-lg text-white placeholder-teal-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 ${data.nameConfidence < 0.7 ? 'ring-2 ring-yellow-300' : ''}"
-                                        placeholder="e.g., Pikachu"
-                                    />
-                                </div>
-                                
-                                <div>
-                                    <label class="block text-sm font-medium text-white mb-1">Form (if applicable)</label>
-                                    <select 
-                                        data-field="form"
-                                        class="w-full px-3 py-2 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
-                                    >
-                                        <option value="" class="bg-teal-600">Normal</option>
-                                    </select>
-                                    <p class="text-xs text-teal-100 mt-1">Forms will populate based on selected Pokémon</p>
-                                </div>
-                                
-                                <div>
-                                    <label class="block text-sm font-medium text-white mb-1">Nickname </label>
-                                    <input 
-                                        type="text" 
-                                        value="${data.nickname}" 
-                                        data-field="nickname"
-                                        class="w-full px-3 py-2 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-lg text-white placeholder-teal-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
-                                        placeholder="Custom nickname"
-                                    />
-                                </div>
-                                
-                                <div class="grid grid-cols-2 gap-2">
+                                <!-- Name, Form, Nickname in one row -->
+                                <div class="grid grid-cols-3 gap-2">
                                     <div>
-                                        <label class="block text-sm font-medium text-white mb-1">
-                                            CP ${this.getConfidenceBadge(data.cpConfidence)}
-                                        </label>
+                                        <label class="block text-xs font-medium text-white mb-1">Pokémon Name</label>
+                                        <input 
+                                            type="text" 
+                                            value="${data.name}" 
+                                            data-field="name"
+                                            class="w-full px-2 py-2 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-lg text-white text-sm placeholder-teal-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+                                            placeholder="e.g., Pikachu"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-white mb-1">Form</label>
+                                        <select 
+                                            data-field="form"
+                                            class="w-full px-2 py-2 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+                                        >
+                                            <option value="" class="bg-teal-600">Normal</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-white mb-1">Nickname</label>
+                                        <input 
+                                            type="text" 
+                                            value="${data.nickname}" 
+                                            data-field="nickname"
+                                            class="w-full px-2 py-2 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-lg text-white text-sm placeholder-teal-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+                                            placeholder="Optional"
+                                        />
+                                    </div>
+                                </div>
+                                
+                                <!-- CP, Level, Date in one row -->
+                                <div class="grid grid-cols-3 gap-2">
+                                    <div>
+                                        <label class="block text-xs font-medium text-white mb-1">CP</label>
                                         <input 
                                             type="number" 
                                             value="${data.cp}" 
                                             data-field="cp"
-                                            class="w-full px-3 py-2 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-lg text-white placeholder-teal-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 ${data.cpConfidence < 0.7 ? 'ring-2 ring-yellow-300' : ''}"
+                                            class="w-full px-2 py-2 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-lg text-white text-sm placeholder-teal-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
                                             placeholder="0-9999"
                                         />
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-medium text-white mb-1">
-                                            Level (auto)
-                                        </label>
+                                        <label class="block text-xs font-medium text-white mb-1">Level (auto)</label>
                                         <input 
                                             type="number" 
                                             step="0.5" 
                                             value="" 
                                             data-field="level"
                                             disabled
-                                            class="w-full px-3 py-2 bg-white bg-opacity-10 backdrop-blur-sm border border-white border-opacity-20 rounded-lg text-teal-100"
+                                            class="w-full px-2 py-2 bg-white bg-opacity-10 backdrop-blur-sm border border-white border-opacity-20 rounded-lg text-teal-100 text-sm"
                                             placeholder="Calculated"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-white mb-1">Date Caught</label>
+                                        <input 
+                                            type="date" 
+                                            value="${data.dateCaught}" 
+                                            data-field="dateCaught"
+                                            class="w-full px-2 py-2 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
                                         />
                                     </div>
                                 </div>
                                 
-                                <div>
-                                    <label class="block text-sm font-medium text-white mb-1">
-                                        Date Caught ${this.getConfidenceBadge(data.dateCaughtConfidence)}
-                                    </label>
-                                    <input 
-                                        type="date" 
-                                        value="${data.dateCaught}" 
-                                        data-field="dateCaught"
-                                        class="w-full px-3 py-2 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 ${data.dateCaughtConfidence < 0.7 ? 'ring-2 ring-yellow-300' : ''}"
-                                    />
-                                </div>
-                                
+                                <!-- IVs -->
                                 <div class="border-t border-white border-opacity-20 pt-3">
-                                    <label class="block text-sm font-medium text-white mb-2">Individual Values (IVs)</label>
+                                    <label class="block text-xs font-medium text-white mb-2">Individual Values (IVs)</label>
                                     <div class="grid grid-cols-3 gap-2">
                                         <div>
-                                            <label class="block text-xs font-medium text-teal-100 mb-1">
-                                                ATK ${this.getConfidenceBadge(data.ivAttackConfidence, true)}
-                                            </label>
+                                            <label class="block text-xs font-medium text-teal-100 mb-1">ATK</label>
                                             <input 
                                                 type="number" 
                                                 inputmode="numeric"
@@ -696,14 +673,12 @@ class ScreenshotProcessor {
                                                 value="${data.ivAttack}" 
                                                 data-field="ivAttack"
                                                 data-iv-field="attack"
-                                                class="w-full px-3 py-2 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-lg text-white text-center placeholder-teal-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 ${data.ivAttackConfidence < 0.7 ? 'ring-2 ring-yellow-300' : ''}"
+                                                class="w-full px-2 py-2 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-lg text-white text-center text-sm placeholder-teal-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
                                                 placeholder="0-15"
                                             />
                                         </div>
                                         <div>
-                                            <label class="block text-xs font-medium text-teal-100 mb-1">
-                                                DEF ${this.getConfidenceBadge(data.ivDefenseConfidence, true)}
-                                            </label>
+                                            <label class="block text-xs font-medium text-teal-100 mb-1">DEF</label>
                                             <input 
                                                 type="number" 
                                                 inputmode="numeric"
@@ -712,14 +687,12 @@ class ScreenshotProcessor {
                                                 value="${data.ivDefense}" 
                                                 data-field="ivDefense"
                                                 data-iv-field="defense"
-                                                class="w-full px-3 py-2 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-lg text-white text-center placeholder-teal-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 ${data.ivDefenseConfidence < 0.7 ? 'ring-2 ring-yellow-300' : ''}"
+                                                class="w-full px-2 py-2 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-lg text-white text-center text-sm placeholder-teal-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
                                                 placeholder="0-15"
                                             />
                                         </div>
                                         <div>
-                                            <label class="block text-xs font-medium text-teal-100 mb-1">
-                                                STA ${this.getConfidenceBadge(data.ivStaminaConfidence, true)}
-                                            </label>
+                                            <label class="block text-xs font-medium text-teal-100 mb-1">STA</label>
                                             <input 
                                                 type="number" 
                                                 inputmode="numeric"
@@ -728,46 +701,49 @@ class ScreenshotProcessor {
                                                 value="${data.ivStamina}" 
                                                 data-field="ivStamina"
                                                 data-iv-field="stamina"
-                                                class="w-full px-3 py-2 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-lg text-white text-center placeholder-teal-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 ${data.ivStaminaConfidence < 0.7 ? 'ring-2 ring-yellow-300' : ''}"
+                                                class="w-full px-2 py-2 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-lg text-white text-center text-sm placeholder-teal-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
                                                 placeholder="0-15"
                                             />
                                         </div>
                                     </div>
                                 </div>
 
+                                <!-- Current Moves - 2 Column Layout -->
                                 <div class="border-t border-white border-opacity-20 pt-3">
-                                    <label class="block text-sm font-medium text-white mb-2">Current Moves</label>
-                                    <div class="space-y-2">
+                                    <label class="block text-xs font-medium text-white mb-2">Current Moves</label>
+                                    <div class="grid grid-cols-2 gap-3">
                                         <div>
                                             <label class="block text-xs font-medium text-teal-100 mb-1">Fast Move</label>
                                             <select 
                                                 data-field="currentFastMove"
-                                                class="w-full px-3 py-2 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+                                                class="w-full px-2 py-2 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
                                             >
                                                 <option value="" class="bg-teal-600">None</option>
                                             </select>
                                         </div>
-                                        <div>
-                                            <label class="block text-xs font-medium text-teal-100 mb-1">Charged Move 1</label>
-                                            <select 
-                                                data-field="currentChargeMove1"
-                                                class="w-full px-3 py-2 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
-                                            >
-                                                <option value="" class="bg-teal-600">None</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label class="block text-xs font-medium text-teal-100 mb-1">Charged Move 2</label>
-                                            <select 
-                                                data-field="currentChargeMove2"
-                                                class="w-full px-3 py-2 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
-                                            >
-                                                <option value="" class="bg-teal-600">None</option>
-                                            </select>
+                                        <div class="space-y-2">
+                                            <div>
+                                                <label class="block text-xs font-medium text-teal-100 mb-1">Charged Move 1</label>
+                                                <select 
+                                                    data-field="currentChargeMove1"
+                                                    class="w-full px-2 py-2 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+                                                >
+                                                    <option value="" class="bg-teal-600">None</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-medium text-teal-100 mb-1">Charged Move 2</label>
+                                                <select 
+                                                    data-field="currentChargeMove2"
+                                                    class="w-full px-2 py-2 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+                                                >
+                                                    <option value="" class="bg-teal-600">None</option>
+                                                </select>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-
+                                
                                 <!-- Toggle Switches -->
                                 <div class="bg-white bg-opacity-10 backdrop-blur-sm rounded-lg p-4 space-y-3 border border-white border-opacity-20">
                                     <h3 class="font-semibold text-white text-sm mb-3">Properties</h3>

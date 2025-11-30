@@ -24,6 +24,11 @@ async function initializeDatabase() {
         request.onupgradeneeded = (event) => {
             const db = event.target.result;
             
+            // Cup data store (Default Leagues, Special Cups)
+            if (!db.objectStoreNames.contains('cups')) {
+                db.createObjectStore('cups', { keyPath: 'id' });
+            }
+            
             // Pokemon data store with dexNumber index for lookups
             if (!db.objectStoreNames.contains('pokemon')) {
                 const pokemonStore = db.createObjectStore('pokemon', { keyPath: 'id' });

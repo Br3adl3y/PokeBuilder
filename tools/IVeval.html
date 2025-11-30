@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Normal Pokemon IV Analysis</title>
+    <title>Pokemon IV Analysis</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 20px auto;
             padding: 20px;
             background-color: #f5f5f5;
@@ -34,64 +34,98 @@
         button:hover {
             background-color: #45a049;
         }
-        .stats-box {
+        button.secondary {
+            background-color: #2196F3;
+        }
+        button.secondary:hover {
+            background-color: #0b7dda;
+        }
+        button.danger {
+            background-color: #f44336;
+            padding: 6px 12px;
+            font-size: 14px;
+        }
+        button.danger:hover {
+            background-color: #da190b;
+        }
+        
+        /* Rule Builder */
+        .rule-builder {
             background: white;
             padding: 20px;
             border-radius: 8px;
             margin-bottom: 20px;
         }
-        .stat-item {
-            padding: 10px;
-            margin: 5px 0;
+        .rule-group {
             background: #f9f9f9;
-            border-left: 4px solid #4CAF50;
+            border: 2px solid #4CAF50;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            position: relative;
         }
-        .stat-item strong {
-            color: #cc0000;
+        .rule-group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
         }
-        .debug-item {
-            padding: 10px;
-            margin: 5px 0;
-            background: #fff3cd;
-            border-left: 4px solid #ffc107;
+        .rule-group-title {
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        .condition {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+        .condition select, .condition input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
             font-size: 14px;
         }
-        table {
-            width: 100%;
-            background: white;
-            border-collapse: collapse;
-            margin-top: 20px;
+        .condition input[type="number"] {
+            width: 80px;
         }
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
+        .condition .combo-select {
+            width: 120px;
         }
-        th {
-            background-color: #4CAF50;
-            color: white;
+        .add-condition-btn {
+            background-color: #2196F3;
+            padding: 6px 12px;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+        .or-separator {
+            text-align: center;
             font-weight: bold;
-        }
-        tr:hover {
-            background-color: #f5f5f5;
-        }
-        #status {
-            padding: 15px;
-            background-color: #fff;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            border-left: 4px solid #4CAF50;
-        }
-        .error {
-            border-left-color: #cc0000 !important;
             color: #cc0000;
+            margin: 15px 0;
+            font-size: 18px;
         }
-        .little-league-note {
-            background: #e3f2fd;
-            border-left: 4px solid #2196f3;
-            padding: 10px;
+        .preset-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        .miss-list {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 4px;
+        }
+        .miss-list h3 {
+            margin-top: 0;
+            color: #856404;
+        }
+        .miss-list ul {
             margin: 10px 0;
-            font-style: italic;
+            padding-left: 20px;
         }
         
         /* Visualization styles */
@@ -143,12 +177,16 @@
         .heatmap-cell.kept {
             box-shadow: inset 0 0 0 3px #00ff00;
         }
+        .heatmap-cell.missed {
+            box-shadow: inset 0 0 0 3px #ff0000;
+        }
         .heatmap-labels {
             display: flex;
             gap: 10px;
             margin-top: 20px;
             justify-content: center;
             align-items: center;
+            flex-wrap: wrap;
         }
         .axis-labels {
             display: flex;
@@ -185,6 +223,9 @@
         .legend-box.kept {
             box-shadow: inset 0 0 0 3px #00ff00;
         }
+        .legend-box.missed {
+            box-shadow: inset 0 0 0 3px #ff0000;
+        }
         
         /* Cell detail popup */
         .cell-detail {
@@ -211,24 +252,45 @@
             background: #f9f9f9;
             border-left: 3px solid #4CAF50;
         }
+        #status {
+            padding: 15px;
+            background-color: #fff;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #4CAF50;
+        }
+        .error {
+            border-left-color: #cc0000 !important;
+            color: #cc0000;
+        }
     </style>
 </head>
 <body>
-    <h1>🔍 Normal Pokemon IV Analysis</h1>
+    <h1>Pokemon IV Analysis</h1>
     
     <div class="controls">
-        <p><strong>Analyze Normal-class Pokemon IVs from your database</strong></p>
         <button id="analyzeBtn">Run Analysis</button>
     </div>
 
     <div id="status">Ready. Click "Run Analysis" to begin.</div>
 
-    <div id="stats" class="stats-box" style="display: none;">
-        <h2>Analysis Results</h2>
-        <div id="statsContent"></div>
+    <div class="rule-builder" style="display: none;" id="ruleBuilder">
+        <h2>Keep Rules</h2>
+        <p>Pokemon matching ANY of these rule groups will be kept:</p>
+        <div id="ruleGroups"></div>
+        <button id="addRuleGroup" class="secondary">Add Rule Group (OR)</button>
         
-        <h3 style="margin-top: 20px;">League Coverage</h3>
-        <div id="debugContent"></div>
+        <div class="preset-buttons">
+            <button onclick="loadPreset('original')">Load Original Rules</button>
+            <button onclick="loadPreset('optimized')">Load Optimized Rules</button>
+            <button onclick="clearRules()">Clear All Rules</button>
+        </div>
+        
+        <div id="missedIVs" class="miss-list" style="display: none;">
+            <h3>Missed Ideal IVs</h3>
+            <p>These IVs have actual Pokemon but are NOT kept by current rules:</p>
+            <ul id="missedList"></ul>
+        </div>
     </div>
 
     <div id="visualization" class="viz-container">
@@ -263,7 +325,7 @@
                     <span>Few</span>
                 </div>
                 <div class="legend-item">
-                    <div class="legend-box" style="background: #cc0000;"></div>
+                    <div class="legend-box" style="background: #990000;"></div>
                     <span>Many</span>
                 </div>
             </div>
@@ -272,6 +334,10 @@
                 <div class="legend-item">
                     <div class="legend-box kept" style="background: #ff6666;"></div>
                     <span>Kept by rules</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-box missed" style="background: #ff6666;"></div>
+                    <span>Missed ideal</span>
                 </div>
             </div>
         </div>
@@ -282,71 +348,14 @@
         </div>
     </div>
 
-    <div id="results" style="display: none;">
-        <h2>IVs with Def or Sta < 10</h2>
-        <div class="little-league-note">
-            <strong>Note:</strong> Little League results only show first-stage Pokemon that can evolve (excludes evolved forms and non-evolving Pokemon)
-        </div>
-        <table id="resultsTable">
-            <thead>
-                <tr>
-                    <th>Pokemon</th>
-                    <th>League</th>
-                    <th>Atk</th>
-                    <th>Def</th>
-                    <th>Sta</th>
-                    <th>IV Spread</th>
-                </tr>
-            </thead>
-            <tbody id="resultsBody"></tbody>
-        </table>
-    </div>
-
-    <div id="results2" style="display: none;">
-        <h2>IVs with Def < 13 AND Sta < 13</h2>
-        <div class="little-league-note">
-            <strong>Note:</strong> Little League results only show first-stage Pokemon that can evolve
-        </div>
-        <table>
-            <thead>
-                <tr>
-                    <th>Pokemon</th>
-                    <th>League</th>
-                    <th>Atk</th>
-                    <th>Def</th>
-                    <th>Sta</th>
-                    <th>IV Spread</th>
-                </tr>
-            </thead>
-            <tbody id="resultsBody2"></tbody>
-        </table>
-    </div>
-
-    <div id="results3" style="display: none;">
-        <h2>IVs with Atk > 2 (Excluding Def > 13 AND Sta > 13) - Sorted by Attack</h2>
-        <div class="little-league-note">
-            <strong>Note:</strong> Little League results only show first-stage Pokemon that can evolve. This list excludes IVs where both Def and Sta are greater than 13.
-        </div>
-        <table>
-            <thead>
-                <tr>
-                    <th>Pokemon</th>
-                    <th>League</th>
-                    <th>Atk</th>
-                    <th>Def</th>
-                    <th>Sta</th>
-                    <th>IV Spread</th>
-                </tr>
-            </thead>
-            <tbody id="resultsBody3"></tbody>
-        </table>
-    </div>
-
     <script>
         const DB_NAME = 'PokemonGoDB';
         let ivDistribution = null;
-        let ivDetails = null; // Store Pokemon names for each IV combo
+        let ivDetails = null;
         let currentAtkIndex = 0;
+        let normalPokemon = null;
+        let evolvedPokemon = null;
+        let currentRules = [];
 
         function openDatabase() {
             return new Promise((resolve, reject) => {
@@ -396,24 +405,62 @@
             return canEvolve && isNotEvolved;
         }
 
-        function shouldKeepIV(atk, def, sta) {
-            // atk = 0
+        function evaluateCondition(condition, atk, def, sta) {
+            const { stat, operator, value, combo } = condition;
+            
+            let leftValue;
+            if (combo) {
+                // Handle combinations like "def+hp"
+                if (combo === 'def+hp') {
+                    leftValue = def + sta;
+                } else if (combo === 'atk+def') {
+                    leftValue = atk + def;
+                } else if (combo === 'atk+hp') {
+                    leftValue = atk + sta;
+                }
+            } else {
+                // Single stat
+                if (stat === 'atk') leftValue = atk;
+                else if (stat === 'def') leftValue = def;
+                else if (stat === 'hp') leftValue = sta;
+            }
+            
+            switch (operator) {
+                case '>': return leftValue > value;
+                case '<': return leftValue < value;
+                case '>=': return leftValue >= value;
+                case '<=': return leftValue <= value;
+                case '=': return leftValue === value;
+                case '!=': return leftValue !== value;
+                default: return false;
+            }
+        }
+
+        function evaluateRuleGroup(ruleGroup, atk, def, sta) {
+            // All conditions in a group must be true (AND)
+            return ruleGroup.every(condition => evaluateCondition(condition, atk, def, sta));
+        }
+
+        function shouldKeepIV(atk, def, sta, rules) {
+            if (!rules || rules.length === 0) {
+                // Default rules if none specified
+                return shouldKeepIVDefault(atk, def, sta);
+            }
+            
+            // Any rule group can match (OR)
+            return rules.some(ruleGroup => evaluateRuleGroup(ruleGroup, atk, def, sta));
+        }
+
+        function shouldKeepIVDefault(atk, def, sta) {
+            // Original rules
             if (atk === 0) return true;
-            
-            // atk = any, def > 13, hp > 11
             if (def > 13 && sta > 11) return true;
-            
-            // atk < 3, def > 12, hp > 4
             if (atk < 3 && def > 12 && sta > 4) return true;
-            
-            // atk < 3, def > 7, hp > 12
             if (atk < 3 && def > 7 && sta > 12) return true;
-            
             return false;
         }
 
         function buildIVDistribution(normalPokemon, evolvedPokemon) {
-            // 3D array: [atk][def][sta] = count
             const dist = [];
             const details = [];
             
@@ -436,7 +483,6 @@
                 for (const league of leagues) {
                     if (!pokemon[league] || !pokemon[league].iv) continue;
                     
-                    // Apply Little League filtering
                     if (league === 'little' && !isLittleLeagueEligible(pokemon, evolvedPokemon)) {
                         continue;
                     }
@@ -465,10 +511,54 @@
             // Start at a darker pink and go to dark red
             const intensity = Math.min((count - 1) / (maxCount - 1), 1);
             const red = 255;
-            const green = Math.floor(150 * (1 - intensity)); // Start at 200 (pink) go to 0 (dark red)
+            const green = Math.floor(150 * (1 - intensity)); // Start at 150 (pink) go to 0 (dark red)
             const blue = Math.floor(150 * (1 - intensity));
             
             return `rgb(${red}, ${green}, ${blue})`;
+        }
+
+        function findMissedIVs() {
+            if (!ivDistribution || !ivDetails) return [];
+            
+            const missed = [];
+            
+            for (let a = 0; a <= 15; a++) {
+                for (let d = 0; d <= 15; d++) {
+                    for (let s = 0; s <= 15; s++) {
+                        const count = ivDistribution[a][d][s];
+                        if (count > 0 && !shouldKeepIV(a, d, s, currentRules)) {
+                            // This IV exists but is not kept
+                            missed.push({
+                                atk: a,
+                                def: d,
+                                sta: s,
+                                pokemon: ivDetails[a][d][s]
+                            });
+                        }
+                    }
+                }
+            }
+            
+            return missed;
+        }
+
+        function updateMissedIVsList() {
+            const missed = findMissedIVs();
+            const missedDiv = document.getElementById('missedIVs');
+            const missedList = document.getElementById('missedList');
+            
+            if (missed.length === 0) {
+                missedDiv.style.display = 'none';
+            } else {
+                missedList.innerHTML = '';
+                missed.forEach(iv => {
+                    const li = document.createElement('li');
+                    const pokemonNames = iv.pokemon.map(p => `${p.name}-${p.league}`).join(', ');
+                    li.textContent = `${iv.atk}/${iv.def}/${iv.sta} - ${pokemonNames}`;
+                    missedList.appendChild(li);
+                });
+                missedDiv.style.display = 'block';
+            }
         }
 
         function showCellDetail(atk, def, sta) {
@@ -478,8 +568,10 @@
             
             const pokemonList = ivDetails[atk][def][sta];
             const count = pokemonList.length;
+            const kept = shouldKeepIV(atk, def, sta, currentRules);
             
-            titleEl.textContent = `IV Spread ${atk}/${def}/${sta} (${count} Pokemon)`;
+            titleEl.textContent = `IV Spread ${atk}/${def}/${sta} (${count} Pokemon) - ${kept ? 'KEPT' : 'TOSSED'}`;
+            titleEl.style.color = kept ? '#4CAF50' : '#cc0000';
             
             if (count === 0) {
                 listEl.innerHTML = '<li>No Pokemon have this IV spread</li>';
@@ -501,7 +593,6 @@
             
             if (!ivDistribution) return;
             
-            // Find max count for color scaling
             let maxCount = 0;
             for (let d = 0; d <= 15; d++) {
                 for (let s = 0; s <= 15; s++) {
@@ -509,12 +600,10 @@
                 }
             }
             
-            // Render grid (HP on Y axis, top to bottom = 15 to 0)
             for (let s = 15; s >= 0; s--) {
                 const row = document.createElement('div');
                 row.className = 'heatmap-row';
                 
-                // Def on X axis, left to right = 0 to 15
                 for (let d = 0; d <= 15; d++) {
                     const cell = document.createElement('div');
                     cell.className = 'heatmap-cell';
@@ -522,15 +611,15 @@
                     const count = ivDistribution[atkValue][d][s];
                     cell.style.backgroundColor = getColorForCount(count, maxCount);
                     
-                    // Check if this IV should be kept
-                    if (shouldKeepIV(atkValue, d, s)) {
+                    const kept = shouldKeepIV(atkValue, d, s, currentRules);
+                    if (kept) {
                         cell.classList.add('kept');
+                    } else if (count > 0) {
+                        // Exists but not kept = missed
+                        cell.classList.add('missed');
                     }
                     
-                    // Tooltip
                     cell.title = `${atkValue}/${d}/${s}: ${count} IVs (click for details)`;
-                    
-                    // Click handler
                     cell.addEventListener('click', () => showCellDetail(atkValue, d, s));
                     
                     row.appendChild(cell);
@@ -542,14 +631,238 @@
             document.getElementById('currentAtk').textContent = atkValue;
         }
 
+        // Rule Builder UI
+        function createConditionElement(groupIndex, condition = null) {
+            const div = document.createElement('div');
+            div.className = 'condition';
+            
+            const comboSelect = document.createElement('select');
+            comboSelect.className = 'combo-select';
+            comboSelect.innerHTML = `
+                <option value="">Single Stat</option>
+                <option value="def+hp">def + hp</option>
+                <option value="atk+def">atk + def</option>
+                <option value="atk+hp">atk + hp</option>
+            `;
+            
+            const statSelect = document.createElement('select');
+            statSelect.innerHTML = `
+                <option value="atk">atk</option>
+                <option value="def">def</option>
+                <option value="hp">hp</option>
+            `;
+            
+            const operatorSelect = document.createElement('select');
+            operatorSelect.innerHTML = `
+                <option value=">">></option>
+                <option value="<"><</option>
+                <option value=">=">>=</option>
+                <option value="<="><=</option>
+                <option value="=">=</option>
+                <option value="!=">!=</option>
+            `;
+            
+            const valueInput = document.createElement('input');
+            valueInput.type = 'number';
+            valueInput.min = '0';
+            valueInput.max = '30';
+            valueInput.value = '0';
+            
+            const removeBtn = document.createElement('button');
+            removeBtn.textContent = 'Remove';
+            removeBtn.className = 'danger';
+            removeBtn.onclick = () => {
+                div.remove();
+                saveRules();
+            };
+            
+            if (condition) {
+                if (condition.combo) {
+                    comboSelect.value = condition.combo;
+                    statSelect.style.display = 'none';
+                } else {
+                    statSelect.value = condition.stat;
+                }
+                operatorSelect.value = condition.operator;
+                valueInput.value = condition.value;
+            }
+            
+            comboSelect.onchange = () => {
+                if (comboSelect.value) {
+                    statSelect.style.display = 'none';
+                } else {
+                    statSelect.style.display = 'inline-block';
+                }
+                saveRules();
+            };
+            
+            statSelect.onchange = () => saveRules();
+            operatorSelect.onchange = () => saveRules();
+            valueInput.oninput = () => saveRules();
+            
+            div.appendChild(comboSelect);
+            div.appendChild(statSelect);
+            div.appendChild(operatorSelect);
+            div.appendChild(valueInput);
+            div.appendChild(removeBtn);
+            
+            if (condition && condition.combo) {
+                statSelect.style.display = 'none';
+            }
+            
+            return div;
+        }
+
+        function createRuleGroup(groupIndex, conditions = []) {
+            const div = document.createElement('div');
+            div.className = 'rule-group';
+            div.dataset.groupIndex = groupIndex;
+            
+            const header = document.createElement('div');
+            header.className = 'rule-group-header';
+            
+            const title = document.createElement('div');
+            title.className = 'rule-group-title';
+            title.textContent = `Rule Group ${groupIndex + 1}`;
+            
+            const removeBtn = document.createElement('button');
+            removeBtn.textContent = 'Remove Group';
+            removeBtn.className = 'danger';
+            removeBtn.onclick = () => {
+                div.remove();
+                saveRules();
+                renumberGroups();
+            };
+            
+            header.appendChild(title);
+            header.appendChild(removeBtn);
+            div.appendChild(header);
+            
+            const conditionsDiv = document.createElement('div');
+            conditionsDiv.className = 'conditions';
+            
+            if (conditions.length === 0) {
+                conditionsDiv.appendChild(createConditionElement(groupIndex));
+            } else {
+                conditions.forEach(cond => {
+                    conditionsDiv.appendChild(createConditionElement(groupIndex, cond));
+                });
+            }
+            
+            div.appendChild(conditionsDiv);
+            
+            const addBtn = document.createElement('button');
+            addBtn.textContent = 'Add Condition (AND)';
+            addBtn.className = 'add-condition-btn';
+            addBtn.onclick = () => {
+                conditionsDiv.appendChild(createConditionElement(groupIndex));
+                saveRules();
+            };
+            div.appendChild(addBtn);
+            
+            return div;
+        }
+
+        function renumberGroups() {
+            const groups = document.querySelectorAll('.rule-group');
+            groups.forEach((group, index) => {
+                group.dataset.groupIndex = index;
+                group.querySelector('.rule-group-title').textContent = `Rule Group ${index + 1}`;
+            });
+        }
+
+        function saveRules() {
+            const groups = document.querySelectorAll('.rule-group');
+            currentRules = [];
+            
+            groups.forEach(group => {
+                const conditions = [];
+                const conditionDivs = group.querySelectorAll('.condition');
+                
+                conditionDivs.forEach(condDiv => {
+                    const comboSelect = condDiv.querySelector('.combo-select');
+                    const statSelect = condDiv.querySelector('select:nth-of-type(2)');
+                    const operatorSelect = condDiv.querySelector('select:nth-of-type(3)');
+                    const valueInput = condDiv.querySelector('input');
+                    
+                    const condition = {
+                        operator: operatorSelect.value,
+                        value: parseInt(valueInput.value)
+                    };
+                    
+                    if (comboSelect.value) {
+                        condition.combo = comboSelect.value;
+                    } else {
+                        condition.stat = statSelect.value;
+                    }
+                    
+                    conditions.push(condition);
+                });
+                
+                if (conditions.length > 0) {
+                    currentRules.push(conditions);
+                }
+            });
+            
+            // Re-render heatmap with new rules
+            if (ivDistribution) {
+                renderHeatmap(currentAtkIndex);
+                updateMissedIVsList();
+            }
+        }
+
+        function loadPreset(preset) {
+            const container = document.getElementById('ruleGroups');
+            container.innerHTML = '';
+            
+            if (preset === 'original') {
+                // Original rules
+                currentRules = [
+                    [{stat: 'atk', operator: '=', value: 0}],
+                    [{stat: 'def', operator: '>', value: 13}, {stat: 'hp', operator: '>', value: 11}],
+                    [{stat: 'atk', operator: '<', value: 3}, {stat: 'def', operator: '>', value: 12}, {stat: 'hp', operator: '>', value: 4}],
+                    [{stat: 'atk', operator: '<', value: 3}, {stat: 'def', operator: '>', value: 7}, {stat: 'hp', operator: '>', value: 12}]
+                ];
+            } else if (preset === 'optimized') {
+                // Optimized rules
+                currentRules = [
+                    [{stat: 'atk', operator: '>=', value: 3}, {stat: 'def', operator: '>=', value: 14}, {stat: 'hp', operator: '>=', value: 14}],
+                    [{stat: 'atk', operator: '<=', value: 2}, {stat: 'def', operator: '>=', value: 14}, {stat: 'hp', operator: '>=', value: 11}],
+                    [{stat: 'atk', operator: '=', value: 0}, {combo: 'def+hp', operator: '>=', value: 20}]
+                ];
+            }
+            
+            currentRules.forEach((conditions, index) => {
+                container.appendChild(createRuleGroup(index, conditions));
+                if (index < currentRules.length - 1) {
+                    const sep = document.createElement('div');
+                    sep.className = 'or-separator';
+                    sep.textContent = 'OR';
+                    container.appendChild(sep);
+                }
+            });
+            
+            if (ivDistribution) {
+                renderHeatmap(currentAtkIndex);
+                updateMissedIVsList();
+            }
+        }
+
+        function clearRules() {
+            const container = document.getElementById('ruleGroups');
+            container.innerHTML = '';
+            currentRules = [];
+            
+            if (ivDistribution) {
+                renderHeatmap(currentAtkIndex);
+                updateMissedIVsList();
+            }
+        }
+
         async function analyzeNormalPokemon() {
             const statusEl = document.getElementById('status');
-            const statsEl = document.getElementById('stats');
-            const resultsEl = document.getElementById('results');
             const vizEl = document.getElementById('visualization');
-            const statsContent = document.getElementById('statsContent');
-            const debugContent = document.getElementById('debugContent');
-            const resultsBody = document.getElementById('resultsBody');
+            const ruleBuilder = document.getElementById('ruleBuilder');
             
             statusEl.textContent = '⏳ Opening database...';
             statusEl.classList.remove('error');
@@ -558,7 +871,7 @@
                 const db = await openDatabase();
                 
                 statusEl.textContent = '⏳ Fetching Normal-class Pokemon...';
-                const normalPokemon = await getAllNormalPokemon(db);
+                normalPokemon = await getAllNormalPokemon(db);
                 
                 if (normalPokemon.length === 0) {
                     statusEl.textContent = '⚠️ No Normal-class Pokemon found in database.';
@@ -566,266 +879,65 @@
                 }
                 
                 statusEl.textContent = `⏳ Building evolution map...`;
-                const evolvedPokemon = buildEvolutionMap(normalPokemon);
+                evolvedPokemon = buildEvolutionMap(normalPokemon);
                 
                 statusEl.textContent = `⏳ Building IV distribution...`;
                 const result = buildIVDistribution(normalPokemon, evolvedPokemon);
                 ivDistribution = result.dist;
                 ivDetails = result.details;
                 
-                statusEl.textContent = `⏳ Analyzing ${normalPokemon.length} Normal-class Pokemon...`;
+                statusEl.textContent = `✅ Analysis complete!`;
                 
-                let totalIVs = 0;
-                let ivsWithLowDefOrSta = [];
-                let ivsWithDefAndStaLessThan13 = [];
-                let ivsWithAtkHigherThan2 = [];
-                let maxAtkAmongLowIVs = 0;
-                let ivsWithAtkHigherThanDefAndSta = 0;
-                
-                let greatCount = 0;
-                let ultraCount = 0;
-                let littleCount = 0;
-                let littleFilteredCount = 0;
-                let missingIVsCount = 0;
-                
-                const leagues = ['great', 'ultra', 'little'];
-                
-                for (const pokemon of normalPokemon) {
-                    let hasAnyIV = false;
-                    
-                    for (const league of leagues) {
-                        if (!pokemon[league] || !pokemon[league].iv) {
-                            continue;
-                        }
-                        
-                        hasAnyIV = true;
-                        totalIVs++;
-                        
-                        if (league === 'great') greatCount++;
-                        if (league === 'ultra') ultraCount++;
-                        if (league === 'little') littleCount++;
-                        
-                        const leagueData = pokemon[league];
-                        const atk = leagueData.iv.atk || 0;
-                        const def = leagueData.iv.def || 0;
-                        const sta = leagueData.iv.sta || 0;
-                        
-                        if (def < 10 || sta < 10) {
-                            if (league === 'little') {
-                                if (!isLittleLeagueEligible(pokemon, evolvedPokemon)) {
-                                    littleFilteredCount++;
-                                    continue;
-                                }
-                            }
-                            
-                            ivsWithLowDefOrSta.push({
-                                pokemon: pokemon.name || pokemon.id || 'Unknown',
-                                league: league.charAt(0).toUpperCase() + league.slice(1) + ' League',
-                                atk: atk,
-                                def: def,
-                                sta: sta
-                            });
-                            
-                            if (atk > maxAtkAmongLowIVs) {
-                                maxAtkAmongLowIVs = atk;
-                            }
-                        }
-                        
-                        if (atk > def && atk > sta) {
-                            ivsWithAtkHigherThanDefAndSta++;
-                        }
-                        
-                        if (def < 13 && sta < 13) {
-                            if (league === 'little') {
-                                if (!isLittleLeagueEligible(pokemon, evolvedPokemon)) {
-                                    continue;
-                                }
-                            }
-                            
-                            ivsWithDefAndStaLessThan13.push({
-                                pokemon: pokemon.name || pokemon.id || 'Unknown',
-                                league: league.charAt(0).toUpperCase() + league.slice(1) + ' League',
-                                atk: atk,
-                                def: def,
-                                sta: sta
-                            });
-                        }
-                        
-                        if (atk > 2) {
-                            if (def > 13 && sta > 13) {
-                                continue;
-                            }
-                            
-                            if (league === 'little') {
-                                if (!isLittleLeagueEligible(pokemon, evolvedPokemon)) {
-                                    continue;
-                                }
-                            }
-                            
-                            ivsWithAtkHigherThan2.push({
-                                pokemon: pokemon.name || pokemon.id || 'Unknown',
-                                league: league.charAt(0).toUpperCase() + league.slice(1) + ' League',
-                                atk: atk,
-                                def: def,
-                                sta: sta
-                            });
-                        }
-                    }
-                    
-                    if (!hasAnyIV) {
-                        missingIVsCount++;
-                    }
-                }
-                
-                ivsWithAtkHigherThan2.sort((a, b) => a.atk - b.atk);
-                
-                statsContent.innerHTML = `
-                    <div class="stat-item">
-                        <strong>Total Normal-class Pokemon:</strong> ${normalPokemon.length}
-                    </div>
-                    <div class="stat-item">
-                        <strong>Total IVs analyzed:</strong> ${totalIVs}
-                    </div>
-                    <div class="stat-item">
-                        <strong>IVs with Def or Sta < 10:</strong> ${ivsWithLowDefOrSta.length}
-                    </div>
-                    <div class="stat-item">
-                        <strong>IVs with Def < 13 AND Sta < 13:</strong> ${ivsWithDefAndStaLessThan13.length}
-                    </div>
-                    <div class="stat-item">
-                        <strong>IVs with Atk > 2 (excluding Def > 13 AND Sta > 13):</strong> ${ivsWithAtkHigherThan2.length}
-                    </div>
-                    <div class="stat-item">
-                        <strong>Little League IVs filtered out:</strong> ${littleFilteredCount} (evolved or can't evolve)
-                    </div>
-                    <div class="stat-item">
-                        <strong>Highest Atk among low IVs:</strong> ${maxAtkAmongLowIVs}
-                    </div>
-                    <div class="stat-item">
-                        <strong>IVs where Atk > Def AND Atk > Sta:</strong> ${ivsWithAtkHigherThanDefAndSta}
-                    </div>
-                `;
-                
-                debugContent.innerHTML = `
-                    <div class="debug-item">
-                        <strong>Great League IVs:</strong> ${greatCount} / ${normalPokemon.length} (${((greatCount/normalPokemon.length)*100).toFixed(1)}%)
-                    </div>
-                    <div class="debug-item">
-                        <strong>Ultra League IVs:</strong> ${ultraCount} / ${normalPokemon.length} (${((ultraCount/normalPokemon.length)*100).toFixed(1)}%)
-                    </div>
-                    <div class="debug-item">
-                        <strong>Little League IVs:</strong> ${littleCount} / ${normalPokemon.length} (${((littleCount/normalPokemon.length)*100).toFixed(1)}%)
-                    </div>
-                    <div class="debug-item">
-                        <strong>Pokemon with no IVs:</strong> ${missingIVsCount}
-                    </div>
-                    <div class="debug-item">
-                        <strong>Expected total if all had 3 leagues:</strong> ${normalPokemon.length * 3}
-                    </div>
-                `;
-                
-                statsEl.style.display = 'block';
-                
-                // Show visualization
-                currentAtkIndex = 0;
-                renderHeatmap(currentAtkIndex);
+                // Show rule builder and visualization
+                ruleBuilder.style.display = 'block';
                 vizEl.style.display = 'block';
                 
-                if (ivsWithLowDefOrSta.length > 0) {
-                    resultsBody.innerHTML = '';
-                    
-                    ivsWithLowDefOrSta.forEach(iv => {
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td>${iv.pokemon}</td>
-                            <td>${iv.league}</td>
-                            <td>${iv.atk}</td>
-                            <td style="color: ${iv.def < 10 ? '#cc0000' : '#000'}; font-weight: ${iv.def < 10 ? 'bold' : 'normal'}">${iv.def}</td>
-                            <td style="color: ${iv.sta < 10 ? '#cc0000' : '#000'}; font-weight: ${iv.sta < 10 ? 'bold' : 'normal'}">${iv.sta}</td>
-                            <td>${iv.atk}/${iv.def}/${iv.sta}</td>
-                        `;
-                        resultsBody.appendChild(row);
-                    });
-                    
-                    resultsEl.style.display = 'block';
-                } else {
-                    resultsEl.style.display = 'none';
-                }
+                // Load optimized preset by default
+                loadPreset('optimized');
                 
-                const resultsEl2 = document.getElementById('results2');
-                const resultsBody2 = document.getElementById('resultsBody2');
-
-                if (ivsWithDefAndStaLessThan13.length > 0) {
-                    resultsBody2.innerHTML = '';
-                    
-                    ivsWithDefAndStaLessThan13.forEach(iv => {
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td>${iv.pokemon}</td>
-                            <td>${iv.league}</td>
-                            <td>${iv.atk}</td>
-                            <td style="color: ${iv.def < 13 ? '#cc0000' : '#000'}; font-weight: ${iv.def < 13 ? 'bold' : 'normal'}">${iv.def}</td>
-                            <td style="color: ${iv.sta < 13 ? '#cc0000' : '#000'}; font-weight: ${iv.sta < 13 ? 'bold' : 'normal'}">${iv.sta}</td>
-                            <td>${iv.atk}/${iv.def}/${iv.sta}</td>
-                        `;
-                        resultsBody2.appendChild(row);
-                    });
-                    
-                    resultsEl2.style.display = 'block';
-                } else {
-                    resultsEl2.style.display = 'none';
-                }
-
-                const resultsEl3 = document.getElementById('results3');
-                const resultsBody3 = document.getElementById('resultsBody3');
-
-                if (ivsWithAtkHigherThan2.length > 0) {
-                    resultsBody3.innerHTML = '';
-                    
-                    ivsWithAtkHigherThan2.forEach(iv => {
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td>${iv.pokemon}</td>
-                            <td>${iv.league}</td>
-                            <td style="color: #2196f3; font-weight: bold">${iv.atk}</td>
-                            <td>${iv.def}</td>
-                        <td>${iv.sta}</td>
-                        <td>${iv.atk}/${iv.def}/${iv.sta}</td>
-                    `;
-                    resultsBody3.appendChild(row);
-                });
+                currentAtkIndex = 0;
+                renderHeatmap(currentAtkIndex);
+                updateMissedIVsList();
                 
-                resultsEl3.style.display = 'block';
-            } else {
-                resultsEl3.style.display = 'none';
+            } catch (error) {
+                statusEl.textContent = `❌ Error: ${error.message}`;
+                statusEl.classList.add('error');
+                console.error('Analysis error:', error);
             }
-            
-            statusEl.textContent = `✅ Analysis complete! Found ${ivsWithLowDefOrSta.length} IVs with Def or Sta < 10.`;
-            
-        } catch (error) {
-            statusEl.textContent = `❌ Error: ${error.message}`;
-            statusEl.classList.add('error');
-            console.error('Analysis error:', error);
         }
-    }
 
-    document.addEventListener('DOMContentLoaded', function() {
-        document.getElementById('analyzeBtn').addEventListener('click', analyzeNormalPokemon);
-        
-        document.getElementById('prevAtk').addEventListener('click', () => {
-            if (currentAtkIndex > 0) {
-                currentAtkIndex--;
-                renderHeatmap(currentAtkIndex);
-            }
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('analyzeBtn').addEventListener('click', analyzeNormalPokemon);
+            
+            document.getElementById('prevAtk').addEventListener('click', () => {
+                if (currentAtkIndex > 0) {
+                    currentAtkIndex--;
+                    renderHeatmap(currentAtkIndex);
+                }
+            });
+            
+            document.getElementById('nextAtk').addEventListener('click', () => {
+                if (currentAtkIndex < 15) {
+                    currentAtkIndex++;
+                    renderHeatmap(currentAtkIndex);
+                }
+            });
+            
+            document.getElementById('addRuleGroup').addEventListener('click', () => {
+                const container = document.getElementById('ruleGroups');
+                const groupIndex = document.querySelectorAll('.rule-group').length;
+                
+                if (groupIndex > 0) {
+                    const sep = document.createElement('div');
+                    sep.className = 'or-separator';
+                    sep.textContent = 'OR';
+                    container.appendChild(sep);
+                }
+                
+                container.appendChild(createRuleGroup(groupIndex));
+                saveRules();
+            });
         });
-        
-        document.getElementById('nextAtk').addEventListener('click', () => {
-            if (currentAtkIndex < 15) {
-                currentAtkIndex++;
-                renderHeatmap(currentAtkIndex);
-            }
-        });
-    });
-</script>
+    </script>
 </body>
 </html>

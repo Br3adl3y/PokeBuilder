@@ -478,31 +478,157 @@
             async initialize(db) {
                 this.db = db;
                 
-                const metadata = await this.getMetadata('lastUpdated');
-                
-                if (!metadata) {
-                    console.log('First load detected - running full scrape...');
+                try {
+                    const metadata = await this.getMetadata('lastUpdated');
+                    
+                    // Check if we got a valid result
+                    if (metadata && metadata.value) {
+                        console.log('Database found, last updated:', metadata.value);
+                        console.log('Checking for updates...');
+                        await this.checkForUpdates();
+                    } else {
+                        console.log('No lastUpdated found - running full scrape');
+                        await this.fullScrape();
+                    }
+                } catch (error) {
+                    console.log('Error checking metadata, running full scrape:', error);
                     await this.fullScrape();
-                } else {
-                    console.log('Checking for updates...');
-                    await this.checkForUpdates();
                 }
                 
                 await this.loadRankingsFromJSON();
+            }
+
+            async parseGameMaster(gameMaster, updateStatus = null, updateProgress = null) {
+                const pokemon = [];
+                const moves = [];
+                const cups = [];
+                const processedPokemon = new Set();
+                
+                const { pvpMoves, pveMoves } = this.buildMoveMaps(gameMaster);
+                
+                if (updateStatus) updateStatus('Parsing GBL schedule...');
+                const scheduleData = this.parseVSSeekerSchedule(gameMaster);
+                
+                if (updateStatus) updateStatus('Parsing cup templates...');
+                const parsedCups = this.parseCups(gameMaster);
+                cups.push(...parsedCups);
+                
+                if (updateStatus) updateStatus('Parsing Pokemon...');
+                for (const item of gameMaster) {
+                    if (!item.templateId?.startsWith('V') || !item.data?.pokemonSettings) continue;
+                    if (processedPokemon.has(item.templateId)) continue;
+                    
+                    try {
+                        const parsed = this.parsePokemon(item, pvpMoves, pveMoves, gameMaster);
+                        if (parsed && this.shouldIncludePokemon(parsed, pokemon)) {
+                            pokemon.push(parsed);
+                            processedPokemon.add(item.templateId);
+                        }
+                    } catch (error) {
+                        console.warn(`${item.templateId}: ${error.message}`);
+                    }
+                }
+                
+                pokemon.sort((a, b) => a.dexNumber - b.dexNumber);
+                
+                if (updateStatus) updateStatus('Calculating PvP IVs...');
+                for (let i = 0; i < pokemon.length; i++) {
+                    const p = pokemon[i];
+                    
+                    if (i % 10 === 0) {
+                        if (updateProgress) updateProgress(i, pokemon.length, `PvP IVs: ${i}/${pokemon.length}`);
+                        await new Promise(resolve => setTimeout(resolve, 0));
+                    }
+                    
+                    const littleWild = this.calculatePvPIVsForLeague(p.stats.attack, p.stats.defense, p.stats.hp, 500, 0);
+                    const littleHatch = this.calculatePvPIVsForLeague(p.stats.attack, p.stats.defense, p.stats.hp, 500, 10);
+                    const greatWild = this.calculatePvPIVsForLeague(p.stats.attack, p.stats.defense, p.stats.hp, 1500, 0);
+                    const greatHatch = this.calculatePvPIVsForLeague(p.stats.attack, p.stats.defense, p.stats.hp, 1500, 10);
+                    const ultraWild = this.calculatePvPIVsForLeague(p.stats.attack, p.stats.defense, p.stats.hp, 2500, 0);
+                    const ultraHatch = this.calculatePvPIVsForLeague(p.stats.attack, p.stats.defense, p.stats.hp, 2500, 10);
+
+                    p.little = { iv: littleWild.iv, maxSP: littleWild.maxSP, minSP: littleWild.minSP, level: littleWild.level, cp: littleWild.cp, ivHatch: littleHatch.iv, maxSPHatch: littleHatch.maxSP, minSPHatch: littleHatch.minSP, needsXL: littleWild.level > 40 };
+                    p.great = { iv: greatWild.iv, maxSP: greatWild.maxSP, minSP: greatWild.minSP, level: greatWild.level, cp: greatWild.cp, ivHatch: greatHatch.iv, maxSPHatch: greatHatch.maxSP, minSPHatch: greatHatch.minSP, needsXL: greatWild.level > 40 };
+                    p.ultra = { iv: ultraWild.iv, maxSP: ultraWild.maxSP, minSP: ultraWild.minSP, level: ultraWild.level, cp: ultraWild.cp, ivHatch: ultraHatch.iv, maxSPHatch: ultraHatch.maxSP, minSPHatch: ultraHatch.minSP, needsXL: ultraWild.level > 40 };
+                    p.master = { iv: { atk: 15, def: 15, sta: 15 }, maxSP: Math.floor(((p.stats.attack + 15) * this.cpm[99]) * ((p.stats.defense + 15) * this.cpm[99]) * Math.max(10, Math.floor((p.stats.hp + 15) * this.cpm[99]))), minSP: Math.floor(((p.stats.attack + 15) * this.cpm[99]) * ((p.stats.defense + 15) * this.cpm[99]) * Math.max(10, Math.floor((p.stats.hp + 15) * this.cpm[99]))), level: 50, cp: this.calculateMaxCP(p.stats.attack, p.stats.defense, p.stats.hp), needsXL: true };
+                }
+                
+                if (updateProgress) updateProgress(pokemon.length, pokemon.length, `PvP IVs: Complete`);
+                
+                if (updateStatus) updateStatus('Calculating PvE TDO scores...');
+                await this.calculatePvETDO(pokemon, pvpMoves, pveMoves, updateProgress);
+                
+                pvpMoves.forEach((move, id) => {
+                    moves.push({ ...move, id: `pvp-${move.category}-${id}`, mode: 'pvp' });
+                });
+                pveMoves.forEach((move, id) => {
+                    moves.push({ ...move, id: `pve-${move.category}-${id}`, mode: 'pve' });
+                });
+                
+                return { pokemon, moves: moves.sort((a, b) => a.name.localeCompare(b.name)), cups, scheduleData };
             }
 
             /**
              * Full scrape - only runs on first load
              */
             async fullScrape() {
+                const overlay = document.createElement('div');
+                overlay.innerHTML = `
+                    <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #2dd4bf 0%, #14b8a6 50%, #10b981 100%); z-index: 9999;">
+                        <div style="max-width: 500px; margin: 0 auto; padding: 32px; height: 100%; display: flex; flex-direction: column; justify-content: center;">
+                            <h1 style="color: white; text-align: center; font-size: 28px; font-weight: 300; letter-spacing: 0.1em; margin-bottom: 32px;">LOADING DATA</h1>
+                            
+                            <div style="background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border-radius: 16px; padding: 24px; margin-bottom: 16px;">
+                                <div id="scrape-status" style="color: white; font-size: 16px; font-weight: 300; text-align: center;">
+                                    Fetching Game Master...
+                                </div>
+                            </div>
+                            
+                            <div style="background: rgba(255, 255, 255, 0.2); border-radius: 9999px; height: 12px; overflow: hidden; margin-bottom: 16px;">
+                                <div id="scrape-progress-bar" style="width: 0%; height: 100%; background: rgba(255, 255, 255, 0.5); transition: width 0.3s ease; font-size: 10px; color: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center; white-space: nowrap;">
+                            </div>
+                            
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+                                <div style="background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border-radius: 16px; padding: 20px; text-align: center;">
+                                    <div id="scrape-pokemon-count" style="font-size: 36px; font-weight: bold; color: white;">0</div>
+                                    <div style="color: rgba(255, 255, 255, 0.8); margin-top: 8px; font-size: 12px; letter-spacing: 0.05em;">POKÉMON</div>
+                                </div>
+                                <div style="background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border-radius: 16px; padding: 20px; text-align: center;">
+                                    <div id="scrape-fast-count" style="font-size: 36px; font-weight: bold; color: white;">0</div>
+                                    <div style="color: rgba(255, 255, 255, 0.8); margin-top: 8px; font-size: 12px; letter-spacing: 0.05em;">FAST</div>
+                                </div>
+                                <div style="background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border-radius: 16px; padding: 20px; text-align: center;">
+                                    <div id="scrape-charge-count" style="font-size: 36px; font-weight: bold; color: white;">0</div>
+                                    <div style="color: rgba(255, 255, 255, 0.8); margin-top: 8px; font-size: 12px; letter-spacing: 0.05em;">CHARGE</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(overlay);
+                
+                const updateScrapeStatus = (message) => {
+                    document.getElementById('scrape-status').innerHTML = message;
+                };
+                
+                const updateScrapeProgress = (current, total) => {
+                    const percent = Math.round((current / total) * 100);
+                    document.getElementById('scrape-progress-bar').style.width = percent + '%';
+                    document.getElementById('scrape-progress-bar').textContent = `${percent}% (${current}/${total})`;
+                };
+                
                 try {
-                    this.showToast('Downloading game data...', 'info');
-                    
+                    updateScrapeStatus('Fetching Game Master from GitHub...');
                     const gameMaster = await this.fetchGameMasterWithRetry();
-                    const { pokemon, moves, cups, scheduleData } = await this.parseGameMaster(gameMaster);
                     
-                    this.showToast('Calculating IVs and stats...', 'info');
+                    updateScrapeStatus(`Loaded ${gameMaster.length.toLocaleString()} templates. Parsing...`);
+                    const { pokemon, moves, cups, scheduleData } = await this.parseGameMaster(gameMaster, updateScrapeStatus, updateScrapeProgress);
+
+                    document.getElementById('scrape-pokemon-count').textContent = pokemon.length;
+                    document.getElementById('scrape-fast-count').textContent = moves.filter(m => m.category === 'fast' && m.mode === 'pvp').length;
+                    document.getElementById('scrape-charge-count').textContent = moves.filter(m => m.category === 'charge' && m.mode === 'pvp').length;
                     
+                    updateScrapeStatus('Saving to IndexedDB...');
                     await this.saveToDatabase('pokemon', pokemon);
                     await this.saveToDatabase('moves', moves);
                     await this.saveToDatabase('cups', cups);
@@ -524,14 +650,32 @@
                         }
                     ]);
                     
-                    await this.scrapeLeekDuck();
+                    updateScrapeStatus('Fetching Team Rocket lineups from LeekDuck...');
+                    const rocketData = await this.scrapeRocketLineups();
+                    await this.saveToDatabase('metadata', [
+                        { key: 'rocketTeams', value: rocketData.teams },
+                        { key: 'rocketCatch', value: rocketData.catchable },
+                        { key: 'rocketLastUpdated', value: new Date().toISOString() }
+                    ]);
+                    
+                    updateScrapeStatus('Fetching Raid Boss lineups from LeekDuck...');
+                    const raidData = await this.scrapeRaidBosses();
+                    await this.saveToDatabase('metadata', [
+                        { key: 'raidCatch', value: raidData },
+                        { key: 'raidLastUpdated', value: new Date().toISOString() }
+                    ]);
+                    
+                    updateScrapeStatus('Calculating type effectiveness...');
                     await this.calculateTypeEffectiveness();
                     
-                    this.showToast(`✅ ${pokemon.length} Pokemon loaded!`, 'success');
+                    updateScrapeStatus('Scraping complete! Data saved to IndexedDB.');
+                    
+                    setTimeout(() => overlay.remove(), 2000);
                     
                 } catch (error) {
+                    overlay.remove();
                     console.error('Full scrape failed:', error);
-                    this.showToast('❌ Failed to load game data', 'error');
+                    alert('Failed to load game data: ' + error.message);
                 }
             }
 
@@ -539,58 +683,160 @@
              * Check for updates - compares Game Master with existing database
              */
             async checkForUpdates() {
+                const overlay = document.createElement('div');
+                overlay.innerHTML = `
+                    <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #2dd4bf 0%, #14b8a6 50%, #10b981 100%); z-index: 9999;">
+                        <div style="max-width: 500px; margin: 0 auto; padding: 32px; height: 100%; display: flex; flex-direction: column; justify-content: center;">
+                            <h1 style="color: white; text-align: center; font-size: 28px; font-weight: 300; letter-spacing: 0.1em; margin-bottom: 32px;">CHECKING UPDATES</h1>
+                            
+                            <div style="background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border-radius: 16px; padding: 24px; margin-bottom: 16px;">
+                                <div id="update-status" style="color: white; font-size: 14px; font-weight: 300; text-align: center;">
+                                    Checking for new data...
+                                </div>
+                            </div>
+                            
+                            <div style="background: rgba(255, 255, 255, 0.2); border-radius: 9999px; height: 12px; overflow: hidden;">
+                                <div id="update-progress-bar" style="width: 0%; height: 100%; background: rgba(255, 255, 255, 0.5); transition: width 0.3s ease; font-size: 10px; color: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center; white-space: nowrap;"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(overlay);
+                
+                const updateStatus = (message) => {
+                    const el = document.getElementById('update-status');
+                    if (el) el.innerHTML = message;
+                };
+                
+                const updateProgress = (percent) => {
+                    const bar = document.getElementById('update-progress-bar');
+                    if (bar) {
+                        bar.style.width = percent + '%';
+                        bar.textContent = percent + '%';
+                    }
+                };
+                
                 try {
-                    this.showToast('Checking for updates...', 'info');
-                    
+                    updateProgress(10);
+                    updateStatus('Fetching Game Master from GitHub...');
                     const gameMaster = await this.fetchGameMasterWithRetry();
+                    
+                    updateProgress(30);
+                    updateStatus('Loading existing database...');
                     const existingPokemon = await this.loadFromDatabase('pokemon');
                     const existingMoves = await this.loadFromDatabase('moves');
                     
-                    const { pokemon: newPokemon, moves: newMoves } = await this.parseGameMaster(gameMaster);
+                    updateProgress(50);
+                    updateStatus('Parsing new data...');
+                    const { pvpMoves, pveMoves } = this.buildMoveMaps(gameMaster);
                     
-                    const newPokemonList = newPokemon.filter(p => 
+                    const newPokemonData = [];
+                    const processedPokemon = new Set();
+                    
+                    for (const item of gameMaster) {
+                        if (!item.templateId?.startsWith('V') || !item.data?.pokemonSettings) continue;
+                        if (processedPokemon.has(item.templateId)) continue;
+                        
+                        try {
+                            const parsed = this.parsePokemon(item, pvpMoves, pveMoves, gameMaster);
+                            if (parsed && this.shouldIncludePokemon(parsed, newPokemonData)) {
+                                newPokemonData.push(parsed);
+                                processedPokemon.add(item.templateId);
+                            }
+                        } catch (error) {
+                            console.warn(`${item.templateId}: ${error.message}`);
+                        }
+                    }
+                    
+                    updateProgress(70);
+                    updateStatus('Comparing with existing data...');
+                    
+                    const newPokemon = newPokemonData.filter(p => 
                         !existingPokemon.some(ep => ep.id === p.id)
                     );
                     
-                    const newMovesList = newMoves.filter(m =>
-                        !existingMoves.some(em => em.id === m.id)
-                    );
+                    const pokemonWithNewMoves = newPokemonData.filter(p => {
+                        const existing = existingPokemon.find(ep => ep.id === p.id);
+                        if (!existing) return false;
+                        
+                        const oldFast = (existing.moves.fast || []).sort().join(',');
+                        const oldFastElite = (existing.moves.fastElite || []).sort().join(',');
+                        const oldCharge = (existing.moves.charge || []).sort().join(',');
+                        const oldChargeElite = (existing.moves.chargeElite || []).sort().join(',');
+                        
+                        const newFast = (p.moves.fast || []).sort().join(',');
+                        const newFastElite = (p.moves.fastElite || []).sort().join(',');
+                        const newCharge = (p.moves.charge || []).sort().join(',');
+                        const newChargeElite = (p.moves.chargeElite || []).sort().join(',');
+                        
+                        return oldFast !== newFast || 
+                            oldFastElite !== newFastElite || 
+                            oldCharge !== newCharge || 
+                            oldChargeElite !== newChargeElite;
+                    });
                     
-                    if (newPokemonList.length === 0 && newMovesList.length === 0) {
-                        this.showToast('✅ Game data is up to date', 'success');
+                    const pokemonToCalculate = [...newPokemon, ...pokemonWithNewMoves];
+                    
+                    const newMoves = [];
+                    pvpMoves.forEach((move, id) => {
+                        const moveObj = { ...move, id: `pvp-${move.category}-${id}`, mode: 'pvp' };
+                        if (!existingMoves.some(em => em.id === moveObj.id)) {
+                            newMoves.push(moveObj);
+                        }
+                    });
+                    pveMoves.forEach((move, id) => {
+                        const moveObj = { ...move, id: `pve-${move.category}-${id}`, mode: 'pve' };
+                        if (!existingMoves.some(em => em.id === moveObj.id)) {
+                            newMoves.push(moveObj);
+                        }
+                    });
+                    
+                    if (pokemonToCalculate.length === 0 && newMoves.length === 0) {
+                        updateProgress(100);
+                        updateStatus('Database is up to date!');
                         await this.scrapeLeekDuck();
+                        setTimeout(() => overlay.remove(), 1500);
                         return;
                     }
                     
-                    if (newPokemonList.length > 0) {
-                        await this.saveToDatabase('pokemon', newPokemonList);
-                        console.log(`Added ${newPokemonList.length} new Pokemon:`, newPokemonList.map(p => p.name));
-                    }
+                    updateProgress(80);
+                    updateStatus(`Calculating stats for ${pokemonToCalculate.length} pokemon...`);
                     
-                    if (newMovesList.length > 0) {
-                        await this.saveToDatabase('moves', newMovesList);
-                        console.log(`Added ${newMovesList.length} new moves:`, newMovesList.map(m => m.name));
+                    await this.calculatePvPIVs(pokemonToCalculate);
+                    await this.calculatePvETDO(pokemonToCalculate, pvpMoves, pveMoves);
+                    
+                    updateProgress(90);
+                    updateStatus('Saving to database...');
+                    
+                    await this.saveToDatabase('pokemon', pokemonToCalculate);
+                    if (newMoves.length > 0) {
+                        await this.saveToDatabase('moves', newMoves);
                     }
                     
                     await this.saveToDatabase('metadata', [{
                         key: 'lastUpdated',
                         value: new Date().toISOString(),
                         gameMasterVersion: gameMaster[0]?.templateId || 'unknown',
-                        pokemonCount: existingPokemon.length + newPokemonList.length,
-                        newPokemonAdded: newPokemonList.length,
-                        newMovesAdded: newMovesList.length
+                        pokemonCount: existingPokemon.length + newPokemon.length,
+                        newPokemonAdded: newPokemon.length,
+                        pokemonUpdated: pokemonWithNewMoves.length,
+                        newMovesAdded: newMoves.length
                     }]);
                     
                     await this.scrapeLeekDuck();
                     
-                    this.showToast(`✅ ${newPokemonList.length} new Pokemon, ${newMovesList.length} new moves!`, 'success');
+                    updateProgress(100);
+                    updateStatus(`✅ ${newPokemon.length} new, ${pokemonWithNewMoves.length} updated, ${newMoves.length} new moves!`);
+                    
+                    setTimeout(() => overlay.remove(), 2000);
                     
                 } catch (error) {
+                    overlay.remove();
                     console.error('Update check failed:', error);
-                    this.showToast('⚠️ Could not check for updates', 'warning');
+                    alert('Update check failed: ' + error.message);
                 }
             }
-
+            
             /**
              * Fetch Game Master with retry logic
              */
@@ -649,55 +895,70 @@
              */
             async loadRankingsFromJSON() {
                 try {
-                    const rankingFiles = await this.discoverRankingFiles();
-                    
-                    if (rankingFiles.length === 0) {
-                        console.log('No ranking files found');
+                    const response = await fetch('list.json');
+                    if (!response.ok) {
+                        console.log('No list.json found');
                         return;
                     }
                     
-                    rankingFiles.sort((a, b) => b.date.localeCompare(a.date));
+                    const files = await response.json();
                     
-                    const allRankings = new Map();
+                    if (files.length === 0) {
+                        console.log('No ranking files in list');
+                        return;
+                    }
                     
-                    for (const file of rankingFiles) {
+                    // Sort by date (newest first)
+                    files.sort((a, b) => b.localeCompare(a));
+                    
+                    const allRankings = [];
+                    const seenLeagues = new Set();
+                    
+                    for (const filename of files) {
                         try {
-                            const response = await fetch(file.url);
-                            if (!response.ok) continue;
+                            const fileResponse = await fetch(filename);
+                            if (!fileResponse.ok) continue;
                             
-                            const data = await response.json();
+                            const data = await fileResponse.json();
                             
-                            if (Array.isArray(data.rankings)) {
-                                data.rankings.forEach(ranking => {
-                                    const key = `${ranking.league}_${ranking.cupName || 'standard'}`;
+                            // Your structure has "leagues" array at top level
+                            if (Array.isArray(data.leagues)) {
+                                data.leagues.forEach(league => {
+                                    const key = league.league; // Use league ID as key
                                     
-                                    if (!allRankings.has(key)) {
-                                        allRankings.set(key, {
-                                            ...ranking,
-                                            sourceFile: file.name,
-                                            sourceDate: file.date
+                                    // Only add if not already present (newer files come first)
+                                    if (!seenLeagues.has(key)) {
+                                        seenLeagues.add(key);
+                                        
+                                        // Store with proper ID for IndexedDB
+                                        allRankings.push({
+                                            id: key,
+                                            league: key,
+                                            cupName: league.cupTitle,
+                                            cpLimit: league.cpLimit,
+                                            calculatedAt: league.calculatedAt,
+                                            rankings: league.rankings,
+                                            sourceFile: filename,
+                                            sourceDate: data.exportDate
                                         });
                                     }
                                 });
                             }
                             
                         } catch (error) {
-                            console.warn(`Failed to load ${file.name}:`, error);
+                            console.warn(`Failed to load ${filename}:`, error);
                         }
                     }
                     
-                    const rankingsArray = Array.from(allRankings.values());
-                    if (rankingsArray.length > 0) {
-                        await this.saveToDatabase('rankings', rankingsArray);
-                        console.log(`Loaded ${rankingsArray.length} league rankings from ${rankingFiles.length} files`);
+                    if (allRankings.length > 0) {
+                        await this.saveToDatabase('rankings', allRankings);
+                        console.log(`Loaded ${allRankings.length} league rankings from ${files.length} files`);
                     }
                     
                 } catch (error) {
                     console.warn('Could not load rankings:', error);
                 }
-            }
-
-            async discoverRankingFiles() {
+            }            async discoverRankingFiles() {
                 try {
                     const response = await fetch('list.json');
                     if (response.ok) {
@@ -715,55 +976,6 @@
                     console.log('No rankings list found');
                 }
                 return [];
-            }
-
-            /**
-             * Parse Game Master
-             */
-            async parseGameMaster(gameMaster) {
-                const pokemon = [];
-                const moves = [];
-                const cups = [];
-                const processedPokemon = new Set();
-                
-                const { pvpMoves, pveMoves } = this.buildMoveMaps(gameMaster);
-                const scheduleData = this.parseVSSeekerSchedule(gameMaster);
-                const parsedCups = this.parseCups(gameMaster);
-                cups.push(...parsedCups);
-                
-                for (const item of gameMaster) {
-                    if (!item.templateId?.startsWith('V') || !item.data?.pokemonSettings) continue;
-                    if (processedPokemon.has(item.templateId)) continue;
-                    
-                    try {
-                        const parsed = this.parsePokemon(item, pvpMoves, pveMoves, gameMaster);
-                        if (parsed && this.shouldIncludePokemon(parsed, pokemon)) {
-                            pokemon.push(parsed);
-                            processedPokemon.add(item.templateId);
-                        }
-                    } catch (error) {
-                        console.warn(`${item.templateId}: ${error.message}`);
-                    }
-                }
-                
-                pokemon.sort((a, b) => a.dexNumber - b.dexNumber);
-                
-                await this.calculatePvPIVs(pokemon);
-                await this.calculatePvETDO(pokemon, pvpMoves, pveMoves);
-                
-                pvpMoves.forEach((move, id) => {
-                    moves.push({ ...move, id: `pvp-${move.category}-${id}`, mode: 'pvp' });
-                });
-                pveMoves.forEach((move, id) => {
-                    moves.push({ ...move, id: `pve-${move.category}-${id}`, mode: 'pve' });
-                });
-                
-                return {
-                    pokemon,
-                    moves: moves.sort((a, b) => a.name.localeCompare(b.name)),
-                    cups,
-                    scheduleData
-                };
             }
 
             // ====================================
@@ -1125,7 +1337,15 @@
             if (rawSuffix.includes('GALARIAN ZEN') || rawSuffix.includes('GALARIAN_ZEN')) return 'Galarian Zen';
             if (rawSuffix.includes('GALAR')) return 'Galarian';
             if (rawSuffix.includes('HISUI')) return 'Hisuian';
-            if (rawSuffix.includes('PALDEA')) return 'Paldean';
+            
+            // FIX: Keep the full Paldean form name
+            if (rawSuffix.includes('PALDEA')) {
+                if (rawSuffix.includes('COMBAT')) return 'Paldean Combat';
+                if (rawSuffix.includes('BLAZE')) return 'Paldean Blaze';
+                if (rawSuffix.includes('AQUA')) return 'Paldean Aqua';
+                return 'Paldean';
+            }
+            
             if (rawSuffix.includes('ORIGIN')) return 'Origin';
             if (rawSuffix.includes('ZEN')) return 'Zen';
             if (rawSuffix.includes('MEGA')) return 'Mega';
@@ -1144,8 +1364,12 @@
             }
             if (nameUpper === 'MR' && name === 'Mr') {
                 name = 'Mr. Mime';
-                if (form === 'Rime') { name = 'Mr. Rime'; form = ''; }
+                if (form.toUpperCase().includes('RIME')) {  // Change from form === 'Rime' to includes('RIME')
+                    name = 'Mr. Rime'; 
+                    form = form.replace(/rime/gi, '').trim() || '';  // Remove 'Rime' from form, keep rest
+                }
                 else if (form.toUpperCase().includes('GALARIAN')) form = 'Galarian';
+                else if (form.toUpperCase() === 'NORMAL') form = 'Normal';
                 else form = '';
             } else if (nameUpper === 'HO') {
                 name = 'Ho-Oh';
@@ -1314,10 +1538,279 @@
             return worstRanks[0];
         }
 
-        async calculatePvETDO(pokemon, pvpMoves, pveMoves) {
-            // PvE TDO calculation is complex and slow
-            // Skipping for now to get app working - will add in separate PR
-            console.log('PvE TDO calculation skipped for performance');
+        async calculatePvETDO(pokemon, pvpMoves, pveMoves, updateProgress = null) {
+            const TYPES = ['NORMAL', 'FIRE', 'WATER', 'GRASS', 'ELECTRIC', 'ICE', 'FIGHTING', 'POISON', 'GROUND', 'FLYING', 'PSYCHIC', 'BUG', 'ROCK', 'GHOST', 'DRAGON', 'DARK', 'STEEL', 'FAIRY'];
+            const dualTypes = [];
+            for (let i = 0; i < TYPES.length; i++) {
+                for (let j = i + 1; j < TYPES.length; j++) {
+                    dualTypes.push(`${TYPES[i]}/${TYPES[j]}`);
+                }
+            }
+            const allDefenderTypes = [...TYPES, ...dualTypes];
+            
+            for (let i = 0; i < pokemon.length; i++) {
+                const p = pokemon[i];
+                
+                if (i % 20 === 0) {
+                    if (updateProgress) {
+                        updateProgress(i, pokemon.length, `PvE TDO: ${i}/${pokemon.length}`);
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 0));
+                }
+                
+                p.raidTDO = {};
+                p.rocketTDO = {};
+                p.spamTDO = [];
+                
+                if (p.shadowInfo) {
+                    p.shadowRaidTDO = {};
+                    p.shadowRocketTDO = {};
+                    p.shadowSpamTDO = [];
+                }
+                
+                const pveFastMoves = p.moves.fast.map(name => 
+                    Array.from(pveMoves.values()).find(m => m.name === name && m.category === 'fast')
+                ).filter(m => m);
+                
+                const pveChargeMoves = [...p.moves.charge, ...p.moves.chargeElite].map(name =>
+                    Array.from(pveMoves.values()).find(m => m.name === name && m.category === 'charge')
+                ).filter(m => m);
+                
+                const pvpFastMoves = p.moves.fast.map(name => 
+                    Array.from(pvpMoves.values()).find(m => m.name === name && m.category === 'fast')
+                ).filter(m => m);
+                
+                const pvpChargeMoves = [...p.moves.charge, ...p.moves.chargeElite].map(name =>
+                    Array.from(pvpMoves.values()).find(m => m.name === name && m.category === 'charge')
+                ).filter(m => m);
+                
+                this.calculateTDOForVariant(p, pveFastMoves, pveChargeMoves, pvpFastMoves, pvpChargeMoves, allDefenderTypes, false);
+                
+                if (p.shadowInfo) {
+                    this.calculateTDOForVariant(p, pveFastMoves, pveChargeMoves, pvpFastMoves, pvpChargeMoves, allDefenderTypes, true);
+                }
+            }
+            
+            if (updateProgress) {
+                updateProgress(pokemon.length, pokemon.length, `PvE TDO: Complete`);
+            }
+        }
+
+        calculateTDOForVariant(p, pveFastMoves, pveChargeMoves, pvpFastMoves, pvpChargeMoves, allDefenderTypes, isShadow) {
+            const raidKey = isShadow ? 'shadowRaidTDO' : 'raidTDO';
+            const rocketKey = isShadow ? 'shadowRocketTDO' : 'rocketTDO';
+            const spamKey = isShadow ? 'shadowSpamTDO' : 'spamTDO';
+            
+            for (const defenderType of allDefenderTypes) {
+                p[raidKey][defenderType] = {
+                    L40: this.calculateBestTDOForLevel(p, pveFastMoves, pveChargeMoves, defenderType, { atk: 15, def: 0, sta: 15 }, 40, true, isShadow, true),
+                    L50: this.calculateBestTDOForLevel(p, pveFastMoves, pveChargeMoves, defenderType, { atk: 15, def: 0, sta: 15 }, 50, true, isShadow, true)
+                };
+            }
+            
+            for (const defenderType of allDefenderTypes) {
+                p[rocketKey][defenderType] = {
+                    L40: this.calculateBestTDOForLevel(p, pvpFastMoves, pvpChargeMoves, defenderType, { atk: 15, def: 15, sta: 15 }, 40, false, isShadow, false),
+                    L50: this.calculateBestTDOForLevel(p, pvpFastMoves, pvpChargeMoves, defenderType, { atk: 15, def: 15, sta: 15 }, 50, false, isShadow, false)
+                };
+            }
+            
+            const spammyMovesets = [];
+            for (const fast of pvpFastMoves) {
+                for (const charge of pvpChargeMoves) {
+                    const spamScore = (1 / (charge.energy / fast.ept)) * 100;
+                    if (spamScore > 11) {
+                        const movesetTypes = [fast.type, charge.type].sort().join('/');
+                        
+                        const existingIndex = spammyMovesets.findIndex(ms => 
+                            [ms.fast.type, ms.charge.type].sort().join('/') === movesetTypes
+                        );
+                        
+                        if (existingIndex === -1) {
+                            spammyMovesets.push({
+                                fast: fast,
+                                charge: charge,
+                                spamScore: spamScore,
+                                typeSignature: movesetTypes
+                            });
+                        } else {
+                            if (spamScore > spammyMovesets[existingIndex].spamScore) {
+                                spammyMovesets[existingIndex] = {
+                                    fast: fast,
+                                    charge: charge,
+                                    spamScore: spamScore,
+                                    typeSignature: movesetTypes
+                                };
+                            }
+                        }
+                    }
+                }
+            }
+            
+            for (const spamMoveset of spammyMovesets) {
+                const tdoByType = {};
+                
+                for (const defenderType of allDefenderTypes) {
+                    const resultL40 = this.simulateRaidBattle(p, spamMoveset.fast, spamMoveset.charge, defenderType, { atk: 15, def: 15, sta: 15 }, 40, false, isShadow, false);
+                    const resultL50 = this.simulateRaidBattle(p, spamMoveset.fast, spamMoveset.charge, defenderType, { atk: 15, def: 15, sta: 15 }, 50, false, isShadow, false);
+                    
+                    tdoByType[defenderType] = {
+                        L40: { tdo: resultL40.tdo, moveset: { fast: spamMoveset.fast.rawId, charge: spamMoveset.charge.rawId } },
+                        L50: { tdo: resultL50.tdo, moveset: { fast: spamMoveset.fast.rawId, charge: spamMoveset.charge.rawId } }
+                    };
+                }
+                
+                p[spamKey].push({
+                    moveset: { fast: spamMoveset.fast.rawId, charge: spamMoveset.charge.rawId },
+                    spamScore: spamMoveset.spamScore,
+                    typeSignature: spamMoveset.typeSignature,
+                    tdoByType: tdoByType
+                });
+            }
+        }
+
+        calculateBestTDOForLevel(pokemon, fastMoves, chargeMoves, defenderType, ivs, level, dummyAttacks, isShadow, isRaid) {
+            let bestResult = { tdo: 0, dps: 0, timeTaken: 0, moveset: null };
+            
+            for (const fast of fastMoves) {
+                for (const charge of chargeMoves) {
+                    const result = this.simulateRaidBattle(pokemon, fast, charge, defenderType, ivs, level, dummyAttacks, isShadow, isRaid);
+                    
+                    if (result.tdo > bestResult.tdo) {
+                        bestResult = {
+                            tdo: result.tdo,
+                            dps: result.dps,
+                            timeTaken: result.timeTaken,
+                            moveset: { fast: fast.rawId, charge: charge.rawId }
+                        };
+                    }
+                }
+            }
+            
+            if (!isRaid) {
+                return { tdo: bestResult.tdo, moveset: bestResult.moveset };
+            }
+            
+            return bestResult;
+        }
+
+        simulateRaidBattle(pokemon, fastMove, chargeMove, defenderType, ivs, level, dummyAttacks, isShadow, isRaid) {
+            const shadowAtkMultiplier = isShadow ? 1.2 : 1.0;
+            const shadowDefMultiplier = isShadow ? 0.833 : 1.0;
+            
+            const levelIndex = Math.round((level - 1) * 2);
+            const pokemonCPM = this.cpm[levelIndex];
+            
+            const attackerAtk = (pokemon.stats.attack + ivs.atk) * pokemonCPM * shadowAtkMultiplier;
+            const attackerDef = (pokemon.stats.defense + ivs.def) * pokemonCPM * shadowDefMultiplier;
+            const attackerHP = Math.floor((pokemon.stats.hp + ivs.sta) * pokemonCPM);
+            
+            const defenderAtk = 100 * 1;
+            const defenderDef = 100 * 1;
+            
+            let attackerCurrentHP = attackerHP;
+            let attackerEnergy = 0;
+            let timeElapsed = 0;
+            let totalDamage = 0;
+            let defenderEnergy = 0;
+            
+            const isShedinja = pokemon.dexNumber === 292;
+            const maxDuration = (isRaid && !isShedinja) ? Infinity : 100000;
+            
+            while (timeElapsed < maxDuration && attackerCurrentHP > 0) {
+                const fastDamage = this.calculatePvEDamage(
+                    attackerAtk, 
+                    defenderDef, 
+                    fastMove.power, 
+                    fastMove.type, 
+                    defenderType, 
+                    pokemon.types
+                );
+                
+                totalDamage += fastDamage;
+                
+                attackerEnergy += fastMove.energy;
+                
+                if (dummyAttacks) {
+                    defenderEnergy += Math.floor(fastDamage / 2);
+                }
+                
+                timeElapsed += fastMove.durationMs || 1000;
+                
+                if (attackerEnergy >= chargeMove.energy) {
+                    attackerEnergy -= chargeMove.energy;
+                    
+                    const chargeDamage = this.calculatePvEDamage(
+                        attackerAtk, 
+                        defenderDef, 
+                        chargeMove.power, 
+                        chargeMove.type, 
+                        defenderType, 
+                        pokemon.types
+                    );
+                    
+                    totalDamage += chargeDamage;
+                    
+                    if (dummyAttacks) {
+                        defenderEnergy += Math.floor(chargeDamage / 2);
+                    }
+                }
+                
+                if (dummyAttacks && defenderEnergy >= 50) {
+                    defenderEnergy -= 50;
+                    
+                    const defenseDamage = Math.floor(0.5 * 50 * (defenderAtk / attackerDef)) + 1;
+                    attackerCurrentHP -= defenseDamage;
+                    
+                    attackerEnergy += Math.floor(defenseDamage / 2);
+                    attackerEnergy = Math.min(100, attackerEnergy);
+                }
+                
+                if (dummyAttacks && timeElapsed % 1000 === 0) {
+                    const defenseFastDamage = 3;
+                    attackerCurrentHP -= defenseFastDamage;
+                    
+                    attackerEnergy += Math.floor(defenseFastDamage / 2);
+                    attackerEnergy = Math.min(100, attackerEnergy);
+                    
+                    defenderEnergy += 3;
+                }
+                
+                attackerEnergy = Math.min(100, attackerEnergy);
+            }
+            
+            const timeInSeconds = timeElapsed / 1000;
+            const dps = timeInSeconds > 0 ? totalDamage / timeInSeconds : 0;
+            
+            return {
+                tdo: totalDamage,
+                dps: dps,
+                timeTaken: timeInSeconds
+            };
+        }
+
+        calculatePvEDamage(attackStat, defenseStat, movePower, moveType, defenderType, attackerTypes) {
+            const effectiveness = this.getTypeEffectivenessForTDO(moveType, defenderType);
+            const stab = attackerTypes.includes(moveType) ? 1.2 : 1.0;
+            
+            const damage = Math.floor(0.5 * movePower * (attackStat / defenseStat) * effectiveness * stab) + 1;
+            return damage;
+        }
+
+        getTypeEffectivenessForTDO(attackType, defenderType) {
+            if (defenderType.includes('/')) {
+                const [type1, type2] = defenderType.split('/');
+                const idx1 = this.TYPES.indexOf(type1);
+                const idx2 = this.TYPES.indexOf(type2);
+                if (idx1 === -1 || idx2 === -1) return 1;
+                const eff1 = this.BASE_CHART[attackType]?.[idx1] || 1;
+                const eff2 = this.BASE_CHART[attackType]?.[idx2] || 1;
+                return eff1 * eff2;
+            } else {
+                const idx = this.TYPES.indexOf(defenderType);
+                if (idx === -1) return 1;
+                return this.BASE_CHART[attackType]?.[idx] || 1;
+            }
         }
 
         async scrapeRocketLineups() {
@@ -1601,6 +2094,32 @@
         // ====================================
 
         async saveToDatabase(storeName, data) {
+            // If store doesn't exist, we need to create it by upgrading the DB
+            if (!this.db.objectStoreNames.contains(storeName)) {
+                console.log(`Creating missing store: ${storeName}`);
+                
+                // Close current connection
+                this.db.close();
+                
+                // Reopen with incremented version to trigger upgrade
+                const currentVersion = this.db.version;
+                const newDb = await new Promise((resolve, reject) => {
+                    const request = indexedDB.open('PokemonGoDB', currentVersion + 1);
+                    
+                    request.onupgradeneeded = (event) => {
+                        const db = event.target.result;
+                        if (!db.objectStoreNames.contains(storeName)) {
+                            db.createObjectStore(storeName, { keyPath: 'id' });
+                        }
+                    };
+                    
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+                
+                this.db = newDb;
+            }
+            
             const transaction = this.db.transaction([storeName], 'readwrite');
             const store = transaction.objectStore(storeName);
             
