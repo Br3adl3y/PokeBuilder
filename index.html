@@ -479,6 +479,7 @@
                 this.db = db;
                 
                 try {
+                    console.log('AutoUpdateManager: Checking metadata...');
                     const metadata = await this.getMetadata('lastUpdated');
                     
                     // Check if we got a valid result
@@ -491,11 +492,21 @@
                         await this.fullScrape();
                     }
                 } catch (error) {
-                    console.log('Error checking metadata, running full scrape:', error);
-                    await this.fullScrape();
+                    console.error('Error in initialize:', error);
+                    console.log('Running full scrape as fallback...');
+                    try {
+                        await this.fullScrape();
+                    } catch (scrapeError) {
+                        console.error('Full scrape also failed:', scrapeError);
+                        throw new Error('Failed to initialize database: ' + scrapeError.message);
+                    }
                 }
                 
-                await this.loadRankingsFromJSON();
+                try {
+                    await this.loadRankingsFromJSON();
+                } catch (rankingError) {
+                    console.warn('Rankings load failed (non-critical):', rankingError);
+                }
             }
 
             async parseGameMaster(gameMaster, updateStatus = null, updateProgress = null) {
@@ -2180,14 +2191,48 @@
 
         // Initialize app after all scripts are loaded
         document.addEventListener('DOMContentLoaded', async () => {
-            const db = await initializeDatabase();
-            
-            // Run auto-update
-            const autoUpdate = new AutoUpdateManager();
-            await autoUpdate.initialize(db);
-            
-            // Then start the app
-            new PokeApp();
+            try {
+                console.log('Starting app initialization...');
+                
+                // Check if all required scripts are loaded
+                if (typeof initializeDatabase === 'undefined') {
+                    throw new Error('initializeDatabase not found - check script loading order');
+                }
+                
+                if (typeof PokeApp === 'undefined') {
+                    throw new Error('PokeApp not found - check script loading order');
+                }
+                
+                const db = await initializeDatabase();
+                console.log('Database initialized:', db);
+                
+                // Run auto-update
+                const autoUpdate = new AutoUpdateManager();
+                await autoUpdate.initialize(db);
+                console.log('Auto-update complete');
+                
+                // Then start the app
+                new PokeApp();
+                console.log('App started');
+                
+            } catch (error) {
+                console.error('App initialization failed:', error);
+                
+                // Show error to user
+                document.body.innerHTML = `
+                    <div style="padding: 20px; text-align: center; font-family: sans-serif;">
+                        <h1 style="color: #e53e3e;">App Failed to Load</h1>
+                        <p style="color: #718096; margin: 20px 0;">${error.message}</p>
+                        <button onclick="location.reload()" style="background: #3182ce; color: white; padding: 10px 20px; border: none; border-radius: 8px; font-size: 16px;">
+                            Retry
+                        </button>
+                        <details style="margin-top: 20px; text-align: left;">
+                            <summary style="cursor: pointer; color: #4a5568;">Technical Details</summary>
+                            <pre style="background: #f7fafc; padding: 10px; border-radius: 4px; overflow-x: auto; font-size: 12px;">${error.stack}</pre>
+                        </details>
+                    </div>
+                `;
+            }
         });
     </script>
 </body>
