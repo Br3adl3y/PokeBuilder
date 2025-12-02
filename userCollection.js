@@ -362,15 +362,19 @@ class UserCollectionManager {
     }
 
     renderPokemonCard(pokemon) {
-    // Get the Showdown sprite ID (handles forms correctly)
-    const spriteId = pokemon.spriteThumb ? null : getShowdownSpriteId(pokemon);
-    
-    const spriteUrl = pokemon.spriteThumb ? 
-        URL.createObjectURL(pokemon.spriteThumb) :
-        `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/${spriteId}.gif`;
-    
-    const fallbackSpriteUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon.dexNumber || 0}.png`;
-    
+        // Get the Showdown sprite ID (handles forms correctly)
+        const spriteId = getShowdownSpriteId(pokemon);
+        
+        let spriteUrl;
+        if (pokemon.spriteThumb) {
+            // Create object URL from blob if it exists
+            spriteUrl = URL.createObjectURL(pokemon.spriteThumb);
+        } else {
+            // Fallback to Showdown sprite
+            spriteUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/${spriteId}.gif`;
+        }
+        
+        const fallbackSpriteUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon.dexNumber || 0}.png`;
         
         const favoriteIcon = pokemon.isFavorite ? 
             '<i class="fa-solid fa-star text-yellow-400 text-xl absolute top-2 right-2"></i>' : '';
@@ -398,6 +402,7 @@ class UserCollectionManager {
                     <img 
                         src="${spriteUrl}" 
                         alt="${pokemon.name}" 
+                        onerror="this.src='${fallbackSpriteUrl}'"
                         class="w-full h-auto mx-auto"
                         style="max-width: 96px;"
                     >
@@ -485,8 +490,6 @@ class UserCollectionManager {
                 window.scrollTo(0, this.scrollPosition);
             }, 0);
         }
-    }
-
-    
+    }    
 }
 

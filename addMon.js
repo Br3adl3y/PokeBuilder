@@ -43,36 +43,47 @@ class ScreenshotProcessor {
 
     // Process batch images one by one
     async processBatch() {
-        if (this.currentBatchIndex >= this.batchImages.length) {
-            this.batchImages = [];
-            this.currentBatchIndex = 0;
-            this.showBatchCompleteModal();
-            return;
-        }
-
-        const file = this.batchImages[this.currentBatchIndex];
-        
-        // Initialize on first image
-        if (this.currentBatchIndex === 0) {
-            this.showProcessingModal('Initializing OCR...');
-            await this.ocr.initTesseract();
-        }
-        
-        this.showProcessingModal(`Processing ${this.currentBatchIndex + 1} of ${this.batchImages.length}...`);
-
-        try {
-            const imageData = await this.loadImage(file);
-            const extractedData = await this.ocr.processScreenshot(imageData, this.app.pokemon);
-            
-            this.hideProcessingModal();
-            this.showConfirmationModal(extractedData, imageData, true);
-        } catch (error) {
-            console.error('Error processing screenshot:', error);
-            this.hideProcessingModal();
-            
-            this.showSkipImageModal(error.message);
-        }
+    if (this.currentBatchIndex >= this.batchImages.length) {
+        this.batchImages = [];
+        this.currentBatchIndex = 0;
+        this.showBatchCompleteModal();
+        return;
     }
+
+    const file = this.batchImages[this.currentBatchIndex];
+    
+    // Initialize on first image
+    if (this.currentBatchIndex === 0) {
+        this.showProcessingModal('Initializing OCR...');
+        await this.ocr.initTesseract();
+    }
+    
+    this.showProcessingModal(`Processing ${this.currentBatchIndex + 1} of ${this.batchImages.length}...`);
+
+    try {
+        console.log('📸 Loading image...');
+        const imageData = await this.loadImage(file);
+        console.log('✓ Image loaded');
+        
+        console.log('🔍 Processing screenshot...');
+        const extractedData = await this.ocr.processScreenshot(imageData, this.app.pokemon);
+        console.log('✓ OCR complete:', extractedData);
+        
+        console.log('🎨 Hiding processing modal...');
+        this.hideProcessingModal();
+        console.log('✓ Modal hidden');
+        
+        console.log('📋 Showing confirmation modal...');
+        this.showConfirmationModal(extractedData, imageData, true);
+        console.log('✓ Confirmation modal shown');
+    } catch (error) {
+        console.error('❌ Error processing screenshot:', error);
+        console.error('Stack:', error.stack);
+        this.hideProcessingModal();
+        
+        this.showSkipImageModal(error.message);
+    }
+}
 
     setupNameAutocomplete(modal) {
         const nameInput = modal.querySelector('[data-field="name"]');
@@ -197,6 +208,7 @@ class ScreenshotProcessor {
         
         // Get values
         const name = modal.querySelector('[data-field="name"]').value.trim();
+        const form = modal.querySelector('[data-field="form"]').value;
         const cp = modal.querySelector('[data-field="cp"]').value;
         const ivAtk = modal.querySelector('[data-field="ivAttack"]').value;
         const ivDef = modal.querySelector('[data-field="ivDefense"]').value;
@@ -213,6 +225,14 @@ class ScreenshotProcessor {
             );
             if (!pokemon) {
                 errors.push({ field: 'name', message: 'Pokémon not found in database' });
+            }
+        }
+        
+        // Validate form - only if there are multiple options AND it's blank
+        if (!form || form === '') {
+            const formSelect = modal.querySelector('[data-field="form"]');
+            if (formSelect.options.length > 1) {  // More than just "Normal"
+                errors.push({ field: 'form', message: 'Please select a form' });
             }
         }
         
@@ -260,13 +280,12 @@ class ScreenshotProcessor {
         } else {
             const caughtDate = new Date(dateCaught);
             const today = new Date();
-            today.setHours(23, 59, 59, 999); // End of today
+            today.setHours(23, 59, 59, 999);
             
             if (caughtDate > today) {
                 errors.push({ field: 'dateCaught', message: 'Date cannot be in the future' });
             }
             
-            // Pokemon GO launched July 6, 2016
             const pogoLaunch = new Date('2016-07-06');
             if (caughtDate < pogoLaunch) {
                 errors.push({ field: 'dateCaught', message: 'Date cannot be before Pokémon GO launched (July 6, 2016)' });
@@ -473,28 +492,27 @@ class ScreenshotProcessor {
         const charge1Select = modal.querySelector('[data-field="currentChargeMove1"]');
         const charge2Select = modal.querySelector('[data-field="currentChargeMove2"]');
         
-        // Populate fast moves
-        fastSelect.innerHTML = '<option value="" class="bg-teal-600">None</option>';
+        // Populate fast moves - no placeholder
+        fastSelect.innerHTML = '';
         if (pokemon.moves && pokemon.moves.fast) {
-            pokemon.moves.fast.forEach(moveId => {
-                const move = this.app.moves.find(m => m.id === `pvp-fast-${moveId}` || m.rawId === moveId);
+            pokemon.moves.fast.forEach(moveName => {
+                const move = this.app.moves.find(m => m.name === moveName);
                 if (move) {
-                    fastSelect.innerHTML += `<option value="${moveId}" class="bg-teal-600">${move.name}</option>`;
+                    fastSelect.innerHTML += `<option value="${move.rawId}" class="bg-teal-600">${move.name}</option>`;
                 }
             });
         }
         
-        // Populate charged moves
-        charge1Select.innerHTML = '<option value="" class="bg-teal-600">None</option>';
-        charge2Select.innerHTML = '<option value="" class="bg-teal-600">None</option>';
+        // Populate charged moves - no placeholder
+        charge1Select.innerHTML = '';
+        charge2Select.innerHTML = '';
         
         if (pokemon.moves && pokemon.moves.charge) {
-            pokemon.moves.charge.forEach(moveId => {
-                const move = this.app.moves.find(m => m.id === `pvp-charge-${moveId}` || m.rawId === moveId);
+            pokemon.moves.charge.forEach(moveName => {
+                const move = this.app.moves.find(m => m.name === moveName);
                 if (move) {
-                    const option = `<option value="${moveId}" class="bg-teal-600">${move.name}</option>`;
-                    charge1Select.innerHTML += option;
-                    charge2Select.innerHTML += option;
+                    charge1Select.innerHTML += `<option value="${move.rawId}" class="bg-teal-600">${move.name}</option>`;
+                    charge2Select.innerHTML += `<option value="${move.rawId}" class="bg-teal-600">${move.name}</option>`;
                 }
             });
         }
@@ -541,8 +559,62 @@ class ScreenshotProcessor {
         return closestLevel;
     }
 
+    async createSpriteThumb(imageData) {
+        try {
+            // Crop to the sprite area (adjust these coordinates based on your screenshot layout)
+            const cropArea = {
+                x: imageData.width * 0.15,  
+                y: imageData.height * 0.09, 
+                width: imageData.width * 0.7,  
+                height: imageData.height * 0.285
+            };
+            
+            // TEMPORARY: Draw a red rectangle on the original image to see the crop area
+            const debugCanvas = document.createElement('canvas');
+            debugCanvas.width = imageData.width;
+            debugCanvas.height = imageData.height;
+            const debugCtx = debugCanvas.getContext('2d');
+            debugCtx.drawImage(imageData.image, 0, 0);
+            debugCtx.strokeStyle = 'red';
+            debugCtx.lineWidth = 5;
+            debugCtx.strokeRect(cropArea.x, cropArea.y, cropArea.width, cropArea.height);
+            
+            // Show it in the confirmation modal (add this to see what's being cropped)
+            const debugImg = document.createElement('img');
+            debugImg.src = debugCanvas.toDataURL();
+            debugImg.style.cssText = 'position:fixed;top:10px;right:10px;width:200px;border:3px solid red;z-index:9999;';
+            document.body.appendChild(debugImg);
+            
+            // Create a new canvas for the cropped image
+            const cropCanvas = document.createElement('canvas');
+            cropCanvas.width = cropArea.width;
+            cropCanvas.height = cropArea.height;
+            const cropCtx = cropCanvas.getContext('2d');
+            
+            // Draw the cropped portion
+            cropCtx.drawImage(
+                imageData.image,
+                cropArea.x, cropArea.y, cropArea.width, cropArea.height,
+                0, 0, cropArea.width, cropArea.height
+            );
+            
+            // Convert to blob
+            return new Promise((resolve) => {
+                cropCanvas.toBlob((blob) => {
+                    resolve(blob);
+                }, 'image/png');
+            });
+        } catch (error) {
+            console.error('Error creating sprite thumbnail:', error);
+            return null;
+        }
+    }
+
     // Show processing modal
     showProcessingModal(message = 'Processing Screenshot...') {
+        // Remove any existing processing modals first
+        document.querySelectorAll('[data-modal="processing"]').forEach(m => m.remove());
+        
         const modalHtml = `
             <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" data-modal="processing">
                 <div class="bg-white rounded-2xl p-8 text-center">
@@ -566,35 +638,42 @@ class ScreenshotProcessor {
         
         // Determine initial shadow state based on OCR detection
         const initialShadowState = data.shadow ? 'shadow' : 'normal';
-        
+
+        // Generate annotated preview
+        const preview = this.createAnnotatedPreview(imageData, data);
+
         const modalHtml = `
-            <div class="fixed inset-0 bg-black bg-opacity-50 z-50 overflow-y-auto py-8" data-modal="confirmation">
-                <div class="flex items-start justify-center min-h-full p-4">
-                    <div class="bg-gradient-to-br from-teal-400 to-teal-500 rounded-2xl max-w-4xl w-full p-6 space-y-4 shadow-2xl">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <h2 class="text-2xl font-bold text-white">Review Pokémon Data</h2>
-                                <p class="text-teal-50">Please verify and complete the information</p>
-                            </div>
-                            ${isBatch ? `
-                                <div class="text-sm text-white bg-white bg-opacity-20 px-3 py-1 rounded-full backdrop-blur-sm">
-                                    ${this.currentBatchIndex + 1} / ${this.batchImages.length}
-                                </div>
-                            ` : ''}
+        <div class="fixed inset-0 bg-black bg-opacity-50 z-50 overflow-y-auto py-8" data-modal="confirmation">
+            <div class="flex items-start justify-center min-h-full p-4">
+                <div class="bg-gradient-to-br from-teal-400 to-teal-500 rounded-2xl max-w-4xl w-full p-6 space-y-4 shadow-2xl">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h2 class="text-2xl font-bold text-white">Verify Pokémon Data</h2>
                         </div>
-                        
-                        <div class="grid md:grid-cols-2 gap-6">
-                            <!-- Screenshot Preview Column -->
-                            <div>
-                                <img src="${imageData.dataUrl}" alt="Screenshot" class="w-full rounded-lg shadow-lg">
+                        ${isBatch ? `
+                            <div class="text-sm text-white bg-white bg-opacity-20 px-3 py-1 rounded-full backdrop-blur-sm">
+                                ${this.currentBatchIndex + 1} / ${this.batchImages.length}
                             </div>
-                            
-                            <!-- Form Fields Column -->
-                            <div class="space-y-3">
+                        ` : ''}
+                    </div>
+                    
+                    <div class="grid md:grid-cols-2 gap-6">
+                    <!-- Screenshot Preview Column with Detection Overlay -->
+                    <div class="relative">
+                        <img 
+                            src="${data.annotatedScreenshot || imageData.dataUrl}" 
+                            alt="Screenshot with detections" 
+                            class="w-full rounded-lg shadow-lg"
+                        >
+                    </div>
+                        
+                        <!-- Form Fields Column -->
+                        <div class="space-y-3">
+                            <label class="block text-m font-medium text-white mb-2">Auto-Detected</label>
                                 <!-- Name, Form, Nickname in one row -->
                                 <div class="grid grid-cols-3 gap-2">
                                     <div>
-                                        <label class="block text-xs font-medium text-white mb-1">Pokémon Name</label>
+                                        <label class="block text-xs font-medium text-white mb-1">Name</label>
                                         <input 
                                             type="text" 
                                             value="${data.name}" 
@@ -637,7 +716,7 @@ class ScreenshotProcessor {
                                         />
                                     </div>
                                     <div>
-                                        <label class="block text-xs font-medium text-white mb-1">Level (auto)</label>
+                                        <label class="block text-xs font-medium text-white mb-1">Calculated Level</label>
                                         <input 
                                             type="number" 
                                             step="0.5" 
@@ -657,59 +736,55 @@ class ScreenshotProcessor {
                                             class="w-full px-2 py-2 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
                                         />
                                     </div>
-                                </div>
-                                
-                                <!-- IVs -->
-                                <div class="border-t border-white border-opacity-20 pt-3">
-                                    <label class="block text-xs font-medium text-white mb-2">Individual Values (IVs)</label>
-                                    <div class="grid grid-cols-3 gap-2">
-                                        <div>
-                                            <label class="block text-xs font-medium text-teal-100 mb-1">ATK</label>
-                                            <input 
-                                                type="number" 
-                                                inputmode="numeric"
-                                                min="0" 
-                                                max="15" 
-                                                value="${data.ivAttack}" 
-                                                data-field="ivAttack"
-                                                data-iv-field="attack"
-                                                class="w-full px-2 py-2 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-lg text-white text-center text-sm placeholder-teal-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
-                                                placeholder="0-15"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label class="block text-xs font-medium text-teal-100 mb-1">DEF</label>
-                                            <input 
-                                                type="number" 
-                                                inputmode="numeric"
-                                                min="0" 
-                                                max="15" 
-                                                value="${data.ivDefense}" 
-                                                data-field="ivDefense"
-                                                data-iv-field="defense"
-                                                class="w-full px-2 py-2 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-lg text-white text-center text-sm placeholder-teal-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
-                                                placeholder="0-15"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label class="block text-xs font-medium text-teal-100 mb-1">STA</label>
-                                            <input 
-                                                type="number" 
-                                                inputmode="numeric"
-                                                min="0" 
-                                                max="15" 
-                                                value="${data.ivStamina}" 
-                                                data-field="ivStamina"
-                                                data-iv-field="stamina"
-                                                class="w-full px-2 py-2 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-lg text-white text-center text-sm placeholder-teal-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
-                                                placeholder="0-15"
-                                            />
-                                        </div>
+
+                                    <!-- IVs -->
+                                    <div>
+                                        <label class="block text-xs font-medium text-white mb-1">Attack</label>
+                                        <input 
+                                            type="number" 
+                                            inputmode="numeric"
+                                            min="0" 
+                                            max="15" 
+                                            value="${data.ivAttack}" 
+                                            data-field="ivAttack"
+                                            data-iv-field="attack"
+                                            class="w-full px-2 py-2 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-lg text-white text-center text-sm placeholder-teal-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+                                            placeholder="0-15"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-white mb-1">Defense</label>
+                                        <input 
+                                            type="number" 
+                                            inputmode="numeric"
+                                            min="0" 
+                                            max="15" 
+                                            value="${data.ivDefense}" 
+                                            data-field="ivDefense"
+                                            data-iv-field="defense"
+                                            class="w-full px-2 py-2 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-lg text-white text-center text-sm placeholder-teal-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+                                            placeholder="0-15"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-white mb-1">HP</label>
+                                        <input 
+                                            type="number" 
+                                            inputmode="numeric"
+                                            min="0" 
+                                            max="15" 
+                                            value="${data.ivStamina}" 
+                                            data-field="ivStamina"
+                                            data-iv-field="stamina"
+                                            class="w-full px-2 py-2 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-lg text-white text-center text-sm placeholder-teal-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+                                            placeholder="0-15"
+                                        />
                                     </div>
                                 </div>
 
                                 <!-- Current Moves - 2 Column Layout -->
                                 <div class="border-t border-white border-opacity-20 pt-3">
+                                    <label class="block text-m font-medium text-white mb-2">Please Input</label>
                                     <label class="block text-xs font-medium text-white mb-2">Current Moves</label>
                                     <div class="grid grid-cols-2 gap-3">
                                         <div>
@@ -718,26 +793,23 @@ class ScreenshotProcessor {
                                                 data-field="currentFastMove"
                                                 class="w-full px-2 py-2 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
                                             >
-                                                <option value="" class="bg-teal-600">None</option>
                                             </select>
                                         </div>
                                         <div class="space-y-2">
                                             <div>
-                                                <label class="block text-xs font-medium text-teal-100 mb-1">Charged Move 1</label>
+                                                <label class="block text-xs font-medium text-teal-100 mb-1">Charge 1</label>
                                                 <select 
                                                     data-field="currentChargeMove1"
                                                     class="w-full px-2 py-2 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
                                                 >
-                                                    <option value="" class="bg-teal-600">None</option>
                                                 </select>
                                             </div>
-                                            <div>
-                                                <label class="block text-xs font-medium text-teal-100 mb-1">Charged Move 2</label>
+                                            <div data-charge2-container style="display: none;">
+                                                <label class="block text-xs font-medium text-teal-100 mb-1">Charge 2</label>
                                                 <select 
                                                     data-field="currentChargeMove2"
                                                     class="w-full px-2 py-2 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
                                                 >
-                                                    <option value="" class="bg-teal-600">None</option>
                                                 </select>
                                             </div>
                                         </div>
@@ -745,9 +817,7 @@ class ScreenshotProcessor {
                                 </div>
                                 
                                 <!-- Toggle Switches -->
-                                <div class="bg-white bg-opacity-10 backdrop-blur-sm rounded-lg p-4 space-y-3 border border-white border-opacity-20">
-                                    <h3 class="font-semibold text-white text-sm mb-3">Properties</h3>
-                                    
+                                <div class="bg-white bg-opacity-0 backdrop-blur-sm rounded-lg p-4 space-y-3 border border-white border-opacity-0">                                  
                                     ${this.renderToggle('2nd Charge Move Unlocked', 'secondChargeUnlocked', data.secondChargeUnlocked)}
                                     ${this.renderToggle('Shiny', 'shiny', data.shiny)}
                                     <div class="flex justify-between items-center">
@@ -780,7 +850,7 @@ class ScreenshotProcessor {
                                     ${this.renderToggle('XXL', 'xxl', data.xxl)}
                                     ${this.renderToggle('XXS', 'xxs', data.xxs)}
                                     
-                                    <div class="flex justify-between items-center pt-2 border-t border-white border-opacity-20">
+                                    <div class="flex justify-between items-center pt-2 border-t border-white border-opacity-0">
                                         <label class="text-sm text-white">Background</label>
                                         <input 
                                             type="text" 
@@ -839,7 +909,7 @@ class ScreenshotProcessor {
     renderToggle(label, fieldName, isActive) {
         return `
             <div class="flex justify-between items-center">
-                <label class="text-sm text-gray-700">${label}</label>
+                <label class="text-sm text-white">${label}</label>
                 <div class="ios-toggle ${isActive ? 'active' : ''}" data-toggle="${fieldName}">
                     <input type="checkbox" ${isActive ? 'checked' : ''} class="hidden" data-field="${fieldName}">
                 </div>
@@ -878,6 +948,106 @@ class ScreenshotProcessor {
         if (data.ivStamina === '' || data.ivStaminaConfidence < 0.7) fields.push('Stamina IV');
         fields.push('Form (always verify)');
         return fields;
+    }
+
+    // Add this method anywhere in the ScreenshotProcessor class
+    createAnnotatedPreview(imageData, extractedData) {
+        const canvas = document.createElement('canvas');
+        canvas.width = imageData.width;
+        canvas.height = imageData.height;
+        const ctx = canvas.getContext('2d');
+        
+        // Draw original image
+        ctx.drawImage(imageData.image, 0, 0);
+        
+        // Define detection regions - ADJUST THESE to match your actual OCR regions
+        const regions = [
+            { 
+                name: 'sprite',
+                label: 'Sprite',
+                x: 0.35, y: 0.15, w: 0.3, h: 0.25, 
+                success: true, // Sprite is always attempted
+                value: 'Crop Area'
+            },
+            { 
+                name: 'name', 
+                label: 'Name',
+                x: 0.1, y: 0.35, w: 0.8, h: 0.08, 
+                success: !!extractedData.name,
+                value: extractedData.name || 'FAILED'
+            },
+            { 
+                name: 'cp', 
+                label: 'CP',
+                x: 0.35, y: 0.08, w: 0.3, h: 0.06, 
+                success: !!extractedData.cp,
+                value: extractedData.cp || 'FAILED'
+            },
+            { 
+                name: 'ivAttack', 
+                label: 'ATK IV',
+                x: 0.15, y: 0.75, w: 0.2, h: 0.05, 
+                success: extractedData.ivAttack !== '',
+                value: extractedData.ivAttack !== '' ? extractedData.ivAttack : 'FAILED'
+            },
+            { 
+                name: 'ivDefense', 
+                label: 'DEF IV',
+                x: 0.4, y: 0.75, w: 0.2, h: 0.05, 
+                success: extractedData.ivDefense !== '',
+                value: extractedData.ivDefense !== '' ? extractedData.ivDefense : 'FAILED'
+            },
+            { 
+                name: 'ivStamina', 
+                label: 'STA IV',
+                x: 0.65, y: 0.75, w: 0.2, h: 0.05, 
+                success: extractedData.ivStamina !== '',
+                value: extractedData.ivStamina !== '' ? extractedData.ivStamina : 'FAILED'
+            },
+            { 
+                name: 'dateCaught', 
+                label: 'Date',
+                x: 0.2, y: 0.85, w: 0.6, h: 0.05, 
+                success: !!extractedData.dateCaught,
+                value: extractedData.dateCaught || 'FAILED'
+            }
+        ];
+        
+        // Draw rectangles and labels for each region
+        regions.forEach(region => {
+            const x = imageData.width * region.x;
+            const y = imageData.height * region.y;
+            const w = imageData.width * region.w;
+            const h = imageData.height * region.h;
+            
+            // Set color based on success
+            const color = region.success ? '#10b981' : '#ef4444';
+            
+            // Draw border
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            ctx.strokeRect(x, y, w, h);
+            
+            // Draw semi-transparent fill
+            ctx.fillStyle = region.success ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)';
+            ctx.fillRect(x, y, w, h);
+            
+            // Draw label background
+            ctx.fillStyle = color;
+            const labelPadding = 4;
+            ctx.font = 'bold 14px sans-serif';
+            const labelWidth = ctx.measureText(region.label).width + labelPadding * 2;
+            ctx.fillRect(x, y - 22, labelWidth, 20);
+            
+            // Draw label text
+            ctx.fillStyle = 'white';
+            ctx.fillText(region.label, x + labelPadding, y - 6);
+        });
+        
+        return {
+            annotatedDataUrl: canvas.toDataURL(),
+            regions: regions
+        };
     }
 
     attachConfirmationListeners(initialData, imageData, isBatch) {
@@ -922,6 +1092,17 @@ class ScreenshotProcessor {
                 const checkbox = toggle.querySelector('input[type="checkbox"]');
                 checkbox.checked = !checkbox.checked;
                 toggle.classList.toggle('active');
+                
+                // Handle 2nd charge move unlock - show/hide entire container
+                if (toggle.dataset.toggle === 'secondChargeUnlocked') {
+                    const charge2Container = modal.querySelector('[data-charge2-container]');
+                    if (checkbox.checked) {
+                        charge2Container.style.display = 'block';
+                    } else {
+                        charge2Container.style.display = 'none';
+                        modal.querySelector('[data-field="currentChargeMove2"]').selectedIndex = 0;
+                    }
+                }
             });
         });
 
@@ -1069,18 +1250,6 @@ class ScreenshotProcessor {
             this.updateCalculatedLevel(modal);
         });
 
-        // Auto-check 2nd Charge Unlocked when charge move 2 is selected
-        const charge2Select = modal.querySelector('[data-field="currentChargeMove2"]');
-        charge2Select.addEventListener('change', (e) => {
-            const toggle = modal.querySelector('[data-toggle="secondChargeUnlocked"]');
-            const checkbox = toggle.querySelector('input[type="checkbox"]');
-            
-            if (e.target.value && e.target.value !== '') {
-                checkbox.checked = true;
-                toggle.classList.add('active');
-            }
-        });
-
         // Auto-calculate level on field changes
         const fieldsToWatch = ['cp', 'ivAttack', 'ivDefense', 'ivStamina'];
         fieldsToWatch.forEach(fieldName => {
@@ -1105,11 +1274,23 @@ class ScreenshotProcessor {
             const formData = this.gatherFormData(modal, imageData, initialData);
             
             modal.remove();
-            await this.savePokemon(formData);
             
-            if (isBatch) {
-                this.currentBatchIndex++;
-                this.processBatch();
+            // Show processing modal while saving
+            this.showProcessingModal('Saving Pokémon...');
+            
+            try {
+                await this.savePokemon(formData);
+                this.hideProcessingModal();
+                console.log('✓ Save complete');
+                
+                if (isBatch) {
+                    this.currentBatchIndex++;
+                    this.processBatch();
+                }
+            } catch (error) {
+                this.hideProcessingModal();
+                console.error('Save failed:', error);
+                this.showErrorModal('Failed to save Pokémon: ' + error.message);
             }
         });
     }
@@ -1315,6 +1496,30 @@ class ScreenshotProcessor {
         try {
             const id = `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
             
+            // Create sprite thumbnail from screenshot
+            let spriteBlob = null;
+            if (formData.screenshot) {
+                try {
+                    // Need to convert data URL back to image for cropping
+                    const img = new Image();
+                    await new Promise((resolve, reject) => {
+                        img.onload = resolve;
+                        img.onerror = reject;
+                        img.src = formData.screenshot;
+                    });
+                    
+                    spriteBlob = await this.createSpriteThumb({
+                        image: img,
+                        width: img.width,
+                        height: img.height
+                    });
+                    console.log('✓ Sprite thumbnail created');
+                } catch (error) {
+                    console.error('Warning: Could not create sprite thumbnail:', error);
+                    // Continue without sprite thumbnail
+                }
+            }
+            
             const pokemonEntry = {
                 id: id,
                 inQueue: true,
@@ -1338,6 +1543,7 @@ class ScreenshotProcessor {
                 secondChargeUnlocked: Boolean(formData.secondChargeUnlocked),
                 shiny: Boolean(formData.shiny),
                 shadow: Boolean(formData.shadow),
+                purified: Boolean(formData.purified),
                 dynamax: Boolean(formData.dynamax),
                 xxl: Boolean(formData.xxl),
                 xxs: Boolean(formData.xxs),
@@ -1365,33 +1571,57 @@ class ScreenshotProcessor {
                 dateCaught: formData.dateCaught || '',
                 dateUploaded: new Date().toISOString(),
                 
-                // Screenshot
-                screenshot: formData.screenshot || null
+                // Images
+                screenshot: formData.screenshot || null,
+                spriteThumb: spriteBlob
             };
             
-            const dbRequest = indexedDB.open('PokemonGoDB');
+            console.log('📝 Saving Pokémon to database:', pokemonEntry.name);
             
-            dbRequest.onsuccess = (event) => {
-                const db = event.target.result;
-                const tx = db.transaction(['userPokemon'], 'readwrite');
-                const store = tx.objectStore('userPokemon');
+            return new Promise((resolve, reject) => {
+                const dbRequest = indexedDB.open('PokemonGoDB');
                 
-                store.add(pokemonEntry);
-                                
-                tx.onerror = () => {
-                    console.error('❌ Transaction error:', tx.error);
-                    this.showErrorModal('Failed to save Pokémon to database');
+                dbRequest.onsuccess = (event) => {
+                    const db = event.target.result;
+                    const tx = db.transaction(['userPokemon'], 'readwrite');
+                    const store = tx.objectStore('userPokemon');
+                    
+                    const addRequest = store.add(pokemonEntry);
+                    
+                    addRequest.onsuccess = () => {
+                        console.log('✓ Pokémon saved successfully!');
+                        resolve();
+                    };
+                    
+                    addRequest.onerror = () => {
+                        console.error('❌ Add request error:', addRequest.error);
+                        this.showErrorModal('Failed to save Pokémon to database');
+                        reject(addRequest.error);
+                    };
+                    
+                    tx.oncomplete = () => {
+                        console.log('✓ Transaction complete');
+                    };
+                    
+                    tx.onerror = () => {
+                        console.error('❌ Transaction error:', tx.error);
+                        this.showErrorModal('Failed to save Pokémon to database');
+                        reject(tx.error);
+                    };
                 };
-            };
-            
-            dbRequest.onerror = () => {
-                console.error('❌ Database error:', dbRequest.error);
-                this.showErrorModal('Failed to access database');
-            };
+                
+                dbRequest.onerror = () => {
+                    console.error('❌ Database error:', dbRequest.error);
+                    this.showErrorModal('Failed to access database');
+                    reject(dbRequest.error);
+                };
+            });
             
         } catch (error) {
             console.error('❌ Error in savePokemon:', error);
+            console.error('Stack:', error.stack);
             this.showErrorModal('Failed to save Pokémon: ' + error.message);
+            throw error;
         }
     }
 }

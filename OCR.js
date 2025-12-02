@@ -79,6 +79,27 @@ class OCRProcessor {
             const croppedScreenshot = this.cropToSprite(imageData);
             console.log('✓ Screenshot cropped');
             
+            const extractedData = {
+                name: pokemonName?.value || '',
+                nickname: nickname?.value || '',
+                nameConfidence: pokemonName?.confidence || 0,
+                cp: cp?.value || '',
+                cpConfidence: cp?.confidence || 0,
+                dateCaught: dateCaught?.value || '',
+                dateCaughtConfidence: dateCaught?.confidence || 0,
+                ivAttack: stats.attack !== undefined ? stats.attack.toString() : '',
+                ivAttackConfidence: stats.attack !== undefined ? 95 : 0,
+                ivDefense: stats.defense !== undefined ? stats.defense.toString() : '',
+                ivDefenseConfidence: stats.defense !== undefined ? 95 : 0,
+                ivStamina: stats.stamina !== undefined ? stats.stamina.toString() : '',
+                ivStaminaConfidence: stats.stamina !== undefined ? 95 : 0,
+                usedFallback: pokemonName?.usedFallback || false,
+                shadow: cp?.isShadow || false
+            };
+            
+            // Create annotated screenshot
+            const annotatedScreenshot = await this.createAnnotatedScreenshot(imageData, extractedData);
+            
             return {
                 name: pokemonName?.value || '',
                 nickname: nickname?.value || '',
@@ -94,6 +115,7 @@ class OCRProcessor {
                 ivStamina: stats.stamina !== undefined ? stats.stamina.toString() : '',
                 ivStaminaConfidence: stats.stamina !== undefined ? 95 : 0,
                 screenshot: croppedScreenshot,  
+                annotatedScreenshot: annotatedScreenshot,
                 form: null,
                 // Toggle states
                 secondChargeUnlocked: false,
@@ -507,11 +529,11 @@ class OCRProcessor {
         const staY = h - (356 * scale) - shift;
         
         const refWidth = 1180;
-        const barStartX = Math.floor((145 / refWidth) * w);
-        const barEndX = Math.floor((530 / refWidth) * w);
+        const barStartX = Math.floor((150 / refWidth) * w);
+        const barEndX = Math.floor((535 / refWidth) * w);
         const barWidth = barEndX - barStartX;
         
-        const maxColor = { r: 0xdf, g: 0x7f, b: 0x81 };
+        const maxColor = { r: 222, g: 127, b: 131 };
         const filledColor = { r: 0xf5, g: 0xa5, b: 0x4e };
         const emptyColor = { r: 0xe2, g: 0xe2, b: 0xe4 };
         
@@ -533,7 +555,7 @@ class OCRProcessor {
                     return i;
                 }
                 
-                if (colorMatches(r, g, b, maxColor)) {
+                if (colorMatches(r, g, b, maxColor, 25)) {
                     return 15;
                 }
             }
@@ -648,6 +670,163 @@ class OCRProcessor {
             cropRegion.x, cropRegion.y, cropRegion.width, cropRegion.height,
             0, 0, cropRegion.width, cropRegion.height
         );
+        
+        return canvas.toDataURL();
+    }
+
+    async createAnnotatedScreenshot(imageData, extractedData) {
+        // Create canvas with original screenshot
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        canvas.width = imageData.width;
+        canvas.height = imageData.height;
+        
+        const w = imageData.width;
+        const h = imageData.height;
+        const refHeight = 2556;
+        const refWidth = 1180;
+        const scale = h / refHeight;
+        
+        // Draw original image
+        ctx.drawImage(imageData.image, 0, 0);
+        
+        // Get anchor and stats box for accurate positioning
+        const anchor = this.findAnchorStar(imageData);
+        const statsBoxTop = this.findStatsBoxEdge(imageData);
+        
+        // Calculate all regions using the same logic as extraction
+        const regions = [];
+        
+        // 1. CP Region
+        const cpX = anchor.x + (-475 * scale);
+        const cpY = anchor.y + (-5 * scale);
+        const cpRegion = {
+            name: 'CP',
+            x: Math.floor(cpX - (w * 0.25)),
+            y: Math.floor(cpY - (h * 0.02)),
+            width: Math.floor(w * 0.45),
+            height: Math.floor(h * 0.04),
+            success: !!extractedData.cp,
+            showPreprocessed: true
+        };
+        regions.push(cpRegion);
+        
+        // 2. Nickname Region
+        const originalHeight = Math.floor(h * 0.08);
+        const newHeight = Math.floor(originalHeight * 0.5);
+        const yOffset = Math.floor(originalHeight * 0.25) + Math.floor(70 * scale);
+        const nicknameRegion = {
+            name: 'Nickname',
+            x: Math.floor(w * 0.05),
+            y: statsBoxTop + Math.floor(60 * scale) + yOffset,
+            width: Math.floor(w * 0.8),
+            height: newHeight,
+            success: !!extractedData.nickname,
+            showPreprocessed: true
+        };
+        regions.push(nicknameRegion);
+        
+        // 3. Pokemon Name Region
+        const nameYOffset = extractedData.usedFallback ? 80 * scale : 0;
+        const searchY = h - (176 * scale) - nameYOffset;
+        const nameRegion = {
+            name: 'Name',
+            x: Math.floor(w * 0.05),
+            y: Math.floor(searchY - (h * 0.02)),
+            width: Math.floor(w * 0.45),
+            height: Math.floor(h * 0.04),
+            success: !!extractedData.name,
+            showPreprocessed: false
+        };
+        regions.push(nameRegion);
+        
+        // 4. Date Caught Region
+        const dateY = h - (176 * scale);
+        const dateRegion = {
+            name: 'Date',
+            x: extractedData.usedFallback ? Math.floor(w * 0.05) : Math.floor(w * 0.5),
+            y: Math.floor(dateY - (h * 0.02)),
+            width: Math.floor(w * 0.45),
+            height: Math.floor(h * 0.04),
+            success: !!extractedData.dateCaught,
+            showPreprocessed: false
+        };
+        regions.push(dateRegion);
+        
+        // Draw preprocessed images for CP and Nickname
+        for (const region of regions) {
+            if (region.showPreprocessed) {
+                const preprocessed = region.name === 'CP' 
+                    ? this.preprocessCPImage(imageData, region)
+                    : this.preprocessImage(imageData, region);
+                
+                // Convert data URL to image
+                const img = new Image();
+                await new Promise((resolve) => {
+                    img.onload = resolve;
+                    img.src = preprocessed;
+                });
+                
+                // Draw preprocessed image at exact position
+                ctx.drawImage(img, region.x, region.y, region.width, region.height);
+            }
+        }
+        
+        // Draw bounding boxes for all regions
+        for (const region of regions) {
+            const color = region.success ? '#10b981' : '#ef4444';
+            
+            // Draw border
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            ctx.strokeRect(region.x, region.y, region.width, region.height);
+            
+            // Draw label
+            ctx.fillStyle = color;
+            ctx.font = 'bold 42px sans-serif';
+            const labelPadding = 12;
+            const labelHeight = 60;
+            const labelWidth = ctx.measureText(region.name).width + labelPadding * 2;
+            
+            // Special case: Date label goes on bottom when Pumpkaboo is triggered
+            const labelOnBottom = region.name === 'Date' && extractedData.usedFallback;
+            
+            if (labelOnBottom) {
+                ctx.fillRect(region.x, region.y + region.height, labelWidth, labelHeight);  // Below box
+                ctx.fillStyle = 'white';
+                ctx.fillText(region.name, region.x + labelPadding, region.y + region.height + 42);  // Text inside bottom label
+            } else {
+                ctx.fillRect(region.x, region.y - labelHeight, labelWidth, labelHeight);  // Above box
+                ctx.fillStyle = 'white';
+                ctx.fillText(region.name, region.x + labelPadding, region.y - 12);  // Text inside top label
+            }
+        }
+        
+        // Draw IV dots
+        const shift = extractedData.usedFallback ? 80 * scale : 0;
+        const atkY = h - (581 * scale) - shift;
+        const defY = h - (466 * scale) - shift;
+        const staY = h - (356 * scale) - shift;
+        
+        const barStartX = Math.floor((150 / refWidth) * w);
+        const barEndX = Math.floor((535 / refWidth) * w);
+        const barWidth = barEndX - barStartX;
+        
+        const drawIVDots = (y, ivValue) => {
+            for (let i = 0; i < 15; i++) {
+                const x = barStartX + (barWidth * (i / 14));
+                const isFilled = i < ivValue;
+                
+                ctx.fillStyle = isFilled ? '#10b981' : 'rgba(156, 163, 175, 0)';
+                ctx.beginPath();
+                ctx.arc(x, y, 10, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        };
+        
+        if (extractedData.ivAttack !== '') drawIVDots(atkY, parseInt(extractedData.ivAttack));
+        if (extractedData.ivDefense !== '') drawIVDots(defY, parseInt(extractedData.ivDefense));
+        if (extractedData.ivStamina !== '') drawIVDots(staY, parseInt(extractedData.ivStamina));
         
         return canvas.toDataURL();
     }

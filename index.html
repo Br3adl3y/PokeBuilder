@@ -420,6 +420,24 @@
         .iv-scroll::-webkit-scrollbar-thumb:hover {
             background: #555;
         }
+
+        /* Detection line animations */
+        @keyframes pulse-line {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.8; }
+        }
+
+        .detection-line {
+            position: absolute;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, currentColor, transparent);
+            transform-origin: left center;
+            pointer-events: none;
+            animation: pulse-line 2s ease-in-out infinite;
+        }
+
+        .detection-success { color: #10b981; }
+        .detection-failed { color: #ef4444; }
     </style>
 </head>
 <body>
@@ -1612,10 +1630,13 @@
             const rocketKey = isShadow ? 'shadowRocketTDO' : 'rocketTDO';
             const spamKey = isShadow ? 'shadowSpamTDO' : 'spamTDO';
             
+            // Calculate raid TDO for both IV spreads
             for (const defenderType of allDefenderTypes) {
                 p[raidKey][defenderType] = {
-                    L40: this.calculateBestTDOForLevel(p, pveFastMoves, pveChargeMoves, defenderType, { atk: 15, def: 0, sta: 15 }, 40, true, isShadow, true),
-                    L50: this.calculateBestTDOForLevel(p, pveFastMoves, pveChargeMoves, defenderType, { atk: 15, def: 0, sta: 15 }, 50, true, isShadow, true)
+                    L40_15_0_15: this.calculateBestTDOForLevel(p, pveFastMoves, pveChargeMoves, defenderType, { atk: 15, def: 0, sta: 15 }, 40, true, isShadow, true),
+                    L40_15_15_15: this.calculateBestTDOForLevel(p, pveFastMoves, pveChargeMoves, defenderType, { atk: 15, def: 15, sta: 15 }, 40, true, isShadow, true),
+                    L50_15_0_15: this.calculateBestTDOForLevel(p, pveFastMoves, pveChargeMoves, defenderType, { atk: 15, def: 0, sta: 15 }, 50, true, isShadow, true),
+                    L50_15_15_15: this.calculateBestTDOForLevel(p, pveFastMoves, pveChargeMoves, defenderType, { atk: 15, def: 15, sta: 15 }, 50, true, isShadow, true)
                 };
             }
             
