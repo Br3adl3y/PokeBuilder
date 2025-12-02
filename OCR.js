@@ -842,15 +842,10 @@ class OCRProcessor {
             const x = barStartX + (barWidth * (i / 14));
             const isFilled = i < ivValue;
             
-            ctx.fillStyle = isFilled ? '#10b981' : '#9ca3af';
+            ctx.fillStyle = isFilled ? '#10b981' : 'rgba(156, 163, 175, 0)';
             ctx.beginPath();
-            ctx.arc(x, y, 8, 0, Math.PI * 2);
+            ctx.arc(x, y, 10, 0, Math.PI * 2);
             ctx.fill();
-            
-            // Add outline
-            ctx.strokeStyle = 'white';
-            ctx.lineWidth = 2;
-            ctx.stroke();
         }
     };
 

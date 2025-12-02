@@ -353,7 +353,7 @@ class ScreenshotProcessor {
                             data-action="batch-upload"
                         >
                             <i class="fa-solid fa-images text-xl"></i>
-                            <span>Batch Upload</span>
+                            <span>Upload</span>
                         </button>
                         
                         ${this.batchImages.length > 0 ? `
@@ -492,29 +492,54 @@ class ScreenshotProcessor {
         const charge1Select = modal.querySelector('[data-field="currentChargeMove1"]');
         const charge2Select = modal.querySelector('[data-field="currentChargeMove2"]');
         
-        // Populate fast moves - no placeholder
+        // Populate fast moves - include both regular and elite
         fastSelect.innerHTML = '';
-        if (pokemon.moves && pokemon.moves.fast) {
-            pokemon.moves.fast.forEach(moveName => {
-                const move = this.app.moves.find(m => m.name === moveName);
-                if (move) {
-                    fastSelect.innerHTML += `<option value="${move.rawId}" class="bg-teal-600">${move.name}</option>`;
-                }
-            });
+        if (pokemon.moves) {
+            // Add regular fast moves
+            if (pokemon.moves.fast) {
+                pokemon.moves.fast.forEach(moveName => {
+                    const move = this.app.moves.find(m => m.name === moveName);
+                    if (move) {
+                        fastSelect.innerHTML += `<option value="${move.rawId}" class="bg-teal-600">${move.name}</option>`;
+                    }
+                });
+            }
+            // Add elite fast moves
+            if (pokemon.moves.fastElite) {
+                pokemon.moves.fastElite.forEach(moveName => {
+                    const move = this.app.moves.find(m => m.name === moveName);
+                    if (move) {
+                        fastSelect.innerHTML += `<option value="${move.rawId}" class="bg-teal-600">${move.name} (Elite)</option>`;
+                    }
+                });
+            }
         }
         
-        // Populate charged moves - no placeholder
+        // Populate charged moves - include both regular and elite
         charge1Select.innerHTML = '';
         charge2Select.innerHTML = '';
         
-        if (pokemon.moves && pokemon.moves.charge) {
-            pokemon.moves.charge.forEach(moveName => {
-                const move = this.app.moves.find(m => m.name === moveName);
-                if (move) {
-                    charge1Select.innerHTML += `<option value="${move.rawId}" class="bg-teal-600">${move.name}</option>`;
-                    charge2Select.innerHTML += `<option value="${move.rawId}" class="bg-teal-600">${move.name}</option>`;
-                }
-            });
+        if (pokemon.moves) {
+            // Add regular charge moves
+            if (pokemon.moves.charge) {
+                pokemon.moves.charge.forEach(moveName => {
+                    const move = this.app.moves.find(m => m.name === moveName);
+                    if (move) {
+                        charge1Select.innerHTML += `<option value="${move.rawId}" class="bg-teal-600">${move.name}</option>`;
+                        charge2Select.innerHTML += `<option value="${move.rawId}" class="bg-teal-600">${move.name}</option>`;
+                    }
+                });
+            }
+            // Add elite charge moves
+            if (pokemon.moves.chargeElite) {
+                pokemon.moves.chargeElite.forEach(moveName => {
+                    const move = this.app.moves.find(m => m.name === moveName);
+                    if (move) {
+                        charge1Select.innerHTML += `<option value="${move.rawId}" class="bg-teal-600">${move.name} (Elite)</option>`;
+                        charge2Select.innerHTML += `<option value="${move.rawId}" class="bg-teal-600">${move.name} (Elite)</option>`;
+                    }
+                });
+            }
         }
     }
 
@@ -569,22 +594,6 @@ class ScreenshotProcessor {
                 height: imageData.height * 0.285
             };
             
-            // TEMPORARY: Draw a red rectangle on the original image to see the crop area
-            const debugCanvas = document.createElement('canvas');
-            debugCanvas.width = imageData.width;
-            debugCanvas.height = imageData.height;
-            const debugCtx = debugCanvas.getContext('2d');
-            debugCtx.drawImage(imageData.image, 0, 0);
-            debugCtx.strokeStyle = 'red';
-            debugCtx.lineWidth = 5;
-            debugCtx.strokeRect(cropArea.x, cropArea.y, cropArea.width, cropArea.height);
-            
-            // Show it in the confirmation modal (add this to see what's being cropped)
-            const debugImg = document.createElement('img');
-            debugImg.src = debugCanvas.toDataURL();
-            debugImg.style.cssText = 'position:fixed;top:10px;right:10px;width:200px;border:3px solid red;z-index:9999;';
-            document.body.appendChild(debugImg);
-            
             // Create a new canvas for the cropped image
             const cropCanvas = document.createElement('canvas');
             cropCanvas.width = cropArea.width;
@@ -630,6 +639,23 @@ class ScreenshotProcessor {
     hideProcessingModal() {
         const modal = document.querySelector('[data-modal="processing"]');
         if (modal) modal.remove();
+    }
+
+    highlightFormField(modal, pokemonName) {
+        const forms = this.app.pokemon.filter(p => 
+            p.name.toLowerCase() === pokemonName.toLowerCase()
+        );
+        
+        const formSelect = modal.querySelector('[data-field="form"]');
+        
+        // If there are multiple forms (more than just the base), highlight in red/pink
+        if (forms.length > 1 || forms.some(p => p.form)) {
+            formSelect.classList.remove('border-white', 'border-opacity-30');
+            formSelect.classList.add('border-pink-400', 'border-2', 'bg-pink-50', 'bg-opacity-30');
+        } else {
+            formSelect.classList.remove('border-pink-400', 'border-2', 'bg-pink-50', 'bg-opacity-30');
+            formSelect.classList.add('border-white', 'border-opacity-30');
+        }
     }
 
     // Show confirmation/edit modal
@@ -1060,6 +1086,7 @@ class ScreenshotProcessor {
         if (initialData.name) {
             const formSelect = modal.querySelector('[data-field="form"]');
             this.updateFormOptions(initialData.name, formSelect);
+            this.highlightFormField(modal, initialData.name);
             this.updateMoveOptions(initialData.name, formSelect.value, modal);
             this.updateCalculatedLevel(modal);
         }
@@ -1240,6 +1267,7 @@ class ScreenshotProcessor {
         
         nameInput.addEventListener('change', () => {
             this.updateFormOptions(nameInput.value, formSelect);
+            this.highlightFormField(modal, nameInput.value);
             this.updateMoveOptions(nameInput.value, formSelect.value, modal);
             this.updateCalculatedLevel(modal);
         });
@@ -1299,12 +1327,18 @@ class ScreenshotProcessor {
             p.name.toLowerCase() === pokemonName.toLowerCase()
         );
         
-        formSelect.innerHTML = '<option value="">Normal</option>';
+        formSelect.innerHTML = '<option value="" class="bg-teal-600">Normal</option>';
         forms.forEach(p => {
             if (p.form) {
-                formSelect.innerHTML += `<option value="${p.form}">${p.form}</option>`;
+                formSelect.innerHTML += `<option value="${p.form}" class="bg-teal-600">${p.form}</option>`;
             }
         });
+        
+        // Highlight field if multiple forms exist
+        const modal = formSelect.closest('[data-modal="confirmation"]');
+        if (modal) {
+            this.highlightFormField(modal, pokemonName);
+        }
     }
 
     updateCalculatedLevel(modal) {
