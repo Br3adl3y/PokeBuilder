@@ -350,10 +350,7 @@ class OCRProcessor {
         const processedImage = this.preprocessImage(imageData, region);
         const result = await this.performOCR(processedImage);
         
-        let cleanedText = result.text.trim();
-        if (cleanedText.toLowerCase().endsWith('i')) {
-            cleanedText = cleanedText.slice(0, -1);
-        }
+        const cleanedText = result.text.trim();
         
         return {
             value: cleanedText,
@@ -675,159 +672,233 @@ class OCRProcessor {
     }
 
     async createAnnotatedScreenshot(imageData, extractedData) {
-        // Create canvas with original screenshot
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
-        canvas.width = imageData.width;
-        canvas.height = imageData.height;
+    // Create canvas with original screenshot
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    canvas.width = imageData.width;
+    canvas.height = imageData.height;
+    
+    const w = imageData.width;
+    const h = imageData.height;
+    const refHeight = 2556;
+    const refWidth = 1180;
+    const scale = h / refHeight;
+    
+    // Draw original image
+    ctx.drawImage(imageData.image, 0, 0);
+    
+    // Get anchor and stats box for accurate positioning
+    const anchor = this.findAnchorStar(imageData);
+    const statsBoxTop = this.findStatsBoxEdge(imageData);
+    
+    // Calculate all regions using the same logic as extraction
+    const regions = [];
+    
+    // 1. CP Region
+    const cpX = anchor.x + (-475 * scale);
+    const cpY = anchor.y + (-5 * scale);
+    const cpRegion = {
+        name: 'CP',
+        x: Math.floor(cpX - (w * 0.25)),
+        y: Math.floor(cpY - (h * 0.02)),
+        width: Math.floor(w * 0.45),
+        height: Math.floor(h * 0.04),
+        success: !!extractedData.cp,
+        showPreprocessed: true
+    };
+    regions.push(cpRegion);
+    
+    // 2. Nickname Region
+    const originalHeight = Math.floor(h * 0.08);
+    const newHeight = Math.floor(originalHeight * 0.5);
+    const yOffset = Math.floor(originalHeight * 0.25) + Math.floor(70 * scale);
+    const nicknameRegion = {
+        name: 'Nickname',
+        x: Math.floor(w * 0.05),
+        y: statsBoxTop + Math.floor(60 * scale) + yOffset,
+        width: Math.floor(w * 0.8),
+        height: newHeight,
+        success: !!extractedData.nickname,
+        showPreprocessed: true
+    };
+    regions.push(nicknameRegion);
+    
+    // 3. Pokemon Name Region
+    const nameYOffset = extractedData.usedFallback ? 80 * scale : 0;
+    const searchY = h - (176 * scale) - nameYOffset;
+    const nameRegion = {
+        name: 'Name',
+        x: Math.floor(w * 0.05),
+        y: Math.floor(searchY - (h * 0.02)),
+        width: Math.floor(w * 0.45),
+        height: Math.floor(h * 0.04),
+        success: !!extractedData.name,
+        showPreprocessed: false
+    };
+    regions.push(nameRegion);
+    
+    // 4. Date Caught Region
+    const dateY = h - (176 * scale);
+    const dateRegion = {
+        name: 'Date',
+        x: extractedData.usedFallback ? Math.floor(w * 0.05) : Math.floor(w * 0.5),
+        y: Math.floor(dateY - (h * 0.02)),
+        width: extractedData.usedFallback ? Math.floor(w * 0.35) : Math.floor(w * 0.45),
+        height: Math.floor(h * 0.04),
+        success: !!extractedData.dateCaught,
+        showPreprocessed: false
+    };
+    regions.push(dateRegion);
+    
+    // Draw preprocessed images for CP and Nickname
+    for (const region of regions) {
+        if (region.showPreprocessed) {
+            const preprocessed = region.name === 'CP' 
+                ? this.preprocessCPImage(imageData, region)
+                : this.preprocessImage(imageData, region);
+            
+            // Convert data URL to image
+            const img = new Image();
+            await new Promise((resolve) => {
+                img.onload = resolve;
+                img.src = preprocessed;
+            });
+            
+            // Draw preprocessed image at exact position
+            ctx.drawImage(img, region.x, region.y, region.width, region.height);
+        }
+    }
+
+    // Blur location data BEFORE drawing labels (so labels stay sharp)
+    const labelHeight = 60;
+
+    // Always blur everything underneath the date region (box, not label)
+    const underDateBlurX = 0;
+    const underDateBlurY = dateRegion.y + dateRegion.height; // Just the box, not the label
+    const underDateBlurWidth = w;
+    const underDateBlurHeight = h - underDateBlurY;
+
+    if (underDateBlurHeight > 0) {
+        const blurRegion1 = ctx.getImageData(underDateBlurX, underDateBlurY, underDateBlurWidth, underDateBlurHeight);
+        const blurred1 = this.applyBlur(blurRegion1, 20);
+        ctx.putImageData(blurred1, underDateBlurX, underDateBlurY);
+    }
+
+    // If Pumpkaboo: also blur to the right of the date region (box, not label)
+    if (extractedData.usedFallback) {
+        const rightBlurX = dateRegion.x + dateRegion.width;
+        const rightBlurY = dateRegion.y;
+        const rightBlurWidth = w - rightBlurX;
+        const rightBlurHeight = dateRegion.height; // Just the box height, not including label
         
-        const w = imageData.width;
-        const h = imageData.height;
-        const refHeight = 2556;
-        const refWidth = 1180;
-        const scale = h / refHeight;
+        if (rightBlurWidth > 0 && rightBlurHeight > 0) {
+            const blurRegion2 = ctx.getImageData(rightBlurX, rightBlurY, rightBlurWidth, rightBlurHeight);
+            const blurred2 = this.applyBlur(blurRegion2, 20);
+            ctx.putImageData(blurred2, rightBlurX, rightBlurY);
+        }
+    }
+
+    // Draw bounding boxes for all regions (AFTER blur)
+    for (const region of regions) {
+        const color = region.success ? '#10b981' : '#ef4444';
         
-        // Draw original image
-        ctx.drawImage(imageData.image, 0, 0);
+        // Draw border
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 3;
+        ctx.strokeRect(region.x, region.y, region.width, region.height);
         
-        // Get anchor and stats box for accurate positioning
-        const anchor = this.findAnchorStar(imageData);
-        const statsBoxTop = this.findStatsBoxEdge(imageData);
+        // Draw label
+        ctx.fillStyle = color;
+        ctx.font = 'bold 42px sans-serif';
+        const labelPadding = 12;
+        const labelWidth = ctx.measureText(region.name).width + labelPadding * 2;
         
-        // Calculate all regions using the same logic as extraction
-        const regions = [];
+        // Special case: Date label goes on bottom when Pumpkaboo is triggered
+        const labelOnBottom = region.name === 'Date' && extractedData.usedFallback;
         
-        // 1. CP Region
-        const cpX = anchor.x + (-475 * scale);
-        const cpY = anchor.y + (-5 * scale);
-        const cpRegion = {
-            name: 'CP',
-            x: Math.floor(cpX - (w * 0.25)),
-            y: Math.floor(cpY - (h * 0.02)),
-            width: Math.floor(w * 0.45),
-            height: Math.floor(h * 0.04),
-            success: !!extractedData.cp,
-            showPreprocessed: true
-        };
-        regions.push(cpRegion);
+        if (labelOnBottom) {
+            ctx.fillRect(region.x, region.y + region.height, labelWidth, labelHeight);  // Below box
+            ctx.fillStyle = 'white';
+            ctx.fillText(region.name, region.x + labelPadding, region.y + region.height + 42);  // Text inside bottom label
+        } else {
+            ctx.fillRect(region.x, region.y - labelHeight, labelWidth, labelHeight);  // Above box
+            ctx.fillStyle = 'white';
+            ctx.fillText(region.name, region.x + labelPadding, region.y - 12);  // Text inside top label
+        }
+    }
+
+    // Draw IV dots
+    const shift = extractedData.usedFallback ? 80 * scale : 0;
+    const atkY = h - (581 * scale) - shift;
+    const defY = h - (466 * scale) - shift;
+    const staY = h - (356 * scale) - shift;
+
+    const barStartX = Math.floor((150 / refWidth) * w);
+    const barEndX = Math.floor((535 / refWidth) * w);
+    const barWidth = barEndX - barStartX;
+
+    const drawIVDots = (y, ivValue) => {
+        for (let i = 0; i < 15; i++) {
+            const x = barStartX + (barWidth * (i / 14));
+            const isFilled = i < ivValue;
+            
+            ctx.fillStyle = isFilled ? '#10b981' : '#9ca3af';
+            ctx.beginPath();
+            ctx.arc(x, y, 8, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Add outline
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+    };
+
+    if (extractedData.ivAttack !== '') drawIVDots(atkY, parseInt(extractedData.ivAttack));
+    if (extractedData.ivDefense !== '') drawIVDots(defY, parseInt(extractedData.ivDefense));
+    if (extractedData.ivStamina !== '') drawIVDots(staY, parseInt(extractedData.ivStamina));
+
+    // No cropping - return full canvas
+    return canvas.toDataURL();
+    }
+
+    applyBlur(imageData, radius) {
+        const pixels = imageData.data;
+        const width = imageData.width;
+        const height = imageData.height;
         
-        // 2. Nickname Region
-        const originalHeight = Math.floor(h * 0.08);
-        const newHeight = Math.floor(originalHeight * 0.5);
-        const yOffset = Math.floor(originalHeight * 0.25) + Math.floor(70 * scale);
-        const nicknameRegion = {
-            name: 'Nickname',
-            x: Math.floor(w * 0.05),
-            y: statsBoxTop + Math.floor(60 * scale) + yOffset,
-            width: Math.floor(w * 0.8),
-            height: newHeight,
-            success: !!extractedData.nickname,
-            showPreprocessed: true
-        };
-        regions.push(nicknameRegion);
+        // Create a copy for the blurred result
+        const blurred = new Uint8ClampedArray(pixels);
         
-        // 3. Pokemon Name Region
-        const nameYOffset = extractedData.usedFallback ? 80 * scale : 0;
-        const searchY = h - (176 * scale) - nameYOffset;
-        const nameRegion = {
-            name: 'Name',
-            x: Math.floor(w * 0.05),
-            y: Math.floor(searchY - (h * 0.02)),
-            width: Math.floor(w * 0.45),
-            height: Math.floor(h * 0.04),
-            success: !!extractedData.name,
-            showPreprocessed: false
-        };
-        regions.push(nameRegion);
-        
-        // 4. Date Caught Region
-        const dateY = h - (176 * scale);
-        const dateRegion = {
-            name: 'Date',
-            x: extractedData.usedFallback ? Math.floor(w * 0.05) : Math.floor(w * 0.5),
-            y: Math.floor(dateY - (h * 0.02)),
-            width: Math.floor(w * 0.45),
-            height: Math.floor(h * 0.04),
-            success: !!extractedData.dateCaught,
-            showPreprocessed: false
-        };
-        regions.push(dateRegion);
-        
-        // Draw preprocessed images for CP and Nickname
-        for (const region of regions) {
-            if (region.showPreprocessed) {
-                const preprocessed = region.name === 'CP' 
-                    ? this.preprocessCPImage(imageData, region)
-                    : this.preprocessImage(imageData, region);
+        // Simple box blur
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                let r = 0, g = 0, b = 0, count = 0;
                 
-                // Convert data URL to image
-                const img = new Image();
-                await new Promise((resolve) => {
-                    img.onload = resolve;
-                    img.src = preprocessed;
-                });
+                // Average surrounding pixels
+                for (let dy = -radius; dy <= radius; dy++) {
+                    for (let dx = -radius; dx <= radius; dx++) {
+                        const nx = x + dx;
+                        const ny = y + dy;
+                        
+                        if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+                            const idx = (ny * width + nx) * 4;
+                            r += pixels[idx];
+                            g += pixels[idx + 1];
+                            b += pixels[idx + 2];
+                            count++;
+                        }
+                    }
+                }
                 
-                // Draw preprocessed image at exact position
-                ctx.drawImage(img, region.x, region.y, region.width, region.height);
+                const idx = (y * width + x) * 4;
+                blurred[idx] = r / count;
+                blurred[idx + 1] = g / count;
+                blurred[idx + 2] = b / count;
+                blurred[idx + 3] = pixels[idx + 3]; // Keep alpha
             }
         }
         
-        // Draw bounding boxes for all regions
-        for (const region of regions) {
-            const color = region.success ? '#10b981' : '#ef4444';
-            
-            // Draw border
-            ctx.strokeStyle = color;
-            ctx.lineWidth = 3;
-            ctx.strokeRect(region.x, region.y, region.width, region.height);
-            
-            // Draw label
-            ctx.fillStyle = color;
-            ctx.font = 'bold 42px sans-serif';
-            const labelPadding = 12;
-            const labelHeight = 60;
-            const labelWidth = ctx.measureText(region.name).width + labelPadding * 2;
-            
-            // Special case: Date label goes on bottom when Pumpkaboo is triggered
-            const labelOnBottom = region.name === 'Date' && extractedData.usedFallback;
-            
-            if (labelOnBottom) {
-                ctx.fillRect(region.x, region.y + region.height, labelWidth, labelHeight);  // Below box
-                ctx.fillStyle = 'white';
-                ctx.fillText(region.name, region.x + labelPadding, region.y + region.height + 42);  // Text inside bottom label
-            } else {
-                ctx.fillRect(region.x, region.y - labelHeight, labelWidth, labelHeight);  // Above box
-                ctx.fillStyle = 'white';
-                ctx.fillText(region.name, region.x + labelPadding, region.y - 12);  // Text inside top label
-            }
-        }
-        
-        // Draw IV dots
-        const shift = extractedData.usedFallback ? 80 * scale : 0;
-        const atkY = h - (581 * scale) - shift;
-        const defY = h - (466 * scale) - shift;
-        const staY = h - (356 * scale) - shift;
-        
-        const barStartX = Math.floor((150 / refWidth) * w);
-        const barEndX = Math.floor((535 / refWidth) * w);
-        const barWidth = barEndX - barStartX;
-        
-        const drawIVDots = (y, ivValue) => {
-            for (let i = 0; i < 15; i++) {
-                const x = barStartX + (barWidth * (i / 14));
-                const isFilled = i < ivValue;
-                
-                ctx.fillStyle = isFilled ? '#10b981' : 'rgba(156, 163, 175, 0)';
-                ctx.beginPath();
-                ctx.arc(x, y, 10, 0, Math.PI * 2);
-                ctx.fill();
-            }
-        };
-        
-        if (extractedData.ivAttack !== '') drawIVDots(atkY, parseInt(extractedData.ivAttack));
-        if (extractedData.ivDefense !== '') drawIVDots(defY, parseInt(extractedData.ivDefense));
-        if (extractedData.ivStamina !== '') drawIVDots(staY, parseInt(extractedData.ivStamina));
-        
-        return canvas.toDataURL();
+        return new ImageData(blurred, width, height);
     }
 }

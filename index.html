@@ -560,7 +560,7 @@
                 
                 pokemon.sort((a, b) => a.dexNumber - b.dexNumber);
                 
-                if (updateStatus) updateStatus('Calculating PvP IVs...');
+                if (updateStatus) updateStatus('Calculating PvP IVs... (~1 minute)');
                 for (let i = 0; i < pokemon.length; i++) {
                     const p = pokemon[i];
                     
@@ -584,8 +584,59 @@
                 
                 if (updateProgress) updateProgress(pokemon.length, pokemon.length, `PvP IVs: Complete`);
                 
-                if (updateStatus) updateStatus('Calculating PvE TDO scores...');
-                await this.calculatePvETDO(pokemon, pvpMoves, pveMoves, updateProgress);
+                if (updateStatus) updateStatus('Calculating PvE TDO scores... (~2-5 minutes)');
+
+                // Fun splash texts
+                const splashTexts = [
+                    'Sylveon says, "Trans Rights are Human Rights"',
+                    'Explaining Stat Product vs. Combat Power, again...',
+                    'Justifying why Flygon isn\'t Bug/Dragon...',
+                    'Using Strength on a truck...',
+                    'Wondering why Skelegirge got Blast Burn before Cinderace...',
+                    'Discriminating between Zoroark, Zeraora, and Zarude...',
+                    'Nickit says, "If you see someone shoplifting, no, you didn\'t"',
+                    'Saving XXS\'s for a showcase that will never come...',
+                    'Pondering my Voltorb...',
+                    'Error! Attempted to divide by Slaking\'s DPS...',
+                    'Avoiding eye contact with Hypno...',
+                    'Slowking says, "Boss makes a dollar, I make a dime, that\'s why I poop on company time"',
+                    'Blasting off again...',
+                    'Adding Unicode support for Nidoran�...',
+                    'Calculating odds of catching a mega shundo-shadynamax-XXL...',
+                    'Smeargle says, "1 part flour, 4 parts water, score with a razor blade"',
+                    'Humoring Regigigas that Normal Legendary isn\'t an oxymoron...',
+                    'Not thinking about what happened to all the pokémon you transfered to the professor...',
+                    'Filing a FAFSA for Wishiwashi...',
+                    'Contemplating Shuckle juice...',
+                    'Obstructing the FBI until Drifloon can get away...',
+                    'Realizing Cosmog weighs more than Wailord...',
+                    'Googling "Mimikyu upskirts"...',
+                    'Cleaning Dittos out of Mewtwo\'s litterbox...',
+                    'Xatu says, "Land Back"',
+                    'Generating Stunfisk\'s 3rd Dimension...',
+                    'Hey guys, did you know that in terms of male human and female Pokémon br...',
+                    'Bisharp says, "Eat the Rich"'
+                ];
+
+                const seriousMessage = 'Calculating PvE TDO scores... (~2-5 minutes)';
+                let splashIndex = 0;
+                let showSerious = false;
+
+                // Custom update progress that alternates between serious and silly
+                const customUpdateProgress = (current, total, message) => {
+                    if (current % 20 === 0 && current > 0) {
+                        if (showSerious) {
+                            if (updateStatus) updateStatus(seriousMessage);
+                        } else {
+                            if (updateStatus) updateStatus(splashTexts[splashIndex]);
+                            splashIndex = (splashIndex + 1) % splashTexts.length;
+                        }
+                        showSerious = !showSerious;
+                    }
+                    if (updateProgress) updateProgress(current, total, message);
+                };
+
+                await this.calculatePvETDO(pokemon, pvpMoves, pveMoves, customUpdateProgress);
                 
                 pvpMoves.forEach((move, id) => {
                     moves.push({ ...move, id: `pvp-${move.category}-${id}`, mode: 'pvp' });

@@ -950,7 +950,6 @@ class ScreenshotProcessor {
         return fields;
     }
 
-    // Add this method anywhere in the ScreenshotProcessor class
     createAnnotatedPreview(imageData, extractedData) {
         const canvas = document.createElement('canvas');
         canvas.width = imageData.width;
