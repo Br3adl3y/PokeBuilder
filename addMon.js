@@ -1414,6 +1414,7 @@ class ScreenshotProcessor {
                 charge1: null,
                 charge2: null
             },
+            assignedEvolution: null,
             screenshot: imageData ? imageData.dataUrl : null
         };
     }
@@ -1599,6 +1600,7 @@ class ScreenshotProcessor {
                     charge1: formData.assignedMoveset?.charge1 || null,
                     charge2: formData.assignedMoveset?.charge2 || null
                 },
+                assignedEvolution: null,
                 
                 // Dates
                 dateCaught: formData.dateCaught || '',

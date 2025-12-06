@@ -801,6 +801,20 @@
                     updateStatus('Fetching Game Master from GitHub...');
                     const gameMaster = await this.fetchGameMasterWithRetry();
                     
+                    updateProgress(20);
+                    updateStatus('Updating GBL schedule...');
+                    const scheduleData = this.parseVSSeekerSchedule(gameMaster);
+                    await this.saveToDatabase('metadata', [
+                        {
+                            key: 'activeSeasonCups',
+                            value: Array.from(scheduleData.activeCupIds)
+                        },
+                        {
+                            key: 'seasonSchedule',
+                            value: { schedule: scheduleData.schedule }
+                        }
+                    ]);
+                    
                     updateProgress(30);
                     updateStatus('Loading existing database...');
                     const existingPokemon = await this.loadFromDatabase('pokemon');
@@ -1280,6 +1294,9 @@
             });
             const uniqueChargeTypes = Array.from(chargeMoveTypes);
             
+            // Extract mega evolutions
+            const megas = this.extractMegaEvolutions(settings);
+            
             return {
                 id: `${name}-${form || 'base'}`,
                 dexNumber,
@@ -1290,12 +1307,62 @@
                 maxCP: this.calculateMaxCP(baseAttack, baseDefense, baseStamina),
                 moves,
                 evolutions,
+                megas,  // Add mega data here
                 pokemonClass: settings.pokemonClass || 'NORMAL',
                 thirdMoveCost,
                 shadowInfo,
                 templateId,
                 chargeTypeCoverage: { count: uniqueChargeTypes.length, types: uniqueChargeTypes }
             };
+        }
+
+        extractMegaEvolutions(settings) {
+            if (!settings.tempEvoOverrides || settings.tempEvoOverrides.length === 0) {
+                return null;
+            }
+            
+            const megas = [];
+            
+            for (const tempEvo of settings.tempEvoOverrides) {
+                if (!tempEvo.tempEvoId || !tempEvo.tempEvoId.includes('MEGA')) continue;
+                
+                const megaData = {
+                    tempEvoId: tempEvo.tempEvoId,
+                    stats: {
+                        attack: tempEvo.stats?.baseAttack || 0,
+                        defense: tempEvo.stats?.baseDefense || 0,
+                        hp: tempEvo.stats?.baseStamina || 0
+                    },
+                    types: [],
+                    maxCP: 0,
+                    form: '' // 'Mega' or 'Mega X' or 'Mega Y'
+                };
+                
+                // Extract types
+                const type1 = (tempEvo.typeOverride1 || '').split('_').pop() || '';
+                const type2 = (tempEvo.typeOverride2 || '').split('_').pop() || '';
+                megaData.types = [type1, type2].filter(t => t);
+                
+                // Calculate Mega CP
+                megaData.maxCP = this.calculateMaxCP(
+                    megaData.stats.attack,
+                    megaData.stats.defense,
+                    megaData.stats.hp
+                );
+                
+                // Determine form name
+                if (tempEvo.tempEvoId.includes('_X')) {
+                    megaData.form = 'Mega X';
+                } else if (tempEvo.tempEvoId.includes('_Y')) {
+                    megaData.form = 'Mega Y';
+                } else {
+                    megaData.form = 'Mega';
+                }
+                
+                megas.push(megaData);
+            }
+            
+            return megas.length > 0 ? megas : null;
         }
 
         getMoveId(moveName, moveMap) {
@@ -1527,13 +1594,48 @@
                 p.master = { 
                     iv: { atk: 15, def: 15, sta: 15 }, 
                     maxSP: Math.floor(((p.stats.attack + 15) * this.cpm[99]) * ((p.stats.defense + 15) * this.cpm[99]) * Math.max(10, Math.floor((p.stats.hp + 15) * this.cpm[99]))), 
-                    minSP: Math.floor(((p.stats.attack + 15) * this.cpm[99]) * ((p.stats.defense + 15) * this.cpm[99]) * Math.max(10, Math.floor((p.stats.hp + 15) * this.cpm[99]))), 
+                    minSP: Math.floor(((p.stats.attack) * this.cpm[99]) * ((p.stats.defense) * this.cpm[99]) * Math.max(10, Math.floor((p.stats.hp) * this.cpm[99]))), 
                     level: 50, 
                     cp: this.calculateMaxCP(p.stats.attack, p.stats.defense, p.stats.hp),
                     needsXL: true
                 };
+
+                // Calculate IVs for mega forms if they exist
+                if (p.megas) {
+                    p.megas.forEach(mega => {
+                        const megaGreat = this.calculatePvPIVsForLeague(mega.stats.attack, mega.stats.defense, mega.stats.hp, 1500, 0);
+                        const megaUltra = this.calculatePvPIVsForLeague(mega.stats.attack, mega.stats.defense, mega.stats.hp, 2500, 0);
+                        
+                        mega.great = {
+                            iv: megaGreat.iv,
+                            maxSP: megaGreat.maxSP,
+                            minSP: megaGreat.minSP,
+                            level: megaGreat.level,
+                            cp: megaGreat.cp,
+                            needsXL: megaGreat.level > 40
+                        };
+                        
+                        mega.ultra = {
+                            iv: megaUltra.iv,
+                            maxSP: megaUltra.maxSP,
+                            minSP: megaUltra.minSP,
+                            level: megaUltra.level,
+                            cp: megaUltra.cp,
+                            needsXL: megaUltra.level > 40
+                        };
+                        
+                        mega.master = {
+                            iv: { atk: 15, def: 15, sta: 15 },
+                            maxSP: Math.floor(((mega.stats.attack + 15) * this.cpm[99]) * ((mega.stats.defense + 15) * this.cpm[99]) * Math.max(10, Math.floor((mega.stats.hp + 15) * this.cpm[99]))),
+                            minSP: Math.floor(((mega.stats.attack + 15) * this.cpm[99]) * ((mega.stats.defense + 15) * this.cpm[99]) * Math.max(10, Math.floor((mega.stats.hp + 15) * this.cpm[99]))),
+                            level: 50,
+                            cp: this.calculateMaxCP(mega.stats.attack, mega.stats.defense, mega.stats.hp),
+                            needsXL: true
+                        };
+                    });
             }
         }
+    }
 
         calculatePvPIVsForLeague(baseatk, basedef, basesta, league, floor) {
             const sortedRanks = this.calculate(baseatk, basedef, basesta, floor, 1, 50, false, league);
@@ -1669,12 +1771,48 @@
                 if (p.shadowInfo) {
                     this.calculateTDOForVariant(p, pveFastMoves, pveChargeMoves, pvpFastMoves, pvpChargeMoves, allDefenderTypes, true);
                 }
+
+                // Calculate TDO for mega forms
+                if (p.megas) {
+                    p.megas.forEach(mega => {
+                        mega.raidTDO = {};
+                        
+                        for (const defenderType of allDefenderTypes) {
+                            mega.raidTDO[defenderType] = {
+                                L40_15_15_15: this.calculateBestTDOForLevel(
+                                    { ...p, stats: mega.stats, types: mega.types },
+                                    pveFastMoves,
+                                    pveChargeMoves,
+                                    defenderType,
+                                    { atk: 15, def: 15, sta: 15 },
+                                    40,
+                                    true,
+                                    false,
+                                    true
+                                ),
+                                L50_15_15_15: this.calculateBestTDOForLevel(
+                                    { ...p, stats: mega.stats, types: mega.types },
+                                    pveFastMoves,
+                                    pveChargeMoves,
+                                    defenderType,
+                                    { atk: 15, def: 15, sta: 15 },
+                                    50,
+                                    true,
+                                    false,
+                                    true
+                                )
+                            };
+                        }
+                    });
+                }
+            
+        
             }
             
             if (updateProgress) {
                 updateProgress(pokemon.length, pokemon.length, `PvE TDO: Complete`);
             }
-        }
+        }   
 
         calculateTDOForVariant(p, pveFastMoves, pveChargeMoves, pvpFastMoves, pvpChargeMoves, allDefenderTypes, isShadow) {
             const raidKey = isShadow ? 'shadowRaidTDO' : 'raidTDO';
@@ -1922,10 +2060,10 @@
                     const nameEl = profile.querySelector('.name');
                     if (!nameEl) continue;
                     
-                    const name = nameEl.textContent.trim();
-                    const isGrunt = name.includes('Grunt');
-                    const isMale = name.includes('Male');
-                    const isFemale = name.includes('Female');
+                    const fullName = nameEl.textContent.trim();
+                    const isGrunt = fullName.includes('Grunt');
+                    const isMale = fullName.includes('Male');
+                    const isFemale = fullName.includes('Female');
                     
                     const slots = profile.querySelectorAll('.slot');
                     const teamData = { slot1: [], slot2: [], slot3: [] };
@@ -1952,7 +2090,7 @@
                             if (isEncounter) {
                                 if (isGrunt) {
                                     catchable.fromGrunt.add(pokemonName);
-                                } else if (name.toLowerCase() === 'giovanni') {
+                                } else if (fullName.toLowerCase() === 'giovanni') {
                                     catchable.fromGiovanni.add(pokemonName);
                                 } else {
                                     catchable.fromLeader.add(pokemonName);
@@ -1963,18 +2101,16 @@
                         slotIndex++;
                     }
                     
-                    const gruntType = this.inferGruntType(teamData);
-                    
                     if (isGrunt) {
                         if (isMale) {
-                            teams.grunts.male[gruntType] = teamData;
+                            teams.grunts.male[fullName] = teamData;
                         } else if (isFemale) {
-                            teams.grunts.female[gruntType] = teamData;
+                            teams.grunts.female[fullName] = teamData;
                         }
-                    } else if (name.toLowerCase() === 'giovanni') {
+                    } else if (fullName.toLowerCase() === 'giovanni') {
                         teams.giovanni = teamData;
                     } else {
-                        const leaderName = name.toLowerCase();
+                        const leaderName = fullName.toLowerCase();
                         teams.leaders[leaderName] = teamData;
                     }
                 }
@@ -1994,29 +2130,6 @@
                     catchable: { fromGrunt: [], fromLeader: [], fromGiovanni: [] }
                 };
             }
-        }
-
-        inferGruntType(teamData) {
-            const allTypes = new Set();
-            
-            for (const slot of ['slot1', 'slot2', 'slot3']) {
-                for (const pokemon of teamData[slot]) {
-                    for (const type of pokemon) {
-                        allTypes.add(type);
-                    }
-                }
-            }
-            
-            if (allTypes.size === 1) {
-                return Array.from(allTypes)[0].toLowerCase();
-            }
-            
-            if (allTypes.size === 2) {
-                const types = Array.from(allTypes).sort();
-                return types.join('-').toLowerCase();
-            }
-            
-            return 'mixed';
         }
 
         async scrapeRaidBosses() {

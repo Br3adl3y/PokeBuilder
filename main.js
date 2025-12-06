@@ -11,7 +11,7 @@
 /**
  * Initialize IndexedDB with all required object stores
  * Creates stores for: pokemon, moves, metadata, typeEffectiveness, rankings, userPokemon
- * Loads initial data from go-database.json if database is empty
+ * Database is populated by AutoUpdateManager in index.html
  * @returns {Promise<IDBDatabase>} The initialized database instance
  */
 async function initializeDatabase() {
@@ -67,78 +67,11 @@ async function initializeDatabase() {
             }
         };
         
-        // Once database is ready, check if we need to load initial data
-        request.onsuccess = async (event) => {
+        // Database is ready - no need to load initial data
+        // AutoUpdateManager handles all data population
+        request.onsuccess = (event) => {
             const db = event.target.result;
-            
-            // Check if pokemon store is empty (first run)
-            const tx = db.transaction(['pokemon'], 'readonly');
-            const store = tx.objectStore('pokemon');
-            const countRequest = store.count();
-            
-            countRequest.onsuccess = async () => {
-                if (countRequest.result === 0) {
-                    console.log('Database empty, loading from JSON...');
-                    
-                    try {
-                        // Fetch and parse the game database
-                        const response = await fetch('./go-database.json');
-                        const data = await response.json();
-                        
-                        console.log('JSON loaded, populating database...');
-                        
-                        // Write all data to IndexedDB
-                        const writeTx = db.transaction(['pokemon', 'moves', 'metadata', 'typeEffectiveness'], 'readwrite');
-                        
-                        // Populate pokemon
-                        if (data.pokemon && Array.isArray(data.pokemon)) {
-                            const pokemonStore = writeTx.objectStore('pokemon');
-                            data.pokemon.forEach(p => pokemonStore.add(p));
-                        }
-                        
-                        // Populate moves
-                        if (data.moves && Array.isArray(data.moves)) {
-                            const movesStore = writeTx.objectStore('moves');
-                            data.moves.forEach(m => movesStore.add(m));
-                        }
-                        
-                        // Populate metadata (handle both array and object formats)
-                        if (data.metadata) {
-                            const metadataStore = writeTx.objectStore('metadata');
-                            if (Array.isArray(data.metadata)) {
-                                data.metadata.forEach(m => metadataStore.add(m));
-                            } else {
-                                Object.entries(data.metadata).forEach(([key, value]) => {
-                                    metadataStore.add({ key, ...value });
-                                });
-                            }
-                        }
-                        
-                        // Populate type effectiveness
-                        if (data.typeEffectiveness && Array.isArray(data.typeEffectiveness)) {
-                            const typeStore = writeTx.objectStore('typeEffectiveness');
-                            data.typeEffectiveness.forEach(t => typeStore.add(t));
-                        }
-                        
-                        writeTx.oncomplete = () => {
-                            console.log('Database initialized successfully!');
-                            resolve(db);
-                        };
-                        
-                        writeTx.onerror = () => {
-                            console.error('Error populating database:', writeTx.error);
-                            resolve(db);
-                        };
-                        
-                    } catch (error) {
-                        console.error('Error loading JSON:', error);
-                        resolve(db);
-                    }
-                } else {
-                    // Database already populated
-                    resolve(db);
-                }
-            };
+            resolve(db);
         };
     });
 }
@@ -520,6 +453,8 @@ class PokeApp {
             app.innerHTML = this.renderMenu();
         } else if (this.currentView === 'collection') {
             app.innerHTML = this.userCollection.render();
+        } else if (this.currentView === 'pve') {  // ADD THIS
+            app.innerHTML = this.renderPvEView();
         } else if (this.currentView === 'pokedex') {
             if (this.selectedPokemon) {
                 app.innerHTML = await renderPokemonDetail.call(this);
@@ -548,7 +483,7 @@ class PokeApp {
                     ${this.renderMenuItem('fa-solid fa-book', 'POKÉDEX', 'pokedex')}
                     ${this.renderMenuItem('fa-solid fa-star', 'COLLECTION', 'collection')}
                     ${this.renderMenuItem('fa-solid fa-users', 'PVP', null)}
-                    ${this.renderMenuItem('fa-solid fa-rocket', 'PVE', null)}
+                    ${this.renderMenuItem('fa-solid fa-rocket', 'PVE', 'pve')}
                     ${this.renderMenuItem('fa-solid fa-message', 'FEEDBACK', null)}
                 </div>
                 
@@ -656,6 +591,487 @@ class PokeApp {
                 </button>
             </div>
         `;
+    }
+
+    /**
+     * Render PvE view with Raid/Gym and Rocket tabs
+     * @returns {string} HTML string
+     */
+    renderPvEView() {
+        const currentTab = this.pveTab || 'raid';
+        
+        return `
+            <div class="min-h-screen pokedex-bg pb-20">
+                <!-- Header with tabs -->
+                <div class="bg-white bg-opacity-15 backdrop-blur-sm p-4 sticky top-0 z-20">
+                    <div class="max-w-7xl mx-auto">
+                        <div class="flex gap-2 mb-4">
+                            <button 
+                                data-action="pve-tab" 
+                                data-tab="raid"
+                                class="flex-1 py-3 px-6 rounded-lg font-semibold transition-all ${currentTab === 'raid' ? 'bg-white text-teal-600' : 'bg-white/20 text-white'}"
+                            >
+                                <i class="fa-solid fa-tower-observation mr-2"></i>
+                                Raid / Gym
+                            </button>
+                            <button 
+                                data-action="pve-tab" 
+                                data-tab="rocket"
+                                class="flex-1 py-3 px-6 rounded-lg font-semibold transition-all ${currentTab === 'rocket' ? 'bg-white text-teal-600' : 'bg-white/20 text-white'}"
+                            >
+                                <i class="fa-solid fa-rocket mr-2"></i>
+                                Team Rocket
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Content -->
+                <div class="max-w-7xl mx-auto p-4">
+                    ${currentTab === 'raid' ? this.renderRaidTab() : this.renderRocketTab()}
+                </div>
+                
+                <!-- Back FAB -->
+                <button class="fab-button fab-center bg-gray-600 text-white" data-action="back">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+        `;
+    }
+
+    /**
+     * Render Raid/Gym tab content
+     * @returns {string} HTML string
+     */
+    renderRaidTab() {
+        const defenderType1 = this.raidDefenderType1 || '';
+        const defenderType2 = this.raidDefenderType2 || '';
+        
+        const types = ['NORMAL', 'FIRE', 'WATER', 'GRASS', 'ELECTRIC', 'ICE', 'FIGHTING', 'POISON', 'GROUND', 'FLYING', 'PSYCHIC', 'BUG', 'ROCK', 'GHOST', 'DRAGON', 'DARK', 'STEEL', 'FAIRY'];
+        
+        return `
+            <!-- Controls -->
+            <div class="bg-white/10 backdrop-blur-sm rounded-xl p-6 mb-6">
+                <div class="flex items-start gap-4">
+                    <div class="flex-1">
+                        <label class="text-white text-sm font-semibold mb-2 block">Defender Type</label>
+                        <div class="flex gap-3">
+                            <select 
+                                data-action="raid-type-1" 
+                                class="flex-1 bg-white/90 rounded-lg px-4 py-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-white"
+                            >
+                                <option value="">Select Type 1</option>
+                                ${types.map(t => `<option value="${t}" ${t === defenderType1 ? 'selected' : ''}>${t.charAt(0) + t.slice(1).toLowerCase()}</option>`).join('')}
+                            </select>
+                            <select 
+                                data-action="raid-type-2" 
+                                class="flex-1 bg-white/90 rounded-lg px-4 py-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-white"
+                            >
+                                <option value="">Type 2 (Optional)</option>
+                                ${types.map(t => `<option value="${t}" ${t === defenderType2 ? 'selected' : ''}>${t.charAt(0) + t.slice(1).toLowerCase()}</option>`).join('')}
+                            </select>
+                        </div>
+                    </div>
+                    <button 
+                        data-action="raid-help"
+                        class="mt-7 w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition-colors"
+                        title="Help"
+                    >
+                        <i class="fa-solid fa-question text-sm"></i>
+                    </button>
+                </div>
+                
+                <div class="flex gap-4 mt-4">
+                    <label class="flex items-center gap-2 text-white cursor-pointer">
+                        <input type="checkbox" data-filter="legendary" checked class="w-4 h-4">
+                        <span class="text-sm">Include Legendary</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-white cursor-pointer">
+                        <input type="checkbox" data-filter="mythical" checked class="w-4 h-4">
+                        <span class="text-sm">Include Mythical</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-white cursor-pointer">
+                        <input type="checkbox" data-filter="mega" checked class="w-4 h-4">
+                        <span class="text-sm">Include Mega</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-white cursor-pointer">
+                        <input type="checkbox" data-filter="shadow" checked class="w-4 h-4">
+                        <span class="text-sm">Include Shadow</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-white cursor-pointer">
+                        <input type="checkbox" data-filter="xl" checked class="w-4 h-4">
+                        <span class="text-sm">Include XL (Lv50)</span>
+                    </label>
+                </div>
+            </div>
+
+            ${defenderType1 ? this.renderRaidLists() : `
+                <div class="bg-white/10 backdrop-blur-sm rounded-xl p-12 text-center">
+                    <i class="fa-solid fa-tower-observation text-white/50 text-6xl mb-4"></i>
+                    <p class="text-white text-lg">Select a defender type to see recommendations</p>
+                </div>
+            `}
+        `;
+    }
+
+    /**
+     * Render Rocket tab content
+     * @returns {string} HTML string
+     */
+    renderRocketTab() {
+        return `
+            <!-- Controls -->
+            <div class="bg-white/10 backdrop-blur-sm rounded-xl p-6 mb-6">
+                <div class="flex items-start gap-4">
+                    <div class="flex-1">
+                        <label class="text-white text-sm font-semibold mb-2 block">Rocket Member</label>
+                        <select 
+                            data-action="rocket-member" 
+                            class="w-full bg-white/90 rounded-lg px-4 py-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-white"
+                        >
+                            <option value="">Select Member</option>
+                            <optgroup label="Leaders">
+                                <option value="leader:giovanni">Giovanni</option>
+                                <option value="leader:cliff">Cliff</option>
+                                <option value="leader:arlo">Arlo</option>
+                                <option value="leader:sierra">Sierra</option>
+                            </optgroup>
+                            <optgroup label="Grunts">
+                                <option value="grunt:Bug">Bug Grunt</option>
+                                <option value="grunt:Dark">Dark Grunt</option>
+                                <option value="grunt:Dragon">Dragon Grunt</option>
+                                <option value="grunt:Electric">Electric Grunt</option>
+                                <option value="grunt:Fairy">Fairy Grunt</option>
+                                <option value="grunt:Fighting">Fighting Grunt</option>
+                                <option value="grunt:Fire">Fire Grunt</option>
+                                <option value="grunt:Flying">Flying Grunt</option>
+                                <option value="grunt:Ghost">Ghost Grunt</option>
+                                <option value="grunt:Grass">Grass Grunt</option>
+                                <option value="grunt:Ground">Ground Grunt</option>
+                                <option value="grunt:Ice">Ice Grunt</option>
+                                <option value="grunt:Normal">Normal Grunt</option>
+                                <option value="grunt:Poison">Poison Grunt</option>
+                                <option value="grunt:Psychic">Psychic Grunt</option>
+                                <option value="grunt:Rock">Rock Grunt</option>
+                                <option value="grunt:Steel">Steel Grunt</option>
+                                <option value="grunt:Water">Water Grunt</option>
+                                <option value="grunt:Typeless">Typeless Grunt</option>
+                                <option value="grunt:Decoy">Decoy Grunt</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <button 
+                        data-action="rocket-help"
+                        class="mt-7 w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition-colors"
+                        title="Help"
+                    >
+                        <i class="fa-solid fa-question text-sm"></i>
+                    </button>
+                </div>
+                
+                <div class="flex gap-4 mt-4">
+                    <label class="flex items-center gap-2 text-white cursor-pointer">
+                        <input type="checkbox" data-filter="legendary" checked class="w-4 h-4">
+                        <span class="text-sm">Include Legendary</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-white cursor-pointer">
+                        <input type="checkbox" data-filter="mythical" checked class="w-4 h-4">
+                        <span class="text-sm">Include Mythical</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-white cursor-pointer">
+                        <input type="checkbox" data-filter="mega" checked class="w-4 h-4">
+                        <span class="text-sm">Include Mega</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-white cursor-pointer">
+                        <input type="checkbox" data-filter="shadow" checked class="w-4 h-4">
+                        <span class="text-sm">Include Shadow</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-white cursor-pointer">
+                        <input type="checkbox" data-filter="xl" checked class="w-4 h-4">
+                        <span class="text-sm">Include XL (Lv50)</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="bg-white/10 backdrop-blur-sm rounded-xl p-12 text-center">
+                <i class="fa-solid fa-rocket text-white/50 text-6xl mb-4"></i>
+                <p class="text-white text-lg">Select a Rocket member to see recommendations</p>
+            </div>
+        `;
+    }
+
+    /**
+     * Render the three-column layout for raid lists
+     * @returns {string} HTML string
+     */
+    renderRaidLists() {
+        const wishlist = this.calculateRaidWishlist();
+        
+        return `
+            <div class="grid grid-cols-3 gap-6">
+                <!-- Current Best -->
+                <div class="bg-white/10 backdrop-blur-sm rounded-xl p-6">
+                    <h3 class="text-white text-lg font-bold mb-4 pb-3 border-b border-white/20">
+                        <i class="fa-solid fa-star mr-2"></i>
+                        Current Best
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="text-white/70 text-sm text-center py-8">
+                            Coming soon - will show your best Pokemon from your collection
+                        </div>
+                    </div>
+                </div>
+
+                <!-- To-Do -->
+                <div class="bg-white/10 backdrop-blur-sm rounded-xl p-6">
+                    <h3 class="text-white text-lg font-bold mb-4 pb-3 border-b border-white/20">
+                        <i class="fa-solid fa-list-check mr-2"></i>
+                        To-Do
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="text-white/70 text-sm text-center py-8">
+                            Coming soon - will show investment priorities from your collection
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Wishlist -->
+                <div class="bg-white/10 backdrop-blur-sm rounded-xl p-6">
+                    <h3 class="text-white text-lg font-bold mb-4 pb-3 border-b border-white/20">
+                        <i class="fa-solid fa-wand-magic-sparkles mr-2"></i>
+                        Wishlist
+                    </h3>
+                    
+                    ${wishlist.damage.length > 0 ? `
+                        <div class="mb-6">
+                            <h4 class="text-white/80 text-sm font-semibold mb-3">
+                                <i class="fa-solid fa-bolt mr-1"></i>
+                                Damage Focused
+                            </h4>
+                            <div class="space-y-2">
+                                ${wishlist.damage.map(p => this.renderPokemonListItem(p)).join('')}
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h4 class="text-white/80 text-sm font-semibold mb-3">
+                                <i class="fa-solid fa-shield mr-1"></i>
+                                Survivability Focused
+                            </h4>
+                            <div class="space-y-2">
+                                ${wishlist.survivability.map(p => this.renderPokemonListItem(p)).join('')}
+                            </div>
+                        </div>
+                    ` : `
+                        <div class="text-white/70 text-sm text-center py-8">
+                            No recommendations available for this type combination
+                        </div>
+                    `}
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Render a single Pokemon list item for PvE lists
+     * @param {Object} pokemon - Pokemon data with name, form, badges, level
+     * @returns {string} HTML string
+     */
+    renderPokemonListItem(pokemon) {
+        const badges = [];
+        if (pokemon.isShadow) badges.push('<span class="text-xs px-2 py-0.5 rounded-full bg-purple-500/80">Shadow</span>');
+        if (pokemon.isMega) badges.push('<span class="text-xs px-2 py-0.5 rounded-full bg-orange-500/80">Mega</span>');
+        if (pokemon.requiresXL) badges.push('<span class="text-xs px-2 py-0.5 rounded-full bg-red-500/80">XL</span>');
+        
+        const displayName = pokemon.name + (pokemon.form ? ` (${pokemon.form})` : '') + (pokemon.megaForm ? ` ${pokemon.megaForm}` : '');
+        
+        return `
+            <div class="bg-white/10 hover:bg-white/20 rounded-lg p-3 cursor-pointer transition-colors flex items-center justify-between gap-2">
+                <span class="text-white text-sm font-medium">${displayName}</span>
+                <div class="flex gap-1 flex-shrink-0">
+                    ${badges.join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Calculate wishlist rankings for current defender type
+     * Uses simulation functions from AutoUpdateManager
+     * @returns {Object} Object with damage and survivability arrays
+     */
+    calculateRaidWishlist() {
+        if (!this.raidDefenderType1) {
+            return { damage: [], survivability: [] };
+        }
+        
+        // Get defender type key
+        let defenderType = this.raidDefenderType1;
+        if (this.raidDefenderType2 && this.raidDefenderType2 !== this.raidDefenderType1) {
+            const types = [this.raidDefenderType1, this.raidDefenderType2].sort();
+            defenderType = types.join('/');
+        }
+        
+        // Get filters
+        const filters = this.getRaidFilters();
+        
+        // Build candidate list
+        const candidates = [];
+        
+        for (const pokemon of this.pokemon) {
+            // Apply filters
+            if (!filters.legendary && pokemon.pokemonClass === 'POKEMON_CLASS_LEGENDARY') continue;
+            if (!filters.mythical && pokemon.pokemonClass === 'POKEMON_CLASS_MYTHIC') continue;
+            
+            // Regular form - L40 and L50
+            if (pokemon.raidTDO && pokemon.raidTDO[defenderType]) {
+                const l40Data = pokemon.raidTDO[defenderType].L40_15_15_15;
+                const l50Data = pokemon.raidTDO[defenderType].L50_15_15_15;
+                
+                if (l40Data) {
+                    candidates.push({
+                        name: pokemon.name,
+                        form: pokemon.form,
+                        isShadow: false,
+                        isMega: false,
+                        megaForm: null,
+                        requiresXL: false,
+                        level: 40,
+                        dps: l40Data.dps,
+                        tdo: l40Data.tdo,
+                        dps3tdo: Math.pow(l40Data.dps, 3) * l40Data.tdo,
+                        dpstdo: l40Data.dps * l40Data.tdo
+                    });
+                }
+                
+                if (l50Data && filters.xl) {
+                    candidates.push({
+                        name: pokemon.name,
+                        form: pokemon.form,
+                        isShadow: false,
+                        isMega: false,
+                        megaForm: null,
+                        requiresXL: true,
+                        level: 50,
+                        dps: l50Data.dps,
+                        tdo: l50Data.tdo,
+                        dps3tdo: Math.pow(l50Data.dps, 3) * l50Data.tdo,
+                        dpstdo: l50Data.dps * l50Data.tdo
+                    });
+                }
+            }
+            
+            // Shadow form - L40 and L50
+            if (filters.shadow && pokemon.shadowRaidTDO && pokemon.shadowRaidTDO[defenderType]) {
+                const l40Data = pokemon.shadowRaidTDO[defenderType].L40_15_15_15;
+                const l50Data = pokemon.shadowRaidTDO[defenderType].L50_15_15_15;
+                
+                if (l40Data) {
+                    candidates.push({
+                        name: pokemon.name,
+                        form: pokemon.form,
+                        isShadow: true,
+                        isMega: false,
+                        megaForm: null,
+                        requiresXL: false,
+                        level: 40,
+                        dps: l40Data.dps,
+                        tdo: l40Data.tdo,
+                        dps3tdo: Math.pow(l40Data.dps, 3) * l40Data.tdo,
+                        dpstdo: l40Data.dps * l40Data.tdo
+                    });
+                }
+                
+                if (l50Data && filters.xl) {
+                    candidates.push({
+                        name: pokemon.name,
+                        form: pokemon.form,
+                        isShadow: true,
+                        isMega: false,
+                        megaForm: null,
+                        requiresXL: true,
+                        level: 50,
+                        dps: l50Data.dps,
+                        tdo: l50Data.tdo,
+                        dps3tdo: Math.pow(l50Data.dps, 3) * l50Data.tdo,
+                        dpstdo: l50Data.dps * l50Data.tdo
+                    });
+                }
+            }
+            
+            // Mega forms - L40 and L50
+            if (filters.mega && pokemon.megas) {
+                for (const mega of pokemon.megas) {
+                    if (mega.raidTDO && mega.raidTDO[defenderType]) {
+                        const l40Data = mega.raidTDO[defenderType].L40_15_15_15;
+                        const l50Data = mega.raidTDO[defenderType].L50_15_15_15;
+                        
+                        if (l40Data) {
+                            candidates.push({
+                                name: pokemon.name,
+                                form: pokemon.form,
+                                isShadow: false,
+                                isMega: true,
+                                megaForm: mega.form,
+                                requiresXL: false,
+                                level: 40,
+                                dps: l40Data.dps,
+                                tdo: l40Data.tdo,
+                                dps3tdo: Math.pow(l40Data.dps, 3) * l40Data.tdo,
+                                dpstdo: l40Data.dps * l40Data.tdo
+                            });
+                        }
+                        
+                        if (l50Data && filters.xl) {
+                            candidates.push({
+                                name: pokemon.name,
+                                form: pokemon.form,
+                                isShadow: false,
+                                isMega: true,
+                                megaForm: mega.form,
+                                requiresXL: true,
+                                level: 50,
+                                dps: l50Data.dps,
+                                tdo: l50Data.tdo,
+                                dps3tdo: Math.pow(l50Data.dps, 3) * l50Data.tdo,
+                                dpstdo: l50Data.dps * l50Data.tdo
+                            });
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Sort and pick top 6 for each category
+        const damageList = [...candidates].sort((a, b) => b.dps3tdo - a.dps3tdo).slice(0, 6);
+        
+        // Remove damage picks from survivability pool
+        const damageIds = new Set(damageList.map(p => 
+            `${p.name}-${p.form}-${p.isShadow}-${p.megaForm}-${p.level}`
+        ));
+        const remainingForSurvivability = candidates.filter(p => 
+            !damageIds.has(`${p.name}-${p.form}-${p.isShadow}-${p.megaForm}-${p.level}`)
+        );
+        
+        const survivabilityList = remainingForSurvivability
+            .sort((a, b) => b.dpstdo - a.dpstdo)
+            .slice(0, 6);
+        
+        return { damage: damageList, survivability: survivabilityList };
+    }
+
+    /**
+     * Get current filter states for raid lists
+     * @returns {Object} Filter states
+     */
+    getRaidFilters() {
+        return {
+            legendary: document.querySelector('[data-filter="legendary"]')?.checked ?? true,
+            mythical: document.querySelector('[data-filter="mythical"]')?.checked ?? true,
+            mega: document.querySelector('[data-filter="mega"]')?.checked ?? true,
+            shadow: document.querySelector('[data-filter="shadow"]')?.checked ?? true,
+            xl: document.querySelector('[data-filter="xl"]')?.checked ?? true
+        };
     }
 
     /**
@@ -838,6 +1254,53 @@ class PokeApp {
         document.querySelectorAll('[data-action="iv-spread"]').forEach(btn => {
             btn.addEventListener('click', () => alert('IV Spreads - Under Construction'));
         });
+
+                // PvE tab switching
+        document.querySelectorAll('[data-action="pve-tab"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                this.pveTab = btn.dataset.tab;
+                this.render();
+            });
+        });
+
+        // Raid type selectors
+        const raidType1 = document.querySelector('[data-action="raid-type-1"]');
+        if (raidType1) {
+            raidType1.addEventListener('change', (e) => {
+                this.raidDefenderType1 = e.target.value;
+                this.render();
+            });
+        }
+
+        const raidType2 = document.querySelector('[data-action="raid-type-2"]');
+        if (raidType2) {
+            raidType2.addEventListener('change', (e) => {
+                this.raidDefenderType2 = e.target.value;
+                this.render();
+            });
+        }
+
+        // Filter checkboxes
+        document.querySelectorAll('[data-filter]').forEach(checkbox => {
+            checkbox.addEventListener('change', () => {
+                this.render();
+            });
+        });
+
+        // Help buttons
+        const raidHelp = document.querySelector('[data-action="raid-help"]');
+        if (raidHelp) {
+            raidHelp.addEventListener('click', () => {
+                alert('All pokemon are scored based on Damage Per Second (DPS) and Total Damage Output (TDO). Damage Focused pokemon maximize DPS (DPS³×TDO) to deal the most damage in the shortest amount of time. Shadow variants with low defense perform best in this ranking. Survivability Focused pokemon give more weight to survivability (DPS×TDO) to prevent re-lobbying. Non-shadow Pokémon with high defense generally perform best in this ranking. This can be adjusted in user settings.');
+            });
+        }
+
+        const rocketHelp = document.querySelector('[data-action="rocket-help"]');
+        if (rocketHelp) {
+            rocketHelp.addEventListener('click', () => {
+                alert('Rocket battles require different strategies than raids. Spam Focused pokemon use fast-charging moves to pressure opponents and build energy quickly. Damage Focused pokemon prioritize raw TDO to finish battles efficiently. Team Rocket battles have different mechanics than raids, so optimal movesets may differ from raid counters.');
+            });
+        }
     }
 
     /**

@@ -1,0 +1,1658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PvE Raid Wishlist - Pokemon GO</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+        
+        .controls {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .type-selectors {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+        
+        .type-selectors label {
+            font-weight: 600;
+            color: #555;
+        }
+        
+        .type-selectors select {
+            padding: 10px 15px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            background: white;
+            cursor: pointer;
+            min-width: 180px;
+        }
+        
+        .type-selectors select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .filters {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            padding-top: 15px;
+            border-top: 1px solid #ddd;
+        }
+        
+        .filters label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #555;
+        }
+        
+        .filters input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        
+        .status {
+            padding: 15px;
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            color: #1976d2;
+        }
+        
+        .lists-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        
+        .list-section {
+            background: #fafafa;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        
+        .list-section h2 {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+        
+        .pokemon-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .pokemon-item {
+            background: white;
+            padding: 12px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        
+        .pokemon-item:hover {
+            border-color: #667eea;
+            transform: translateX(5px);
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+        }
+        
+        .pokemon-item.selected {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+        
+        .pokemon-badge {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .badge-shadow {
+            background: #9c27b0;
+            color: white;
+        }
+        
+        .badge-mega {
+            background: #ff9800;
+            color: white;
+        }
+        
+        .badge-xl {
+            background: #f44336;
+            color: white;
+        }
+        
+        .pokemon-name {
+            flex: 1;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .details-panel {
+            position: fixed;
+            right: -400px;
+            top: 0;
+            width: 400px;
+            height: 100vh;
+            background: white;
+            box-shadow: -4px 0 20px rgba(0,0,0,0.1);
+            transition: right 0.3s ease;
+            padding: 30px;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+        
+        .details-panel.open {
+            right: 0;
+        }
+        
+        .details-panel .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: #999;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+        
+        .details-panel .close-btn:hover {
+            background: #f0f0f0;
+            color: #333;
+        }
+        
+        .details-header {
+            margin-bottom: 25px;
+        }
+        
+        .details-header h3 {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .details-badges {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .details-section {
+            margin-bottom: 25px;
+        }
+        
+        .details-section h4 {
+            font-size: 14px;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+        }
+        
+        .details-content {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            font-size: 15px;
+            color: #333;
+        }
+        
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .stat-row:last-child {
+            border-bottom: none;
+        }
+        
+        .stat-label {
+            font-weight: 600;
+            color: #666;
+        }
+        
+        .stat-value {
+            color: #333;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .slot-button {
+            padding: 15px 20px;
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            font-weight: 600;
+            color: #667eea;
+            transition: all 0.2s;
+        }
+
+        .slot-button:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .slot-button.active {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
+        }
+
+        
+    </style>
+</head>
+<body>
+    <div class="container" style="position: relative;">
+        <h1>Gym/Raids</h1>
+        <button onclick="alert('All pokemon are scored based on Damage Per Second (DPS) and Total Damage Output (TDO). Damage Focused pokemon maximize DPS (DPS³×TDO) to deal the most damage in the shortest amount of time. Shadow variants with low defense perform best in this ranking. Survivability Focused pokemon give more weight to survivability (DPS×TDO) to prevent re-lobbying. Non-shadow Pokémon with high defense generally perform best in this ranking. This can be adjusted in user settings.')" style="position: absolute; top: 30px; right: 30px; width: 32px; height: 32px; border-radius: 50%; background: #667eea; color: white; border: none; cursor: pointer; font-size: 18px; font-weight: bold;">?</button>
+        <div class="controls">
+            <div class="type-selectors">
+                <label>Defender Type:</label>
+                <select id="type1">
+                    <option value="">Select Type 1</option>
+                </select>
+                <select id="type2">
+                    <option value="">Select Type 2 (Optional)</option>
+                </select>
+            </div>
+            
+            <div class="filters">
+                <label>
+                    <input type="checkbox" id="filter-legendary" checked>
+                    Include Legendary
+                </label>
+                <label>
+                    <input type="checkbox" id="filter-mythical" checked>
+                    Include Mythical
+                </label>
+                <label>
+                    <input type="checkbox" id="filter-mega" checked>
+                    Include Mega
+                </label>
+                <label>
+                    <input type="checkbox" id="filter-shadow" checked>
+                    Include Shadow
+                </label>
+                <label>
+                    <input type="checkbox" id="filter-xl" checked>
+                    Include XL Candy (Lv50)
+                </label>
+            </div>
+        </div>
+        
+        <div id="status" class="status">
+            Select a defender type to see recommendations
+        </div>
+        
+        <div class="lists-container">
+            <div class="list-section">
+                <h2>Damage Focused</h2>
+                <div id="damage-list" class="pokemon-list">
+                    <div class="empty-state">Select a defender type above</div>
+                </div>
+            </div>
+            
+            <div class="list-section">
+                <h2>Survivability Focused</h2>
+                <div id="survivability-list" class="pokemon-list">
+                    <div class="empty-state">Select a defender type above</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Team Rocket Section -->
+    <div class="container" style="margin-top: 50px;">
+        <h1>Team Rocket Battles</h1>
+        
+        <div class="controls">
+            <div class="type-selectors">
+                <label>Rocket Member:</label>
+                <select id="rocket-member">
+                    <option value="">Select Member</option>
+                </select>
+                <div id="gender-toggle" style="display: none; margin-left: 20px;">
+                    <label style="margin-right: 15px;">
+                        <input type="radio" name="gender" value="male" checked> Male
+                    </label>
+                    <label>
+                        <input type="radio" name="gender" value="female"> Female
+                    </label>
+                </div>
+            </div>
+            
+            <div class="filters">
+                <label>
+                    <input type="checkbox" id="rocket-filter-legendary" checked>
+                    Include Legendary
+                </label>
+                <label>
+                    <input type="checkbox" id="rocket-filter-mythical" checked>
+                    Include Mythical
+                </label>
+                <label>
+                    <input type="checkbox" id="rocket-filter-mega" checked>
+                    Include Mega
+                </label>
+                <label>
+                    <input type="checkbox" id="rocket-filter-shadow" checked>
+                    Include Shadow
+                </label>
+                <label>
+                    <input type="checkbox" id="rocket-filter-xl" checked>
+                    Include XL Candy (Lv50)
+                </label>
+            </div>
+        </div>
+        
+        <div id="rocket-status" class="status">
+            Select a Rocket member to see recommendations
+        </div>
+        
+        <div style="display: flex; gap: 30px;">
+            <!-- Slot Selection Panel -->
+            <div style="flex: 0 0 120px;">
+                <div class="list-section" style="position: sticky; top: 20px;">
+                    <div id="slot-buttons" style="display: flex; flex-direction: column; gap: 10px;">
+                        <!-- Slot buttons will be inserted here -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Lists Container -->
+            <div class="lists-container" style="flex: 1;">
+                <div class="list-section">
+                    <h2>Spam Focused</h2>
+                    <div id="rocket-spam-list" class="pokemon-list">
+                        <div class="empty-state">Select a Rocket member above</div>
+                    </div>
+                </div>
+                
+                <div class="list-section">
+                    <h2>Damage Focused</h2>
+                    <div id="rocket-damage-list" class="pokemon-list">
+                        <div class="empty-state">Select a Rocket member above</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="details-panel" class="details-panel">
+        <button class="close-btn" onclick="closeDetails()">×</button>
+        <div id="details-content"></div>
+    </div>
+    
+    <script>
+        // ============================================================
+        // DATABASE
+        // ============================================================
+        const DB_NAME = 'PokemonGoDB';
+        let db = null;
+        
+        // Settings (will be user-configurable later)
+        let DPS_POWER = 3;
+        let TDO_POWER = 1;
+        
+        // ============================================================
+        // INIT
+        // ============================================================
+        
+        async function initDatabase() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, 5);
+                request.onerror = () => reject(request.error);
+                request.onsuccess = () => {
+                    db = request.result;
+                    resolve(db);
+                };
+            });
+        }
+        
+        async function loadFromDatabase(storeName) {
+            const transaction = db.transaction([storeName], 'readonly');
+            const store = transaction.objectStore(storeName);
+            const request = store.getAll();
+            
+            return new Promise((resolve, reject) => {
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+        
+        function updateStatus(message) {
+            document.getElementById('status').innerHTML = message;
+        }
+        
+        // ============================================================
+        // TYPE CHART
+        // ============================================================
+        
+        const POKEMON_TYPES = [
+            'NORMAL', 'FIRE', 'WATER', 'GRASS', 'ELECTRIC', 'ICE',
+            'FIGHTING', 'POISON', 'GROUND', 'FLYING', 'PSYCHIC', 'BUG',
+            'ROCK', 'GHOST', 'DRAGON', 'DARK', 'STEEL', 'FAIRY'
+        ];
+        
+        function populateTypeDropdowns() {
+            const type1 = document.getElementById('type1');
+            const type2 = document.getElementById('type2');
+            
+            POKEMON_TYPES.forEach(type => {
+                const option1 = document.createElement('option');
+                option1.value = type;
+                option1.textContent = type.charAt(0) + type.slice(1).toLowerCase();
+                type1.appendChild(option1);
+                
+                const option2 = document.createElement('option');
+                option2.value = type;
+                option2.textContent = type.charAt(0) + type.slice(1).toLowerCase();
+                type2.appendChild(option2);
+            });
+        }
+        
+        // ============================================================
+        // WISHLIST CALCULATION
+        // ============================================================
+        
+        function getDefenderTypeKey(type1, type2) {
+            if (!type1) return null;
+            if (!type2 || type1 === type2) return type1;
+            
+            // Sort by position in POKEMON_TYPES array (same order as damage chart)
+            const index1 = POKEMON_TYPES.indexOf(type1);
+            const index2 = POKEMON_TYPES.indexOf(type2);
+            
+            if (index1 < index2) {
+                return type1 + '/' + type2;
+            } else {
+                return type2 + '/' + type1;
+            }
+        }
+        
+        function calculateWishlist(allPokemon, defenderType) {
+            const candidates = [];
+            
+            for (const pokemon of allPokemon) {
+                // Regular form - L40 and L50 as separate entries
+                if (pokemon.raidTDO && pokemon.raidTDO[defenderType]) {
+                    // L40 entry
+                    const l40Data = pokemon.raidTDO[defenderType].L40_15_15_15;
+                    if (l40Data) {
+                        const dps3tdo = Math.pow(l40Data.dps, DPS_POWER) * l40Data.tdo;
+                        const dpstdo = l40Data.dps * Math.pow(l40Data.tdo, TDO_POWER);
+                        
+                        candidates.push({
+                            name: pokemon.name,
+                            form: pokemon.form,
+                            isShadow: false,
+                            isMega: false,
+                            megaForm: null,
+                            isLegendary: pokemon.pokemonClass === 'POKEMON_CLASS_LEGENDARY',
+                            isMythical: pokemon.pokemonClass === 'POKEMON_CLASS_MYTHIC',
+                            requiresXL: false,
+                            moveset: l40Data.moveset,
+                            dps: l40Data.dps,
+                            tdo: l40Data.tdo,
+                            dps3tdo: dps3tdo,
+                            dpstdo: dpstdo,
+                            speciesId: pokemon.id,
+                            level: 40
+                        });
+                    }
+                    
+                    // L50 entry
+                    const l50Data = pokemon.raidTDO[defenderType].L50_15_15_15;
+                    if (l50Data) {
+                        const dps3tdo = Math.pow(l50Data.dps, DPS_POWER) * l50Data.tdo;
+                        const dpstdo = l50Data.dps * Math.pow(l50Data.tdo, TDO_POWER);
+                        
+                        candidates.push({
+                            name: pokemon.name,
+                            form: pokemon.form,
+                            isShadow: false,
+                            isMega: false,
+                            megaForm: null,
+                            isLegendary: pokemon.pokemonClass === 'POKEMON_CLASS_LEGENDARY',
+                            isMythical: pokemon.pokemonClass === 'POKEMON_CLASS_MYTHIC',
+                            requiresXL: true,
+                            moveset: l50Data.moveset,
+                            dps: l50Data.dps,
+                            tdo: l50Data.tdo,
+                            dps3tdo: dps3tdo,
+                            dpstdo: dpstdo,
+                            speciesId: pokemon.id,
+                            level: 50
+                        });
+                    }
+                }
+                
+                // Shadow form - L40 and L50 as separate entries
+                if (pokemon.shadowRaidTDO && pokemon.shadowRaidTDO[defenderType]) {
+                    // L40 shadow
+                    const l40Data = pokemon.shadowRaidTDO[defenderType].L40_15_15_15;
+                    if (l40Data) {
+                        const dps3tdo = Math.pow(l40Data.dps, DPS_POWER) * l40Data.tdo;
+                        const dpstdo = l40Data.dps * Math.pow(l40Data.tdo, TDO_POWER);
+                        
+                        candidates.push({
+                            name: pokemon.name,
+                            form: pokemon.form,
+                            isShadow: true,
+                            isMega: false,
+                            megaForm: null,
+                            isLegendary: pokemon.pokemonClass === 'POKEMON_CLASS_LEGENDARY',
+                            isMythical: pokemon.pokemonClass === 'POKEMON_CLASS_MYTHIC',
+                            requiresXL: false,
+                            moveset: l40Data.moveset,
+                            dps: l40Data.dps,
+                            tdo: l40Data.tdo,
+                            dps3tdo: dps3tdo,
+                            dpstdo: dpstdo,
+                            speciesId: pokemon.id,
+                            level: 40
+                        });
+                    }
+                    
+                    // L50 shadow
+                    const l50Data = pokemon.shadowRaidTDO[defenderType].L50_15_15_15;
+                    if (l50Data) {
+                        const dps3tdo = Math.pow(l50Data.dps, DPS_POWER) * l50Data.tdo;
+                        const dpstdo = l50Data.dps * Math.pow(l50Data.tdo, TDO_POWER);
+                        
+                        candidates.push({
+                            name: pokemon.name,
+                            form: pokemon.form,
+                            isShadow: true,
+                            isMega: false,
+                            megaForm: null,
+                            isLegendary: pokemon.pokemonClass === 'POKEMON_CLASS_LEGENDARY',
+                            isMythical: pokemon.pokemonClass === 'POKEMON_CLASS_MYTHIC',
+                            requiresXL: true,
+                            moveset: l50Data.moveset,
+                            dps: l50Data.dps,
+                            tdo: l50Data.tdo,
+                            dps3tdo: dps3tdo,
+                            dpstdo: dpstdo,
+                            speciesId: pokemon.id,
+                            level: 50
+                        });
+                    }
+                }
+                
+                // Mega forms - L40 and L50 as separate entries
+                if (pokemon.megas) {
+                    for (const mega of pokemon.megas) {
+                        if (mega.raidTDO && mega.raidTDO[defenderType]) {
+                            // L40 mega
+                            const l40Data = mega.raidTDO[defenderType].L40_15_15_15;
+                            if (l40Data) {
+                                const dps3tdo = Math.pow(l40Data.dps, DPS_POWER) * l40Data.tdo;
+                                const dpstdo = l40Data.dps * Math.pow(l40Data.tdo, TDO_POWER);
+                                
+                                candidates.push({
+                                    name: pokemon.name,
+                                    form: pokemon.form,
+                                    isShadow: false,
+                                    isMega: true,
+                                    megaForm: mega.form,
+                                    isLegendary: pokemon.pokemonClass === 'POKEMON_CLASS_LEGENDARY',
+                                    isMythical: pokemon.pokemonClass === 'POKEMON_CLASS_MYTHIC',
+                                    requiresXL: false,
+                                    moveset: l40Data.moveset,
+                                    dps: l40Data.dps,
+                                    tdo: l40Data.tdo,
+                                    dps3tdo: dps3tdo,
+                                    dpstdo: dpstdo,
+                                    speciesId: pokemon.id,
+                                    level: 40
+                                });
+                            }
+                            
+                            // L50 mega
+                            const l50Data = mega.raidTDO[defenderType].L50_15_15_15;
+                            if (l50Data) {
+                                const dps3tdo = Math.pow(l50Data.dps, DPS_POWER) * l50Data.tdo;
+                                const dpstdo = l50Data.dps * Math.pow(l50Data.tdo, TDO_POWER);
+                                
+                                candidates.push({
+                                    name: pokemon.name,
+                                    form: pokemon.form,
+                                    isShadow: false,
+                                    isMega: true,
+                                    megaForm: mega.form,
+                                    isLegendary: pokemon.pokemonClass === 'POKEMON_CLASS_LEGENDARY',
+                                    isMythical: pokemon.pokemonClass === 'POKEMON_CLASS_MYTHIC',
+                                    requiresXL: true,
+                                    moveset: l50Data.moveset,
+                                    dps: l50Data.dps,
+                                    tdo: l50Data.tdo,
+                                    dps3tdo: dps3tdo,
+                                    dpstdo: dpstdo,
+                                    speciesId: pokemon.id,
+                                    level: 50
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Apply filters
+            const filters = {
+                legendary: document.getElementById('filter-legendary').checked,
+                mythical: document.getElementById('filter-mythical').checked,
+                mega: document.getElementById('filter-mega').checked,
+                shadow: document.getElementById('filter-shadow').checked,
+                xl: document.getElementById('filter-xl').checked
+            };
+            
+            const filtered = candidates.filter(p => {
+                if (!filters.legendary && p.isLegendary) return false;
+                if (!filters.mythical && p.isMythical) return false;
+                if (!filters.mega && p.isMega) return false;
+                if (!filters.shadow && p.isShadow) return false;
+                if (!filters.xl && p.requiresXL) return false;
+                return true;
+            });
+            
+            // Sort and split
+            const damageList = [...filtered].sort((a, b) => b.dps3tdo - a.dps3tdo).slice(0, 6);
+            
+            // Remove damage picks from survivability pool
+            const damageIds = new Set(damageList.map(p => 
+                `${p.speciesId}-${p.isShadow}-${p.megaForm}-${p.level}`
+            ));
+            const remainingForSurvivability = filtered.filter(p => 
+                !damageIds.has(`${p.speciesId}-${p.isShadow}-${p.megaForm}-${p.level}`)
+            );
+            
+            const survivabilityList = remainingForSurvivability
+                .sort((a, b) => b.dpstdo - a.dpstdo)
+                .slice(0, 6);
+            
+            return { damageList, survivabilityList };
+        }
+        
+        // ============================================================
+        // UI RENDERING
+        // ============================================================
+        
+        function getDisplayName(pokemon) {
+            let name = pokemon.name;
+            if (pokemon.form) name += ` (${pokemon.form})`;
+            if (pokemon.megaForm) name += ` ${pokemon.megaForm}`;
+            return name;
+        }
+        
+        function renderPokemonItem(pokemon) {
+            const div = document.createElement('div');
+            div.className = 'pokemon-item';
+            div.onclick = () => showDetails(pokemon);
+            
+            let badges = '';
+            if (pokemon.isShadow) badges += '<span class="pokemon-badge badge-shadow">Shadow</span>';
+            if (pokemon.isMega) badges += '<span class="pokemon-badge badge-mega">Mega</span>';
+            if (pokemon.requiresXL) badges += '<span class="pokemon-badge badge-xl">XL</span>';
+            
+            div.innerHTML = `
+                <span class="pokemon-name">${getDisplayName(pokemon)}</span>
+                <div style="display: flex; gap: 5px;">${badges}</div>
+            `;
+            
+            return div;
+        }
+        
+        function renderLists(damageList, survivabilityList) {
+            const damageContainer = document.getElementById('damage-list');
+            const survivabilityContainer = document.getElementById('survivability-list');
+            
+            damageContainer.innerHTML = '';
+            survivabilityContainer.innerHTML = '';
+            
+            if (damageList.length === 0) {
+                damageContainer.innerHTML = '<div class="empty-state">No Pokemon match your filters</div>';
+            } else {
+                damageList.forEach(p => damageContainer.appendChild(renderPokemonItem(p)));
+            }
+            
+            if (survivabilityList.length === 0) {
+                survivabilityContainer.innerHTML = '<div class="empty-state">No Pokemon match your filters</div>';
+            } else {
+                survivabilityList.forEach(p => survivabilityContainer.appendChild(renderPokemonItem(p)));
+            }
+        }
+        
+        function showDetails(pokemon) {
+            const panel = document.getElementById('details-panel');
+            const content = document.getElementById('details-content');
+            
+            let badges = '';
+            if (pokemon.isShadow) badges += '<span class="pokemon-badge badge-shadow">Shadow</span>';
+            if (pokemon.isMega) badges += '<span class="pokemon-badge badge-mega">Mega</span>';
+            if (pokemon.requiresXL) badges += '<span class="pokemon-badge badge-xl">XL 50</span>';
+            
+            content.innerHTML = `
+                <div class="details-header">
+                    <h3>${getDisplayName(pokemon)}</h3>
+                    <div class="details-badges">${badges}</div>
+                </div>
+                
+                <div class="details-section">
+                    <h4>IVs & Level</h4>
+                    <div class="details-content">
+                        <div class="stat-row">
+                            <span class="stat-label">Attack IV</span>
+                            <span class="stat-value">15</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Defense IV</span>
+                            <span class="stat-value">15</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Stamina IV</span>
+                            <span class="stat-value">15</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Level</span>
+                            <span class="stat-value">${pokemon.level}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="details-section">
+                    <h4>Moveset</h4>
+                    <div class="details-content">
+                        <div class="stat-row">
+                            <span class="stat-label">Fast Move</span>
+                            <span class="stat-value">${pokemon.moveset.fast.replace(/_/g, ' ')}</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Charged Move</span>
+                            <span class="stat-value">${pokemon.moveset.charge.replace(/_/g, ' ')}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="details-section">
+                    <h4>Performance</h4>
+                    <div class="details-content">
+                        <div class="stat-row">
+                            <span class="stat-label">DPS</span>
+                            <span class="stat-value">${pokemon.dps.toFixed(2)}</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">TDO</span>
+                            <span class="stat-value">${Math.round(pokemon.tdo)}</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Damage Score</span>
+                            <span class="stat-value">${Math.round(pokemon.dps3tdo).toLocaleString()}</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Survivability Score</span>
+                            <span class="stat-value">${Math.round(pokemon.dpstdo).toLocaleString()}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            panel.classList.add('open');
+        }
+        
+        function closeDetails() {
+            document.getElementById('details-panel').classList.remove('open');
+        }
+        
+        // ============================================================
+        // EVENT HANDLERS
+        // ============================================================
+        
+        let allPokemon = [];
+        
+        async function handleTypeChange() {
+            const type1 = document.getElementById('type1').value;
+            const type2 = document.getElementById('type2').value;
+            
+            if (!type1) {
+                updateStatus('Select a defender type to see recommendations');
+                document.getElementById('damage-list').innerHTML = '<div class="empty-state">Select a defender type above</div>';
+                document.getElementById('survivability-list').innerHTML = '<div class="empty-state">Select a defender type above</div>';
+                return;
+            }
+            
+            const defenderType = getDefenderTypeKey(type1, type2);
+            updateStatus(`Calculating best counters for ${defenderType.replace('/', ' / ')}...`);
+            
+            const { damageList, survivabilityList } = calculateWishlist(allPokemon, defenderType);
+            
+            renderLists(damageList, survivabilityList);
+            updateStatus(`✅ Showing top counters for ${defenderType.replace('/', ' / ')}`);
+        }
+        
+        function handleFilterChange() {
+            // Re-run calculation with current type selection
+            handleTypeChange();
+        }
+        
+        // ============================================================
+        // ROCKET BATTLE LOGIC
+        // ============================================================
+
+        let rocketTeamsData = null;
+        
+        function populateRocketDropdown() {
+            const select = document.getElementById('rocket-member');
+            
+            if (!rocketTeamsData) return;
+            
+            // Add leaders (including Giovanni from root level)
+            const leaderGroup = document.createElement('optgroup');
+            leaderGroup.label = 'Leaders';
+            
+            // Add giovanni if it exists at root level
+            if (rocketTeamsData.giovanni) {
+                const option = document.createElement('option');
+                option.value = 'leader:giovanni';
+                option.textContent = 'Giovanni';
+                leaderGroup.appendChild(option);
+            }
+            
+            // Add other leaders from leaders object
+            const leaders = rocketTeamsData.leaders;
+            if (leaders) {
+                for (const leaderId in leaders) {
+                    const option = document.createElement('option');
+                    option.value = `leader:${leaderId}`;
+                    option.textContent = leaderId.charAt(0).toUpperCase() + leaderId.slice(1);
+                    leaderGroup.appendChild(option);
+                }
+            }
+            select.appendChild(leaderGroup);
+            
+            // Add grunts
+            const gruntTypes = new Set();
+            const maleGrunts = rocketTeamsData.grunts?.male || {};
+            const femaleGrunts = rocketTeamsData.grunts?.female || {};
+            
+            const allGruntNames = [...Object.keys(maleGrunts), ...Object.keys(femaleGrunts)];
+            
+            for (const gruntName of allGruntNames) {
+                if (gruntName.includes('Decoy')) {
+                    gruntTypes.add('Decoy');
+                } else if (gruntName.includes('Grunt') && !gruntName.includes('-type')) {
+                    // "Male Grunt" or "Female Grunt" = Typeless
+                    gruntTypes.add('Typeless');
+                } else if (gruntName.includes('-type')) {
+                    // Extract type from pattern "Type-type Gender Grunt"
+                    const match = gruntName.match(/^(\w+)-type/);
+                    if (match) {
+                        gruntTypes.add(match[1]);
+                    }
+                }
+            }
+            
+            if (gruntTypes.size > 0) {
+                const gruntGroup = document.createElement('optgroup');
+                gruntGroup.label = 'Grunts';
+                
+                const sortedTypes = Array.from(gruntTypes).sort();
+                for (const type of sortedTypes) {
+                    const option = document.createElement('option');
+                    option.value = `grunt:${type}`;
+                    option.textContent = `${type} Grunt`;
+                    gruntGroup.appendChild(option);
+                }
+                select.appendChild(gruntGroup);
+            }
+        }
+
+        function getRocketLineup(memberType, memberId, gender = 'male') {
+            if (memberType === 'leader') {
+                // Check root level for giovanni first
+                if (memberId === 'giovanni' && rocketTeamsData.giovanni) {
+                    return rocketTeamsData.giovanni;
+                }
+                // Otherwise check leaders object
+                return rocketTeamsData.leaders?.[memberId];
+            } else {
+                // Handle grunts
+                const genderGrunts = rocketTeamsData.grunts?.[gender];
+                if (!genderGrunts) return null;
+                
+                // Handle Decoy grunts
+                if (memberId === 'Decoy') {
+                    const genderKey = gender === 'male' ? 'Decoy Male Grunt' : 'Decoy Female Grunt';
+                    return genderGrunts[genderKey];
+                }
+                
+                // Handle typeless grunts
+                if (memberId === 'Typeless') {
+                    const genderKey = gender === 'male' ? 'Male Grunt' : 'Female Grunt';
+                    return genderGrunts[genderKey];
+                }
+                
+                // Handle typed grunts - match exact pattern "Type-type Gender Grunt"
+                const gruntKey = `${memberId}-type ${gender === 'male' ? 'Male' : 'Female'} Grunt`;
+                return genderGrunts[gruntKey];
+            }
+        }
+
+        function checkGenderVariants(gruntType) {
+            const maleGrunts = rocketTeamsData.grunts?.male || {};
+            const femaleGrunts = rocketTeamsData.grunts?.female || {};
+            
+            let hasMale = false;
+            let hasFemale = false;
+            
+            // Handle Decoy grunts
+            if (gruntType === 'Decoy') {
+                hasMale = 'Decoy Male Grunt' in maleGrunts;
+                hasFemale = 'Decoy Female Grunt' in femaleGrunts;
+            }
+            // Handle typeless grunts
+            else if (gruntType === 'Typeless') {
+                hasMale = 'Male Grunt' in maleGrunts;
+                hasFemale = 'Female Grunt' in femaleGrunts;
+            }
+            // Handle typed grunts
+            else {
+                const maleKey = `${gruntType}-type Male Grunt`;
+                const femaleKey = `${gruntType}-type Female Grunt`;
+                hasMale = maleKey in maleGrunts;
+                hasFemale = femaleKey in femaleGrunts;
+            }
+            
+            return { hasMale, hasFemale };
+        }
+
+        function calculateRocketCounters(allPokemon, lineup) {
+            const results = {
+                spam: [],
+                damage: []
+            };
+            
+            // Process each slot
+            for (let slotNum = 1; slotNum <= 3; slotNum++) {
+                const slotKey = `slot${slotNum}`;
+                let possibleTypes = lineup[slotKey];
+                
+                // Convert array format to string keys
+                possibleTypes = possibleTypes.map(typeArray => {
+                    if (typeArray.length === 1) {
+                        return typeArray[0];
+                    } else {
+                        return getDefenderTypeKey(typeArray[0], typeArray[1]);
+                    }
+                });
+
+                if (!possibleTypes || possibleTypes.length === 0) continue;
+                
+                // Calculate spam-focused counter for this slot
+                const spamCandidates = [];
+                
+                for (const pokemon of allPokemon) {
+                    if (!pokemon.spamTDO) continue;
+                    
+                    // Each spamTDO entry is a different moveset
+                    for (const spamMoveset of pokemon.spamTDO) {
+                        // Sum TDO across all possible types in this slot
+                        let tdoSum40 = 0;
+                        let tdoSum50 = 0;
+                        let validTypes = 0;
+                        
+                        for (const defenderType of possibleTypes) {
+                            const typeData = spamMoveset.tdoByType[defenderType];
+                            if (typeData) {
+                                if (typeData.L40) tdoSum40 += typeData.L40.tdo;
+                                if (typeData.L50) tdoSum50 += typeData.L50.tdo;
+                                validTypes++;
+                            }
+                        }
+                        
+                        if (validTypes === 0) continue;
+                        
+                        // Create candidates for L40 and L50
+                        if (tdoSum40 > 0) {
+                            spamCandidates.push({
+                                name: pokemon.name,
+                                form: pokemon.form,
+                                isShadow: false,
+                                isMega: false,
+                                megaForm: null,
+                                isLegendary: pokemon.pokemonClass === 'POKEMON_CLASS_LEGENDARY',
+                                isMythical: pokemon.pokemonClass === 'POKEMON_CLASS_MYTHIC',
+                                requiresXL: false,
+                                moveset: spamMoveset.moveset,
+                                spamScore: spamMoveset.spamScore,
+                                tdoSum: tdoSum40,
+                                compositeScore: spamMoveset.spamScore * tdoSum40,
+                                speciesId: pokemon.id,
+                                level: 40,
+                                slot: slotNum,
+                                possibleTypes: possibleTypes
+                            });
+                        }
+                        
+                        if (tdoSum50 > 0) {
+                            spamCandidates.push({
+                                name: pokemon.name,
+                                form: pokemon.form,
+                                isShadow: false,
+                                isMega: false,
+                                megaForm: null,
+                                isLegendary: pokemon.pokemonClass === 'POKEMON_CLASS_LEGENDARY',
+                                isMythical: pokemon.pokemonClass === 'POKEMON_CLASS_MYTHIC',
+                                requiresXL: true,
+                                moveset: spamMoveset.moveset,
+                                spamScore: spamMoveset.spamScore,
+                                tdoSum: tdoSum50,
+                                compositeScore: spamMoveset.spamScore * tdoSum50,
+                                speciesId: pokemon.id,
+                                level: 50,
+                                slot: slotNum,
+                                possibleTypes: possibleTypes
+                            });
+                        }
+                    }
+                    
+                    // Shadow spam variants
+                    if (pokemon.shadowSpamTDO) {
+                        for (const spamMoveset of pokemon.shadowSpamTDO) {
+                            let tdoSum40 = 0;
+                            let tdoSum50 = 0;
+                            let validTypes = 0;
+                            
+                            for (const defenderType of possibleTypes) {
+                                const typeData = spamMoveset.tdoByType[defenderType];
+                                if (typeData) {
+                                    if (typeData.L40) tdoSum40 += typeData.L40.tdo;
+                                    if (typeData.L50) tdoSum50 += typeData.L50.tdo;
+                                    validTypes++;
+                                }
+                            }
+                            
+                            if (validTypes === 0) continue;
+                            
+                            if (tdoSum40 > 0) {
+                                spamCandidates.push({
+                                    name: pokemon.name,
+                                    form: pokemon.form,
+                                    isShadow: true,
+                                    isMega: false,
+                                    megaForm: null,
+                                    isLegendary: pokemon.pokemonClass === 'POKEMON_CLASS_LEGENDARY',
+                                    isMythical: pokemon.pokemonClass === 'POKEMON_CLASS_MYTHIC',
+                                    requiresXL: false,
+                                    moveset: spamMoveset.moveset,
+                                    spamScore: spamMoveset.spamScore,
+                                    tdoSum: tdoSum40,
+                                    compositeScore: spamMoveset.spamScore * tdoSum40,
+                                    speciesId: pokemon.id,
+                                    level: 40,
+                                    slot: slotNum,
+                                    possibleTypes: possibleTypes
+                                });
+                            }
+                            
+                            if (tdoSum50 > 0) {
+                                spamCandidates.push({
+                                    name: pokemon.name,
+                                    form: pokemon.form,
+                                    isShadow: true,
+                                    isMega: false,
+                                    megaForm: null,
+                                    isLegendary: pokemon.pokemonClass === 'POKEMON_CLASS_LEGENDARY',
+                                    isMythical: pokemon.pokemonClass === 'POKEMON_CLASS_MYTHIC',
+                                    requiresXL: true,
+                                    moveset: spamMoveset.moveset,
+                                    spamScore: spamMoveset.spamScore,
+                                    tdoSum: tdoSum50,
+                                    compositeScore: spamMoveset.spamScore * tdoSum50,
+                                    speciesId: pokemon.id,
+                                    level: 50,
+                                    slot: slotNum,
+                                    possibleTypes: possibleTypes
+                                });
+                            }
+                        }
+                    }
+                }
+                
+                // Apply filters to spam candidates
+                const filteredSpam = applyRocketFilters(spamCandidates);
+                
+                // Sort and pick best for this slot
+                filteredSpam.sort((a, b) => b.compositeScore - a.compositeScore);
+                if (filteredSpam.length > 0) {
+                    results.spam.push(filteredSpam[0]);
+                }
+                
+                // Calculate damage-focused counter for this slot
+                const damageCandidates = [];
+                
+                for (const pokemon of allPokemon) {
+                    // Regular rocketTDO
+                    if (pokemon.rocketTDO) {
+                        let tdoSum40 = 0;
+                        let tdoSum50 = 0;
+                        let dpsSum40 = 0;
+                        let dpsSum50 = 0;
+                        let validTypes = 0;
+                        
+                        for (const defenderType of possibleTypes) {
+                            const typeData = pokemon.rocketTDO[defenderType];
+                            if (typeData) {
+                                if (typeData.L40) {
+                                    tdoSum40 += typeData.L40.tdo;
+                                    validTypes++;
+                                }
+                                if (typeData.L50) {
+                                    tdoSum50 += typeData.L50.tdo;
+                                }
+                            }
+                        }
+                        
+                        if (validTypes === 0) continue;
+
+                        if (tdoSum40 > 0) {
+                            damageCandidates.push({
+                                name: pokemon.name,
+                                form: pokemon.form,
+                                isShadow: false,
+                                isMega: false,
+                                megaForm: null,
+                                isLegendary: pokemon.pokemonClass === 'POKEMON_CLASS_LEGENDARY',
+                                isMythical: pokemon.pokemonClass === 'POKEMON_CLASS_MYTHIC',
+                                requiresXL: false,
+                                moveset: pokemon.rocketTDO[possibleTypes[0]].L40.moveset,
+                                tdoSum: tdoSum40,
+                                compositeScore: tdoSum40,
+                                speciesId: pokemon.id,
+                                level: 40,
+                                slot: slotNum,
+                                possibleTypes: possibleTypes
+                            });
+                        }
+                        
+                        if (tdoSum50 > 0) {
+                            damageCandidates.push({
+                                name: pokemon.name,
+                                form: pokemon.form,
+                                isShadow: false,
+                                isMega: false,
+                                megaForm: null,
+                                isLegendary: pokemon.pokemonClass === 'POKEMON_CLASS_LEGENDARY',
+                                isMythical: pokemon.pokemonClass === 'POKEMON_CLASS_MYTHIC',
+                                requiresXL: true,
+                                moveset: pokemon.rocketTDO[possibleTypes[0]].L50.moveset,
+                                tdoSum: tdoSum50,
+                                compositeScore: tdoSum50,
+                                speciesId: pokemon.id,
+                                level: 50,
+                                slot: slotNum,
+                                possibleTypes: possibleTypes
+                            });
+                        }
+                    }
+                    
+                    // Shadow rocketTDO
+                    if (pokemon.shadowRocketTDO) {
+                        let tdoSum40 = 0;
+                        let tdoSum50 = 0;
+                        let validTypes = 0;
+                        
+                        for (const defenderType of possibleTypes) {
+                            const typeData = pokemon.shadowRocketTDO[defenderType];
+                            if (typeData) {
+                                if (typeData.L40) {
+                                    tdoSum40 += typeData.L40.tdo;
+                                    validTypes++;
+                                }
+                                if (typeData.L50) {
+                                    tdoSum50 += typeData.L50.tdo;
+                                }
+                            }
+                        }
+                        
+                        if (validTypes === 0) continue;
+                        
+                        if (tdoSum40 > 0) {
+                            damageCandidates.push({
+                                name: pokemon.name,
+                                form: pokemon.form,
+                                isShadow: true,
+                                isMega: false,
+                                megaForm: null,
+                                isLegendary: pokemon.pokemonClass === 'POKEMON_CLASS_LEGENDARY',
+                                isMythical: pokemon.pokemonClass === 'POKEMON_CLASS_MYTHIC',
+                                requiresXL: false,
+                                moveset: pokemon.shadowRocketTDO[possibleTypes[0]].L40.moveset,
+                                tdoSum: tdoSum40,
+                                compositeScore: tdoSum40,
+                                speciesId: pokemon.id,
+                                level: 40,
+                                slot: slotNum,
+                                possibleTypes: possibleTypes
+                            });
+                        }
+                        
+                        if (tdoSum50 > 0) {
+                            damageCandidates.push({
+                                name: pokemon.name,
+                                form: pokemon.form,
+                                isShadow: true,
+                                isMega: false,
+                                megaForm: null,
+                                isLegendary: pokemon.pokemonClass === 'POKEMON_CLASS_LEGENDARY',
+                                isMythical: pokemon.pokemonClass === 'POKEMON_CLASS_MYTHIC',
+                                requiresXL: true,
+                                moveset: pokemon.shadowRocketTDO[possibleTypes[0]].L50.moveset,
+                                tdoSum: tdoSum50,
+                                compositeScore: tdoSum50,
+                                speciesId: pokemon.id,
+                                level: 50,
+                                slot: slotNum,
+                                possibleTypes: possibleTypes
+                            });
+                        }
+                    }
+                }
+                
+                // Apply filters to damage candidates
+                const filteredDamage = applyRocketFilters(damageCandidates);
+                
+                // Sort and pick best for this slot
+                filteredDamage.sort((a, b) => b.compositeScore - a.compositeScore);
+                if (filteredDamage.length > 0) {
+                    results.damage.push(filteredDamage[0]);
+                }
+            }
+            
+            return results;
+        }
+
+        function applyRocketFilters(candidates) {
+            const filters = {
+                legendary: document.getElementById('rocket-filter-legendary').checked,
+                mythical: document.getElementById('rocket-filter-mythical').checked,
+                mega: document.getElementById('rocket-filter-mega').checked,
+                shadow: document.getElementById('rocket-filter-shadow').checked,
+                xl: document.getElementById('rocket-filter-xl').checked
+            };
+            
+            return candidates.filter(p => {
+                if (!filters.legendary && p.isLegendary) return false;
+                if (!filters.mythical && p.isMythical) return false;
+                if (!filters.mega && p.isMega) return false;
+                if (!filters.shadow && p.isShadow) return false;
+                if (!filters.xl && p.requiresXL) return false;
+                return true;
+            });
+        }
+
+        function renderRocketItem(pokemon) {
+            const div = document.createElement('div');
+            div.className = 'pokemon-item';
+            div.onclick = () => showRocketDetails(pokemon);
+            
+            let badges = '';
+            if (pokemon.isShadow) badges += '<span class="pokemon-badge badge-shadow">Shadow</span>';
+            if (pokemon.isMega) badges += '<span class="pokemon-badge badge-mega">Mega</span>';
+            if (pokemon.requiresXL) badges += '<span class="pokemon-badge badge-xl">XL</span>';
+            
+            div.innerHTML = `
+                <span class="pokemon-name">${getDisplayName(pokemon)}</span>
+                <div style="display: flex; gap: 5px;">${badges}</div>
+            `;
+            
+            return div;
+        }
+
+        function showRocketDetails(pokemon) {
+            const panel = document.getElementById('details-panel');
+            const content = document.getElementById('details-content');
+            
+            let badges = '';
+            if (pokemon.isShadow) badges += '<span class="pokemon-badge badge-shadow">Shadow</span>';
+            if (pokemon.isMega) badges += '<span class="pokemon-badge badge-mega">Mega</span>';
+            if (pokemon.requiresXL) badges += '<span class="pokemon-badge badge-xl">XL 50</span>';
+            
+            // Format possible types for display
+            const typesDisplay = pokemon.possibleTypes 
+                ? pokemon.possibleTypes.map(t => t.replace('/', ' / ')).join('<br>')
+                : 'N/A';
+            
+            content.innerHTML = `
+                <div class="details-header">
+                    <h3>${getDisplayName(pokemon)}</h3>
+                    <div class="details-badges">${badges}</div>
+                </div>
+                
+                <div class="details-section">
+                    <h4>Battle Info</h4>
+                    <div class="details-content">
+                        <div class="stat-row">
+                            <span class="stat-label">Slot</span>
+                            <span class="stat-value">${pokemon.slot}</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Level</span>
+                            <span class="stat-value">${pokemon.level}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="details-section">
+                    <h4>Possible Defender Types</h4>
+                    <div class="details-content">
+                        ${typesDisplay}
+                    </div>
+                </div>
+                
+                <div class="details-section">
+                    <h4>Moveset</h4>
+                    <div class="details-content">
+                        <div class="stat-row">
+                            <span class="stat-label">Fast Move</span>
+                            <span class="stat-value">${pokemon.moveset.fast.replace(/_/g, ' ')}</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Charged Move</span>
+                            <span class="stat-value">${pokemon.moveset.charge.replace(/_/g, ' ')}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="details-section">
+                    <h4>Performance</h4>
+                    <div class="details-content">
+                        ${pokemon.spamScore ? `
+                            <div class="stat-row">
+                                <span class="stat-label">Spam Score</span>
+                                <span class="stat-value">${pokemon.spamScore.toFixed(2)}</span>
+                            </div>
+                        ` : ''}
+                        ${pokemon.tdoSum ? `
+                            <div class="stat-row">
+                                <span class="stat-label">Total TDO</span>
+                                <span class="stat-value">${Math.round(pokemon.tdoSum)}</span>
+                            </div>
+                        ` : ''}
+                        <div class="stat-row">
+                            <span class="stat-label">Composite Score</span>
+                            <span class="stat-value">${Math.round(pokemon.compositeScore).toLocaleString()}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            panel.classList.add('open');
+        }
+
+        function showSlotDetails(slotNum, possibleTypes) {
+            const panel = document.getElementById('details-panel');
+            const content = document.getElementById('details-content');
+            
+            const typesList = possibleTypes.map(t => t.replace('/', ' / ')).join('<br>');
+            
+            content.innerHTML = `
+                <div class="details-header">
+                    <h3>Slot ${slotNum} Possibilities</h3>
+                </div>
+                
+                <div class="details-section">
+                    <h4>Possible Defender Types</h4>
+                    <div class="details-content">
+                        ${typesList}
+                    </div>
+                </div>
+            `;
+            
+            panel.classList.add('open');
+        }
+
+        function renderRocketLists(spamList, damageList) {
+            const spamContainer = document.getElementById('rocket-spam-list');
+            const damageContainer = document.getElementById('rocket-damage-list');
+            
+            spamContainer.innerHTML = '';
+            damageContainer.innerHTML = '';
+            
+            if (spamList.length === 0) {
+                spamContainer.innerHTML = '<div class="empty-state">No Pokemon match your filters</div>';
+            } else {
+                spamList.forEach(p => spamContainer.appendChild(renderRocketItem(p)));
+            }
+            
+            if (damageList.length === 0) {
+                damageContainer.innerHTML = '<div class="empty-state">No Pokemon match your filters</div>';
+            } else {
+                damageList.forEach(p => damageContainer.appendChild(renderRocketItem(p)));
+            }
+        }
+
+        async function handleRocketChange() {
+            const selection = document.getElementById('rocket-member').value;
+            
+            if (!selection) {
+                document.getElementById('rocket-status').innerHTML = 'Select a Rocket member to see recommendations';
+                document.getElementById('rocket-spam-list').innerHTML = '<div class="empty-state">Select a Rocket member above</div>';
+                document.getElementById('rocket-damage-list').innerHTML = '<div class="empty-state">Select a Rocket member above</div>';
+                document.getElementById('gender-toggle').style.display = 'none';
+                document.getElementById('slot-buttons').innerHTML = '';
+                activeSlot = null;
+                currentRocketResults = null;
+                return;
+            }
+            
+            const [memberType, memberId] = selection.split(':');
+            
+            // Check if gender toggle needed
+            if (memberType === 'grunt') {
+                const { hasMale, hasFemale } = checkGenderVariants(memberId);
+                if (hasMale && hasFemale) {
+                    document.getElementById('gender-toggle').style.display = 'flex';
+                } else {
+                    document.getElementById('gender-toggle').style.display = 'none';
+                }
+            } else {
+                document.getElementById('gender-toggle').style.display = 'none';
+            }
+            
+            const gender = document.querySelector('input[name="gender"]:checked')?.value || 'male';
+            const lineup = getRocketLineup(memberType, memberId, gender);
+            
+            if (!lineup) {
+                document.getElementById('rocket-status').innerHTML = '⚠️ No lineup data found for this member';
+                document.getElementById('slot-buttons').innerHTML = '';
+                return;
+            }
+            
+            document.getElementById('rocket-status').innerHTML = `⏳ Calculating counters for ${memberId}...`;
+            
+            const results = calculateRocketCounters(allPokemon, lineup);
+            currentRocketResults = results;
+            activeSlot = null;
+            
+            createSlotButtons(results.spam, results.damage);
+            renderRocketLists(results.spam, results.damage);
+            document.getElementById('rocket-status').innerHTML = `✅ Showing best counters for ${memberId.charAt(0).toUpperCase() + memberId.slice(1)}`;
+        }
+
+        function handleRocketFilterChange() {
+            handleRocketChange();
+        }
+
+        function createSlotButtons(spamList, damageList) {
+            const container = document.getElementById('slot-buttons');
+            container.innerHTML = '';
+            
+            // Get unique slots and their possible types
+            const slotData = new Map();
+            [...spamList, ...damageList].forEach(p => {
+                if (!slotData.has(p.slot)) {
+                    slotData.set(p.slot, p.possibleTypes);
+                }
+            });
+            
+            const sortedSlots = Array.from(slotData.keys()).sort();
+            
+            sortedSlots.forEach(slot => {
+                const button = document.createElement('div');
+                button.className = 'slot-button';
+                if (activeSlot === slot) button.classList.add('active');
+                button.textContent = `Slot ${slot}`;
+                button.onclick = () => {
+                    showSlotDetails(slot, slotData.get(slot));
+                };
+                container.appendChild(button);
+            });
+        }
+
+        function showSlotDetails(slotNum, possibleTypes) {
+            const panel = document.getElementById('details-panel');
+            const content = document.getElementById('details-content');
+            
+            const typesList = possibleTypes.map(t => t.replace('/', ' / ')).join('<br>');
+            
+            content.innerHTML = `
+                <div class="details-header">
+                    <h3>Slot ${slotNum} Possibilities</h3>
+                </div>
+                
+                <div class="details-section">
+                    <h4>Possible Defender Types</h4>
+                    <div class="details-content">
+                        ${typesList}
+                    </div>
+                </div>
+            `;
+            
+            panel.classList.add('open');
+        }
+
+        // ============================================================
+        // INITIALIZATION
+        // ============================================================
+        
+        (async function init() {
+            try {
+                updateStatus('Loading database...');
+                await initDatabase();
+                
+                updateStatus('Loading Pokemon data...');
+                allPokemon = await loadFromDatabase('pokemon');
+                
+                if (allPokemon.length === 0) {
+                    updateStatus('⚠️ No Pokemon data found. Please run the data scraper first.');
+                    return;
+                }
+                
+                // Load rocket teams data
+                const metadata = await loadFromDatabase('metadata');
+                const rocketData = metadata.find(m => m.key === 'rocketTeams');
+                if (rocketData) {
+                    rocketTeamsData = rocketData.value;
+                    populateRocketDropdown();
+                }
+                
+                populateTypeDropdowns();
+                
+                // Raid event listeners
+                document.getElementById('type1').addEventListener('change', handleTypeChange);
+                document.getElementById('type2').addEventListener('change', handleTypeChange);
+                
+                document.getElementById('filter-legendary').addEventListener('change', handleFilterChange);
+                document.getElementById('filter-mythical').addEventListener('change', handleFilterChange);
+                document.getElementById('filter-mega').addEventListener('change', handleFilterChange);
+                document.getElementById('filter-shadow').addEventListener('change', handleFilterChange);
+                document.getElementById('filter-xl').addEventListener('change', handleFilterChange);
+                
+                // Rocket event listeners
+                document.getElementById('rocket-member').addEventListener('change', handleRocketChange);
+                document.querySelectorAll('input[name="gender"]').forEach(radio => {
+                    radio.addEventListener('change', handleRocketChange);
+                });
+                
+                document.getElementById('rocket-filter-legendary').addEventListener('change', handleRocketFilterChange);
+                document.getElementById('rocket-filter-mythical').addEventListener('change', handleRocketFilterChange);
+                document.getElementById('rocket-filter-mega').addEventListener('change', handleRocketFilterChange);
+                document.getElementById('rocket-filter-shadow').addEventListener('change', handleRocketFilterChange);
+                document.getElementById('rocket-filter-xl').addEventListener('change', handleRocketFilterChange);
+                
+                updateStatus(`✅ Loaded ${allPokemon.length} Pokemon. Select a defender type to begin.`);
+                
+            } catch (error) {
+                updateStatus(`❌ Error: ${error.message}`);
+                console.error('Init error:', error);
+            }
+        })();
+    </script>
+</body>
+</html>
