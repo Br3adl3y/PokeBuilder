@@ -23,53 +23,7 @@ class UserCollectionManager {
         
         await this.loadCollection();
         
-        // If empty, populate with test data
-        if (this.collection.length === 0) {
-            console.log('Populating test data...');
-            await this.populateTestData();
-            await this.loadCollection(); // Reload after populating
-            console.log('Test data loaded:', this.collection.length, 'Pokemon');
-        }
-        
         this.initialized = true;
-    }
-
-    async populateTestData() {
-        const testPokemon = [
-            { name: 'Pikachu', dexNumber: 25, cp: 1523, level: 25, attackIV: 15, defenseIV: 14, staminaIV: 13, form: 'Normal', isFavorite: true },
-            { name: 'Charizard', dexNumber: 6, cp: 2847, level: 30, attackIV: 12, defenseIV: 15, staminaIV: 14, form: 'Normal', isFavorite: false },
-            { name: 'Blastoise', dexNumber: 9, cp: 2456, level: 28, attackIV: 14, defenseIV: 13, staminaIV: 15, form: 'Normal', isFavorite: true },
-            { name: 'Mewtwo', dexNumber: 150, cp: 4178, level: 40, attackIV: 15, defenseIV: 15, staminaIV: 15, form: 'Normal', isFavorite: true },
-            { name: 'Dragonite', dexNumber: 149, cp: 3581, level: 35, attackIV: 14, defenseIV: 14, staminaIV: 13, form: 'Normal', isFavorite: false },
-            { name: 'Gyarados', dexNumber: 130, cp: 3012, level: 32, attackIV: 13, defenseIV: 15, staminaIV: 14, form: 'Normal', isFavorite: false },
-            { name: 'Snorlax', dexNumber: 143, cp: 2789, level: 29, attackIV: 15, defenseIV: 12, staminaIV: 15, form: 'Normal', isFavorite: true },
-            { name: 'Lapras', dexNumber: 131, cp: 2345, level: 26, attackIV: 14, defenseIV: 14, staminaIV: 12, form: 'Normal', isFavorite: false },
-            { name: 'Gengar', dexNumber: 94, cp: 2678, level: 30, attackIV: 15, defenseIV: 13, staminaIV: 14, form: 'Normal', isFavorite: false },
-            { name: 'Alakazam', dexNumber: 65, cp: 2134, level: 27, attackIV: 13, defenseIV: 14, staminaIV: 13, form: 'Normal', isFavorite: false },
-            { name: 'Machamp', dexNumber: 68, cp: 2890, level: 31, attackIV: 15, defenseIV: 15, staminaIV: 12, form: 'Normal', isFavorite: true },
-            { name: 'Arcanine', dexNumber: 59, cp: 2567, level: 28, attackIV: 14, defenseIV: 13, staminaIV: 15, form: 'Normal', isFavorite: false }
-        ];
-
-        const now = new Date();
-        
-        for (let i = 0; i < testPokemon.length; i++) {
-            const mon = testPokemon[i];
-            const dateCaught = new Date(now.getTime() - (i * 86400000)); // Each day older
-            // Make first 3 pokemon added in last 24 hours to show the glow
-            const dateUploaded = i < 3 ? new Date(now.getTime() - (i * 3600000)) : new Date(now.getTime() - (i * 43200000));
-            
-            // Fetch sprite as blob
-            const spriteUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${mon.dexNumber}.png`;
-            const spriteBlob = await this.fetchImageAsBlob(spriteUrl);
-            
-            await this.addPokemon({
-                ...mon,
-                roles: [],
-                dateCaught: dateCaught.toISOString(),
-                dateUploaded: dateUploaded.toISOString(),
-                spriteThumb: spriteBlob
-            });
-        }
     }
 
     async fetchImageAsBlob(url) {
