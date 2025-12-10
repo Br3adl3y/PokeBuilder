@@ -450,11 +450,11 @@
     <script src="userCollection.js"></script>
     <script src="OCR.js"></script>
     <script src="scraper.js"></script>
+    <script src="PvE.js"></script>
     <script>
         // Initialize app after all scripts are loaded
         document.addEventListener('DOMContentLoaded', async () => {
             try {
-                console.log('Starting app initialization...');
                 
                 // Check if all required scripts are loaded
                 if (typeof initializeDatabase === 'undefined') {
@@ -466,16 +466,13 @@
                 }
                 
                 const db = await initializeDatabase();
-                console.log('Database initialized:', db);
                 
                 // Run auto-update
                 const autoUpdate = new AutoUpdateManager();
                 await autoUpdate.initialize(db);
-                console.log('Auto-update complete');
                 
                 // Then start the app
                 new PokeApp();
-                console.log('App started');
                 
             } catch (error) {
                 console.error('App initialization failed:', error);

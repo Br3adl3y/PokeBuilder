@@ -204,7 +204,7 @@ class AutoUpdateManager {
         overlay.innerHTML = `
             <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #2dd4bf 0%, #14b8a6 50%, #10b981 100%); z-index: 9999;">
                 <div style="max-width: 500px; margin: 0 auto; padding: 32px; height: 100%; display: flex; flex-direction: column; justify-content: center;">
-                    <h1 style="color: white; text-align: center; font-size: 28px; font-weight: 300; letter-spacing: 0.1em; margin-bottom: 32px;">LOADING DATA</h1>
+                    <h1 style="color: white; text-align: center; font-size: 28px; font-weight: 300; letter-spacing: 0.1em; margin-bottom: 32px;">CREATING DATABASE</h1>
                     
                     <div style="background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border-radius: 16px; padding: 24px; margin-bottom: 16px;">
                         <div id="scrape-status" style="color: white; font-size: 16px; font-weight: 300; text-align: center;">
@@ -845,6 +845,12 @@ class AutoUpdateManager {
         // Extract mega evolutions
         const megas = this.extractMegaEvolutions(settings);
         
+        // Extract size data
+        const pokedexHeightM = settings.pokedexHeightM || null;
+        const pokedexWeightKg = settings.pokedexWeightKg || null;
+        const heightStdDev = settings.heightStdDev || null;
+        const weightStdDev = settings.weightStdDev || null;
+        
         return {
             id: `${name}-${form || 'base'}`,
             dexNumber,
@@ -855,12 +861,16 @@ class AutoUpdateManager {
             maxCP: this.calculateMaxCP(baseAttack, baseDefense, baseStamina),
             moves,
             evolutions,
-            megas,  // Add mega data here
+            megas,
             pokemonClass: settings.pokemonClass || 'NORMAL',
             thirdMoveCost,
             shadowInfo,
             templateId,
-            chargeTypeCoverage: { count: uniqueChargeTypes.length, types: uniqueChargeTypes }
+            chargeTypeCoverage: { count: uniqueChargeTypes.length, types: uniqueChargeTypes },
+            pokedexHeightM,
+            pokedexWeightKg,
+            heightStdDev,
+            weightStdDev
         };
     }
 
@@ -883,7 +893,7 @@ extractMegaEvolutions(settings) {
             },
             types: [],
             maxCP: 0,
-            form: '' // 'Mega' or 'Mega X' or 'Mega Y'
+            form: '' // 'Mega' or 'Mega X' or 'Mega Y' or "Mega Z'
         };
         
         // Extract types
@@ -976,15 +986,39 @@ extractEvolutions(settings, gameMaster) {
             const evolutionData = { name: '', form: '', candyCost: branch.candyCost || 0, candyCostPurified: branch.candyCostPurified || 0 };
             if (typeof evoId === 'string') {
                 const parts = evoId.split('_');
-                evolutionData.name = this.toTitleCase(parts[0]);
-                if (parts.length > 1) {
-                    const formStr = parts.slice(1).join('_').toUpperCase();
-                    if (formStr.includes('ALOLA')) evolutionData.form = 'Alolan';
-                    else if (formStr.includes('GALARIAN') || formStr.includes('GALAR')) evolutionData.form = 'Galarian';
-                    else if (formStr.includes('HISUIAN') || formStr.includes('HISUI')) evolutionData.form = 'Hisuian';
-                    else if (formStr.includes('PALDEAN') || formStr.includes('PALDEA')) evolutionData.form = 'Paldean';
-                    else if (formStr === 'NORMAL' || formStr === 'STANDARD') evolutionData.form = '';
-                    else evolutionData.form = this.toTitleCase(parts.slice(1).join('_'));
+                
+                // Special case for MR_MIME and MR_RIME
+                if (parts[0].toUpperCase() === 'MR' && parts.length > 1) {
+                    if (parts[1].toUpperCase() === 'MIME') {
+                        evolutionData.name = 'Mr. Mime';
+                        // Check if there's a regional form after MIME
+                        if (parts.length > 2) {
+                            if (parts[2].toUpperCase().includes('GALARIAN') || parts[2].toUpperCase().includes('GALAR')) {
+                                evolutionData.form = 'Galarian';
+                            }
+                        }
+                    } else if (parts[1].toUpperCase() === 'RIME') {
+                        evolutionData.name = 'Mr. Rime';
+                        // Check if there's a regional form
+                        if (parts.length > 2) {
+                            const formStr = parts.slice(2).join('_').toUpperCase();
+                            if (formStr.includes('GALARIAN') || formStr.includes('GALAR')) {
+                                evolutionData.form = 'Galarian';
+                            }
+                        }
+                    }
+                } else {
+                    // Normal processing for other Pokemon
+                    evolutionData.name = this.toTitleCase(parts[0]);
+                    if (parts.length > 1) {
+                        const formStr = parts.slice(1).join('_').toUpperCase();
+                        if (formStr.includes('ALOLA')) evolutionData.form = 'Alolan';
+                        else if (formStr.includes('GALARIAN') || formStr.includes('GALAR')) evolutionData.form = 'Galarian';
+                        else if (formStr.includes('HISUIAN') || formStr.includes('HISUI')) evolutionData.form = 'Hisuian';
+                        else if (formStr.includes('PALDEAN') || formStr.includes('PALDEA')) evolutionData.form = 'Paldean';
+                        else if (formStr === 'NORMAL' || formStr === 'STANDARD') evolutionData.form = '';
+                        else evolutionData.form = this.toTitleCase(parts.slice(1).join('_'));
+                    }
                 }
             }
             evolutions.push(evolutionData);
@@ -1385,6 +1419,7 @@ calculateTDOForVariant(p, pveFastMoves, pveChargeMoves, pvpFastMoves, pvpChargeM
         };
     }
     
+    // **UPDATED: Now stores DPS along with TDO**
     for (const defenderType of allDefenderTypes) {
         p[rocketKey][defenderType] = {
             L40: this.calculateBestTDOForLevel(p, pvpFastMoves, pvpChargeMoves, defenderType, { atk: 15, def: 15, sta: 15 }, 40, false, isShadow, false),
@@ -1424,6 +1459,7 @@ calculateTDOForVariant(p, pveFastMoves, pveChargeMoves, pvpFastMoves, pvpChargeM
         }
     }
     
+    // **UPDATED: Now stores DPS along with TDO**
     for (const spamMoveset of spammyMovesets) {
         const tdoByType = {};
         
@@ -1432,8 +1468,16 @@ calculateTDOForVariant(p, pveFastMoves, pveChargeMoves, pvpFastMoves, pvpChargeM
             const resultL50 = this.simulateRaidBattle(p, spamMoveset.fast, spamMoveset.charge, defenderType, { atk: 15, def: 15, sta: 15 }, 50, false, isShadow, false);
             
             tdoByType[defenderType] = {
-                L40: { tdo: resultL40.tdo, moveset: { fast: spamMoveset.fast.rawId, charge: spamMoveset.charge.rawId } },
-                L50: { tdo: resultL50.tdo, moveset: { fast: spamMoveset.fast.rawId, charge: spamMoveset.charge.rawId } }
+                L40: { 
+                    tdo: resultL40.tdo, 
+                    dps: resultL40.dps,  // **NEW**
+                    moveset: { fast: spamMoveset.fast.rawId, charge: spamMoveset.charge.rawId } 
+                },
+                L50: { 
+                    tdo: resultL50.tdo, 
+                    dps: resultL50.dps,  // **NEW**
+                    moveset: { fast: spamMoveset.fast.rawId, charge: spamMoveset.charge.rawId } 
+                }
             };
         }
         
@@ -1464,11 +1508,12 @@ calculateBestTDOForLevel(pokemon, fastMoves, chargeMoves, defenderType, ivs, lev
         }
     }
     
-    if (!isRaid) {
-        return { tdo: bestResult.tdo, moveset: bestResult.moveset };
-    }
-    
-    return bestResult;
+    // **UPDATED: Return DPS for both raid and rocket**
+    return {
+        tdo: bestResult.tdo,
+        dps: bestResult.dps,  // **NEW: Always return DPS**
+        moveset: bestResult.moveset
+    };
 }
 
 simulateRaidBattle(pokemon, fastMove, chargeMove, defenderType, ivs, level, dummyAttacks, isShadow, isRaid) {

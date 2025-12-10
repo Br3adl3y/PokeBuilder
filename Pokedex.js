@@ -16,9 +16,6 @@
  * @param {boolean} forceSpecificForm - If true, display this specific form instead of defaulting to base
  */
 function selectPokemon(pokemon, forceSpecificForm = false) {
-    console.log('selectPokemon called with:', pokemon.name, pokemon.form, 'force:', forceSpecificForm);
-    console.trace(); // Debug: shows call stack
-    
     // Get all forms for this pokemon
     const forms = getPokemonForms.call(this, pokemon.dexNumber);
     const baseForm = forms[0]; // Base form is always first (sorted in getPokemonForms)
@@ -27,9 +24,7 @@ function selectPokemon(pokemon, forceSpecificForm = false) {
     // selectedForm holds the specific variant being displayed
     this.selectedPokemon = baseForm;
     this.selectedForm = forceSpecificForm ? pokemon : null;
-    
-    console.log('After setting - selectedPokemon:', this.selectedPokemon.form, 'selectedForm:', this.selectedForm?.form);
-    
+        
     // Reset UI state
     this.expandedSections = {};
     this.moveMode = 'pvp';
@@ -44,9 +39,6 @@ function selectPokemon(pokemon, forceSpecificForm = false) {
  * @param {string} formId - The ID of the form to switch to
  */
 function selectForm(formId) {
-    console.log('selectForm called with formId:', formId);
-    console.trace(); // Debug: shows call stack
-    
     this.selectedForm = this.pokemon.find(p => p.id === formId);
     this.expandedSections = {};
     this.render();
@@ -348,10 +340,6 @@ async function renderPokemonDetail() {
     };
     
     const chainPokemon = chain ? getAllChainPokemon(chain) : [];
-
-    // Debug logging
-    console.log('Forms array:', forms.map(f => ({id: f.id, form: f.form, name: f.name})));
-    console.log('Currently displaying (p):', {id: p.id, form: p.form, name: p.name});
 
     return `
         <div class="min-h-screen pokedex-bg p-4 py-8" data-detail-container>

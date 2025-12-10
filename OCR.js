@@ -44,41 +44,20 @@ class OCRProcessor {
     }
 
     // Process screenshot and extract data with OCR
-    async processScreenshot(imageData, pokemonList) {
-        console.log('🔍 Starting OCR processing...');
-        console.log('Image dimensions:', imageData.width, 'x', imageData.height);
-        console.log('Pokemon list length:', pokemonList?.length);
-        
+    async processScreenshot(imageData, pokemonList) {        
         try {
             // Extract regions from the Pokémon GO screenshot
             const anchor = this.findAnchorStar(imageData);
-            console.log('✓ Anchor found:', anchor);
-            
             const statsBoxTop = this.findStatsBoxEdge(imageData);
-            console.log('✓ Stats box top:', statsBoxTop);
-            
             const nickname = await this.extractNickname(imageData, statsBoxTop);
-            console.log('✓ Nickname extracted:', nickname);
-            
             const cp = await this.extractCP(imageData, anchor.x, anchor.y);
-            console.log('✓ CP extracted:', cp);
-            
             const dateFirstPass = await this.extractDateCaught(imageData, { usedFallback: false });
-            console.log('✓ Date first pass:', dateFirstPass);
-            
             const pokemonName = await this.extractPokemonName(imageData, dateFirstPass, pokemonList);
-            console.log('✓ Pokemon name extracted:', pokemonName);
-            
             const dateCaught = await this.extractDateCaught(imageData, pokemonName);
-            console.log('✓ Date caught:', dateCaught);
-            
             const stats = await this.extractIVStats(imageData, pokemonName);
-            console.log('✓ Stats extracted:', stats);
             
             // Crop to just the sprite area
             const croppedScreenshot = this.cropToSprite(imageData);
-            console.log('✓ Screenshot cropped');
-            
             const extractedData = {
                 name: pokemonName?.value || '',
                 nickname: nickname?.value || '',

@@ -359,7 +359,7 @@
 
         function openDatabase() {
             return new Promise((resolve, reject) => {
-                const request = indexedDB.open(DB_NAME, 2);
+                const request = indexedDB.open(DB_NAME, 5);
                 
                 request.onerror = () => reject(new Error('Failed to open database: ' + request.error));
                 request.onsuccess = () => resolve(request.result);
@@ -478,6 +478,11 @@
             }
 
             const leagues = ['great', 'ultra', 'little'];
+            const leagueLimits = {
+                'great': 1500,
+                'ultra': 2500,
+                'little': 500
+            };
             
             for (const pokemon of normalPokemon) {
                 for (const league of leagues) {
@@ -488,6 +493,14 @@
                     }
                     
                     const leagueData = pokemon[league];
+                    
+                    // NEW: Check if CP is within 100 of the league limit
+                    const cp = leagueData.cp || 0;
+                    const leagueLimit = leagueLimits[league];
+                    if (cp < leagueLimit - 10) {
+                        continue; // Skip this Pokemon for this league
+                    }
+                    
                     const atk = leagueData.iv.atk || 0;
                     const def = leagueData.iv.def || 0;
                     const sta = leagueData.iv.sta || 0;
@@ -495,7 +508,8 @@
                     dist[atk][def][sta]++;
                     details[atk][def][sta].push({
                         name: pokemon.name,
-                        league: league.charAt(0).toUpperCase() + league.slice(1)
+                        league: league.charAt(0).toUpperCase() + league.slice(1),
+                        cp: cp  // Add CP to the details for reference
                     });
                 }
             }
@@ -579,7 +593,7 @@
                 listEl.innerHTML = '';
                 pokemonList.forEach(p => {
                     const li = document.createElement('li');
-                    li.textContent = `${p.name} - ${p.league} League`;
+                    li.textContent = `${p.name} - ${p.league} League (CP: ${p.cp})`;
                     listEl.appendChild(li);
                 });
             }

@@ -61,26 +61,15 @@ class ScreenshotProcessor {
     this.showProcessingModal(`Processing ${this.currentBatchIndex + 1} of ${this.batchImages.length}...`);
 
     try {
-        console.log('📸 Loading image...');
         const imageData = await this.loadImage(file);
-        console.log('✓ Image loaded');
-        
-        console.log('🔍 Processing screenshot...');
         const extractedData = await this.ocr.processScreenshot(imageData, this.app.pokemon);
-        console.log('✓ OCR complete:', extractedData);
         
-        console.log('🎨 Hiding processing modal...');
         this.hideProcessingModal();
-        console.log('✓ Modal hidden');
-        
-        console.log('📋 Showing confirmation modal...');
         this.showConfirmationModal(extractedData, imageData, true);
-        console.log('✓ Confirmation modal shown');
     } catch (error) {
         console.error('❌ Error processing screenshot:', error);
         console.error('Stack:', error.stack);
         this.hideProcessingModal();
-        
         this.showSkipImageModal(error.message);
     }
 }
@@ -1308,7 +1297,6 @@ class ScreenshotProcessor {
             try {
                 await this.savePokemon(formData);
                 this.hideProcessingModal();
-                console.log('✓ Save complete');
                 
                 if (isBatch) {
                     this.currentBatchIndex++;
@@ -1547,7 +1535,6 @@ class ScreenshotProcessor {
                         width: img.width,
                         height: img.height
                     });
-                    console.log('✓ Sprite thumbnail created');
                 } catch (error) {
                     console.error('Warning: Could not create sprite thumbnail:', error);
                     // Continue without sprite thumbnail
@@ -1601,7 +1588,7 @@ class ScreenshotProcessor {
                     charge2: formData.assignedMoveset?.charge2 || null
                 },
                 assignedEvolution: null,
-                
+
                 // Dates
                 dateCaught: formData.dateCaught || '',
                 dateUploaded: new Date().toISOString(),
@@ -1610,8 +1597,6 @@ class ScreenshotProcessor {
                 screenshot: formData.screenshot || null,
                 spriteThumb: spriteBlob
             };
-            
-            console.log('📝 Saving Pokémon to database:', pokemonEntry.name);
             
             return new Promise((resolve, reject) => {
                 const dbRequest = indexedDB.open('PokemonGoDB');
@@ -1624,7 +1609,6 @@ class ScreenshotProcessor {
                     const addRequest = store.add(pokemonEntry);
                     
                     addRequest.onsuccess = () => {
-                        console.log('✓ Pokémon saved successfully!');
                         resolve();
                     };
                     
@@ -1635,7 +1619,6 @@ class ScreenshotProcessor {
                     };
                     
                     tx.oncomplete = () => {
-                        console.log('✓ Transaction complete');
                     };
                     
                     tx.onerror = () => {
