@@ -14,7 +14,7 @@ class ScreenshotProcessor {
         this.tesseractWorker = null;
         
         // CP Multiplier array for level calculations
-        this.cpm = [0.094, 0.135137430784308, 0.166397869586944, 0.192650914456886, 0.215732470154762, 0.236572655026622, 0.255720049142837, 0.273530381100769, 0.29024988412857, 0.306057381335773, 0.321087598800659, 0.335445032295077, 0.349212676286697, 0.36245774877879, 0.375235587358474, 0.387592411085168, 0.399567276239395, 0.41119354951725, 0.422500014305114, 0.432926413410414, 0.443107545375824, 0.453059953871985, 0.46279838681221, 0.472336077786704, 0.481684952974319, 0.490855810259008, 0.499858438968658, 0.508701756943992, 0.517393946647644, 0.525942508771329, 0.534354329109191, 0.542635762230353, 0.550792694091796, 0.558830599438087, 0.566754519939422, 0.574569148039264, 0.582278907299041, 0.589887911977272, 0.59740000963211, 0.604823657502073, 0.61215728521347, 0.61940411056605, 0.626567125320434, 0.633649181622743, 0.640652954578399, 0.647580963301656, 0.654435634613037, 0.661219263506722, 0.667934000492096, 0.674581899290818, 0.681164920330047, 0.687684905887771, 0.694143652915954, 0.700542893277978, 0.706884205341339, 0.713169102333341, 0.719399094581604, 0.725575616972598, 0.731700003147125, 0.734741011137376, 0.737769484519958, 0.740785574597326, 0.743789434432983, 0.746781208702482, 0.749761044979095, 0.752729105305821, 0.75568550825119, 0.758630366519684, 0.761563837528228, 0.764486065255226, 0.767397165298461, 0.77029727397159, 0.77318650484085, 0.776064945942412, 0.778932750225067, 0.781790064808426, 0.784636974334716, 0.787473583646825, 0.790300011634826, 0.792803950958807, 0.795300006866455, 0.79780392148697, 0.800300002098083, 0.802803892322847, 0.805299997329711, 0.807803863460723, 0.81029999256134, 0.812803834895026, 0.815299987792968, 0.817803806620319, 0.820299983024597, 0.822803778631297, 0.825299978256225, 0.827803750922782, 0.830299973487854, 0.832803753381377, 0.835300028324127, 0.837803755931569, 0.840300023555755, 0.842803729034748, 0.845300018787384, 0.847803702398935, 0.850300014019012, 0.852803676019539, 0.85530000925064, 0.857803649892077, 0.860300004482269, 0.862803624012168, 0.865299999713897];
+        this.cpm = [0.0939999967813491, 0.135137430784308, 0.166397869586944, 0.192650914456886, 0.215732470154762, 0.236572655026622, 0.255720049142837, 0.273530381100769, 0.29024988412857, 0.306057381335773, 0.321087598800659, 0.335445032295077, 0.349212676286697, 0.36245774877879, 0.375235587358474, 0.387592411085168, 0.399567276239395, 0.41119354951725, 0.422500014305114, 0.432926413410414, 0.443107545375824, 0.453059953871985, 0.46279838681221, 0.472336077786704, 0.481684952974319, 0.490855810259008, 0.499858438968658, 0.508701756943992, 0.517393946647644, 0.525942508771329, 0.534354329109191, 0.542635762230353, 0.550792694091796, 0.558830599438087, 0.566754519939422, 0.574569148039264, 0.582278907299041, 0.589887911977272, 0.59740000963211, 0.604823657502073, 0.61215728521347, 0.61940411056605, 0.626567125320434, 0.633649181622743, 0.640652954578399, 0.647580963301656, 0.654435634613037, 0.661219263506722, 0.667934000492096, 0.674581899290818, 0.681164920330047, 0.687684905887771, 0.694143652915954, 0.700542893277978, 0.706884205341339, 0.713169102333341, 0.719399094581604, 0.725575616972598, 0.731700003147125, 0.734741011137376, 0.737769484519958, 0.740785574597326, 0.743789434432983, 0.746781208702482, 0.749761044979095, 0.752729105305821, 0.75568550825119, 0.758630366519684, 0.761563837528228, 0.764486065255226, 0.767397165298461, 0.77029727397159, 0.77318650484085, 0.776064945942412, 0.778932750225067, 0.781790064808426, 0.784636974334716, 0.787473583646825, 0.790300011634826, 0.792803950958807, 0.795300006866455, 0.79780392148697, 0.800300002098083, 0.802803892322847, 0.805299997329711, 0.807803863460723, 0.81029999256134, 0.812803834895026, 0.815299987792968, 0.817803806620319, 0.820299983024597, 0.822803778631297, 0.825299978256225, 0.827803750922782, 0.830299973487854, 0.832803753381377, 0.835300028324127, 0.837803755931569, 0.840300023555755, 0.842803729034748, 0.845300018787384, 0.847803702398935, 0.850300014019012, 0.852803676019539, 0.85530000925064, 0.857803649892077, 0.860300004482269, 0.862803624012168, 0.865299999713897];
     }
 
     loadImage(file) {
@@ -327,22 +327,12 @@ class ScreenshotProcessor {
                     <p class="text-teal-50">Upload screenshots from Pokémon GO</p>
                     
                     <div class="space-y-3">
-                        ${!this.isDesktop ? `
-                            <button 
-                                class="w-full bg-white bg-opacity-20 backdrop-blur-sm text-white rounded-xl py-4 flex items-center justify-center gap-3 hover:bg-opacity-30 transition border border-white border-opacity-20"
-                                data-action="single-pokemon"
-                            >
-                                <i class="fa-solid fa-image text-xl"></i>
-                                <span>Single Pokémon</span>
-                            </button>
-                        ` : ''}
-                        
                         <button 
                             class="w-full bg-white bg-opacity-20 backdrop-blur-sm text-white rounded-xl py-4 flex items-center justify-center gap-3 hover:bg-opacity-30 transition border border-white border-opacity-20"
                             data-action="batch-upload"
                         >
                             <i class="fa-solid fa-images text-xl"></i>
-                            <span>Upload</span>
+                            <span>Upload Screenshots</span>
                         </button>
                         
                         ${this.batchImages.length > 0 ? `
@@ -354,14 +344,6 @@ class ScreenshotProcessor {
                                 <span>Continue Batch (${this.currentBatchIndex + 1}/${this.batchImages.length})</span>
                             </button>
                         ` : ''}
-                        
-                        <button 
-                            class="w-full bg-blue-500 text-white rounded-xl py-4 flex items-center justify-center gap-3 hover:bg-blue-600 transition font-semibold shadow-lg"
-                            data-action="analyze-queue"
-                        >
-                            <i class="fa-solid fa-chart-line text-xl"></i>
-                            <span>Analyze Caught Pokémon</span>
-                        </button>
                     </div>
                     
                     <button 
@@ -374,7 +356,7 @@ class ScreenshotProcessor {
                     <input 
                         type="file" 
                         accept="image/*" 
-                        ${this.isDesktop ? 'multiple' : ''}
+                        multiple
                         class="hidden" 
                         data-input="file-upload"
                     />
@@ -394,13 +376,6 @@ class ScreenshotProcessor {
             modal.remove();
         });
 
-        const singleBtn = modal.querySelector('[data-action="single-pokemon"]');
-        if (singleBtn) {
-            singleBtn.addEventListener('click', () => {
-                modal.querySelector('[data-input="file-upload"]').click();
-            });
-        }
-
         modal.querySelector('[data-action="batch-upload"]').addEventListener('click', () => {
             modal.querySelector('[data-input="file-upload"]').click();
         });
@@ -412,24 +387,11 @@ class ScreenshotProcessor {
                 this.processBatch();
             });
         }
-        
-        const analyzeBtn = modal.querySelector('[data-action="analyze-queue"]');
-        if (analyzeBtn) {
-            analyzeBtn.addEventListener('click', () => {
-                modal.remove();
-                this.app.catchReport.startQueue();
-            });
-        }
 
         modal.querySelector('[data-input="file-upload"]').addEventListener('change', (e) => {
             const files = Array.from(e.target.files);
             modal.remove();
-            
-            if (files.length === 1 && !this.isDesktop) {
-                this.handleSingleImage(files[0]);
-            } else {
-                this.handleBatchUpload(files);
-            }
+            this.handleBatchUpload(files);
         });
 
         modal.addEventListener('click', (e) => {
@@ -438,29 +400,6 @@ class ScreenshotProcessor {
     }
 
     
-    // Handle single image upload
-    async handleSingleImage(file) {
-        if (!file) return;
-
-        this.showProcessingModal('Initializing OCR...');
-
-        try {
-            await this.ocr.initTesseract();
-            
-            this.showProcessingModal('Processing screenshot...');
-            
-            const imageData = await this.loadImage(file);
-            const extractedData = await this.ocr.processScreenshot(imageData, this.app.pokemon);
-            
-            this.hideProcessingModal();
-            this.showConfirmationModal(extractedData, imageData);
-        } catch (error) {
-            console.error('Error processing screenshot:', error);
-            this.hideProcessingModal();
-            this.showErrorModal(error.message);
-        }
-    }
-
     // Handle batch upload
     async handleBatchUpload(files) {
         this.batchImages = files;
@@ -653,6 +592,11 @@ class ScreenshotProcessor {
         
         // Determine initial shadow state based on OCR detection
         const initialShadowState = data.shadow ? 'shadow' : 'normal';
+        
+        // Determine initial size state
+        let initialSizeState = 'regular';
+        if (data.xxl) initialSizeState = 'xxl';
+        if (data.xxs) initialSizeState = 'xxs';
 
         // Generate annotated preview
         const preview = this.createAnnotatedPreview(imageData, data);
@@ -834,9 +778,13 @@ class ScreenshotProcessor {
                                 <!-- Toggle Switches -->
                                 <div class="bg-white bg-opacity-0 backdrop-blur-sm rounded-lg p-4 space-y-3 border border-white border-opacity-0">                                  
                                     ${this.renderToggle('2nd Charge Move Unlocked', 'secondChargeUnlocked', data.secondChargeUnlocked)}
-                                    ${this.renderToggle('Shiny', 'shiny', data.shiny)}
+                                    
+                                    <!-- Shadow Status -->
                                     <div class="flex justify-between items-center">
-                                        <label class="text-sm text-white">Shadow Status</label>
+                                        <label class="text-sm text-white flex items-center gap-2">
+                                            <img src="https://raw.githubusercontent.com/PokeMiners/pogo_assets/master/Images/Rocket/ic_shadow.png" alt="" class="w-5 h-5">
+                                            Shadow
+                                        </label>
                                         <div class="flex gap-2">
                                             <button 
                                                 type="button"
@@ -861,9 +809,79 @@ class ScreenshotProcessor {
                                             </button>
                                         </div>
                                     </div>
+                                    
+                                    <!-- Size Status -->
+                                    <div class="flex justify-between items-center">
+                                        <label class="text-sm text-white flex items-center gap-2">
+                                            <img src="https://raw.githubusercontent.com/PokeMiners/pogo_assets/master/Images/Menu%20Icons/ic_height.png" alt="" class="w-5 h-5">
+                                            Size
+                                        </label>
+                                        <div class="flex gap-2">
+                                            <button 
+                                                type="button"
+                                                data-size-state="xxl"
+                                                class="px-3 py-1 text-xs rounded-lg transition ${initialSizeState === 'xxl' ? 'bg-white text-teal-600' : 'bg-white bg-opacity-20 text-white'}"
+                                            >
+                                                XXL
+                                            </button>
+                                            <button 
+                                                type="button"
+                                                data-size-state="regular"
+                                                class="px-3 py-1 text-xs rounded-lg transition ${initialSizeState === 'regular' ? 'bg-white text-teal-600' : 'bg-white bg-opacity-20 text-white'}"
+                                            >
+                                                Regular
+                                            </button>
+                                            <button 
+                                                type="button"
+                                                data-size-state="xxs"
+                                                class="px-3 py-1 text-xs rounded-lg transition ${initialSizeState === 'xxs' ? 'bg-white text-teal-600' : 'bg-white bg-opacity-20 text-white'}"
+                                            >
+                                                XXS
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Weight and Height Fields (hidden by default) -->
+                                    <div data-size-fields style="display: ${initialSizeState !== 'regular' ? 'block' : 'none'};">
+                                        <div class="grid grid-cols-2 gap-2 pl-8">
+                                            <div>
+                                                <label class="block text-xs font-medium text-teal-100 mb-1">Weight (kg)</label>
+                                                <input 
+                                                    type="number" 
+                                                    step="0.01"
+                                                    value="${data.weight || ''}" 
+                                                    data-field="weight"
+                                                    class="w-full px-2 py-1 text-sm bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded text-white placeholder-teal-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+                                                    placeholder="0.00"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-medium text-teal-100 mb-1">Height (m)</label>
+                                                <input 
+                                                    type="number" 
+                                                    step="0.01"
+                                                    value="${data.height || ''}" 
+                                                    data-field="height"
+                                                    class="w-full px-2 py-1 text-sm bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded text-white placeholder-teal-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+                                                    placeholder="0.00"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Shiny -->
+                                    <div class="flex justify-between items-center">
+                                        <label class="text-sm text-white flex items-center gap-2">
+                                            <img src="https://raw.githubusercontent.com/PokeMiners/pogo_assets/master/Images/Filters/ic_shiny_white.png" alt="" class="w-5 h-5">
+                                            Shiny
+                                        </label>
+                                        <div class="ios-toggle ${data.shiny ? 'active' : ''}" data-toggle="shiny">
+                                            <input type="checkbox" ${data.shiny ? 'checked' : ''} class="hidden" data-field="shiny">
+                                        </div>
+                                    </div>
+                                    
                                     ${this.renderToggle('Dynamax', 'dynamax', data.dynamax)}
-                                    ${this.renderToggle('XXL', 'xxl', data.xxl)}
-                                    ${this.renderToggle('XXS', 'xxs', data.xxs)}
+                                    ${this.renderToggle('Mega', 'mega', data.mega || false)}
                                     
                                     <div class="flex justify-between items-center pt-2 border-t border-white border-opacity-0">
                                         <label class="text-sm text-white">Background</label>
@@ -877,7 +895,10 @@ class ScreenshotProcessor {
                                     </div>
                                     
                                     <div class="flex justify-between items-center">
-                                        <label class="text-sm text-white">Costume</label>
+                                        <label class="text-sm text-white flex items-center gap-2">
+                                            <img src="https://raw.githubusercontent.com/PokeMiners/pogo_assets/master/Images/Menu%20Icons/ic_hanger.png" alt="" class="w-5 h-5">
+                                            Costume
+                                        </label>
                                         <input 
                                             type="text" 
                                             value="${data.costume || ''}" 
@@ -893,10 +914,16 @@ class ScreenshotProcessor {
                         <div class="flex gap-3 pt-4">
                             ${isBatch ? `
                                 <button 
-                                    class="px-6 bg-white bg-opacity-20 backdrop-blur-sm text-white rounded-xl py-3 hover:bg-opacity-30 transition font-semibold border border-white border-opacity-20"
+                                    class="px-6 bg-yellow-500 bg-opacity-90 backdrop-blur-sm text-white rounded-xl py-3 hover:bg-yellow-600 transition font-semibold border border-white border-opacity-20"
                                     data-action="skip-batch"
                                 >
                                     <i class="fa-solid fa-forward mr-2"></i>Skip
+                                </button>
+                                <button 
+                                    class="px-6 bg-red-500 bg-opacity-90 backdrop-blur-sm text-white rounded-xl py-3 hover:bg-red-600 transition font-semibold border border-white border-opacity-20"
+                                    data-action="delete-image"
+                                >
+                                    <i class="fa-solid fa-trash mr-2"></i>Delete
                                 </button>
                             ` : ''}
                             <button 
@@ -930,6 +957,19 @@ class ScreenshotProcessor {
                 </div>
             </div>
         `;
+    }
+
+    highlightCPField(modal, cp) {
+        const cpInput = modal.querySelector('[data-field="cp"]');
+        
+        // Highlight if CP is suspiciously low (under 10) or high (over 5500)
+        if (cp < 10 || cp > 5500) {
+            cpInput.classList.remove('border-white', 'border-opacity-30');
+            cpInput.classList.add('border-pink-400', 'border-2', 'bg-pink-50', 'bg-opacity-30');
+        } else {
+            cpInput.classList.remove('border-pink-400', 'border-2', 'bg-pink-50', 'bg-opacity-30');
+            cpInput.classList.add('border-white', 'border-opacity-30');
+        }
     }
 
     getConfidenceBadge(confidence, small = false) {
@@ -1080,6 +1120,11 @@ class ScreenshotProcessor {
             this.updateCalculatedLevel(modal);
         }
         
+        // Highlight CP if it's suspicious
+        if (initialData.cp) {
+            this.highlightCPField(modal, parseInt(initialData.cp));
+        }
+        
         // Cancel button
         modal.querySelector('[data-action="cancel-confirmation"]').addEventListener('click', () => {
             if (confirm('Are you sure you want to cancel? Unsaved data will be lost.')) {
@@ -1091,13 +1136,31 @@ class ScreenshotProcessor {
             }
         });
 
-        // Skip button
+        // Skip button - moves image to end of queue
         const skipBtn = modal.querySelector('[data-action="skip-batch"]');
         if (skipBtn) {
             skipBtn.addEventListener('click', () => {
                 modal.remove();
-                this.currentBatchIndex++;
+                // Move current image to end of array
+                const currentImage = this.batchImages[this.currentBatchIndex];
+                this.batchImages.splice(this.currentBatchIndex, 1);
+                this.batchImages.push(currentImage);
+                // Don't increment index since we removed current item
                 this.processBatch();
+            });
+        }
+
+        // Delete button - removes image from queue
+        const deleteBtn = modal.querySelector('[data-action="delete-image"]');
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', () => {
+                if (confirm('Delete this image from the batch?')) {
+                    modal.remove();
+                    // Remove current image from array
+                    this.batchImages.splice(this.currentBatchIndex, 1);
+                    // Don't increment index since we removed current item
+                    this.processBatch();
+                }
             });
         }
 
@@ -1118,6 +1181,32 @@ class ScreenshotProcessor {
                         modal.querySelector('[data-field="currentChargeMove2"]').selectedIndex = 0;
                     }
                 }
+                
+                // Size state buttons (XXL/Regular/XXS)
+                modal.querySelectorAll('[data-size-state]').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const state = btn.dataset.sizeState;
+                        
+                        // Update button styles
+                        modal.querySelectorAll('[data-size-state]').forEach(b => {
+                            if (b.dataset.sizeState === state) {
+                                b.className = 'px-3 py-1 text-xs rounded-lg transition bg-white text-teal-600';
+                            } else {
+                                b.className = 'px-3 py-1 text-xs rounded-lg transition bg-white bg-opacity-20 text-white';
+                            }
+                        });
+                        
+                        // Show/hide weight and height fields for XXL or XXS
+                        const sizeFields = modal.querySelector('[data-size-fields]');
+                        if (state === 'xxl' || state === 'xxs') {
+                            sizeFields.style.display = 'block';
+                        } else {
+                            sizeFields.style.display = 'none';
+                            modal.querySelector('[data-field="weight"]').value = '';
+                            modal.querySelector('[data-field="height"]').value = '';
+                        }
+                    });
+                });
             });
         });
 
@@ -1266,6 +1355,23 @@ class ScreenshotProcessor {
             this.updateCalculatedLevel(modal);
         });
 
+        // CP field validation and highlighting
+        const cpInput = modal.querySelector('[data-field="cp"]');
+        cpInput.addEventListener('input', () => {
+            const cp = parseInt(cpInput.value);
+            if (cp >= 10 && cp <= 5500) {
+                cpInput.classList.remove('border-pink-400', 'border-2', 'bg-pink-50', 'bg-opacity-30');
+                cpInput.classList.add('border-white', 'border-opacity-30');
+            }
+        });
+
+        cpInput.addEventListener('blur', () => {
+            const cp = parseInt(cpInput.value);
+            if (cp) {
+                this.highlightCPField(modal, cp);
+            }
+        });
+
         // Auto-calculate level on field changes
         const fieldsToWatch = ['cp', 'ivAttack', 'ivDefense', 'ivStamina'];
         fieldsToWatch.forEach(fieldName => {
@@ -1279,6 +1385,12 @@ class ScreenshotProcessor {
 
         // Save button
         modal.querySelector('[data-action="save-pokemon"]').addEventListener('click', async () => {
+            // Highlight CP if it's suspicious before validation
+            const cpValue = parseInt(modal.querySelector('[data-field="cp"]').value);
+            if (cpValue && (cpValue < 10 || cpValue > 5500)) {
+                this.highlightCPField(modal, cpValue);
+            }
+            
             // Validate form
             const errors = this.validateFormData(modal);
             
@@ -1297,6 +1409,9 @@ class ScreenshotProcessor {
             try {
                 await this.savePokemon(formData);
                 this.hideProcessingModal();
+                
+                // Run catch report for this Pokemon immediately
+                await this.app.catchReport.analyzeSinglePokemon(formData.id);
                 
                 if (isBatch) {
                     this.currentBatchIndex++;
@@ -1366,6 +1481,18 @@ class ScreenshotProcessor {
             }
         });
         
+        // Find which size state button is active
+        let sizeState = 'regular';
+        modal.querySelectorAll('[data-size-state]').forEach(btn => {
+            if (btn.classList.contains('bg-white') && btn.classList.contains('text-teal-600')) {
+                sizeState = btn.dataset.sizeState;
+            }
+        });
+        
+        // Get weight and height if XXL or XXS is selected
+        const weight = (sizeState === 'xxl' || sizeState === 'xxs') ? parseFloat(modal.querySelector('[data-field="weight"]').value) || null : null;
+        const height = (sizeState === 'xxl' || sizeState === 'xxs') ? parseFloat(modal.querySelector('[data-field="height"]').value) || null : null;
+        
         return {
             name: modal.querySelector('[data-field="name"]').value,
             form: modal.querySelector('[data-field="form"]').value || null,
@@ -1384,8 +1511,11 @@ class ScreenshotProcessor {
             shadow: shadowState === 'shadow',
             purified: shadowState === 'purified',
             dynamax: modal.querySelector('[data-field="dynamax"]').checked,
-            xxl: modal.querySelector('[data-field="xxl"]').checked,
-            xxs: modal.querySelector('[data-field="xxs"]').checked,
+            mega: modal.querySelector('[data-field="mega"]').checked,
+            xxl: sizeState === 'xxl',
+            xxs: sizeState === 'xxs',
+            weight: weight,
+            height: height,
             background: modal.querySelector('[data-field="background"]').value || null,
             costume: modal.querySelector('[data-field="costume"]').value || null,
             // Current moveset
@@ -1457,28 +1587,18 @@ class ScreenshotProcessor {
             <div class="bg-white rounded-2xl max-w-md w-full p-8 text-center space-y-6">
                 <div class="text-green-500">
                     <i class="fa-solid fa-circle-check text-6xl mb-4"></i>
-                    <h2 class="text-3xl font-bold text-gray-800">Uploads Complete!</h2>
+                    <h2 class="text-3xl font-bold text-gray-800">Batch Complete!</h2>
                 </div>
                 
                 <p class="text-gray-600">
-                    Pokémon uploaded and ready for analysis
+                    All Pokémon have been processed and analyzed
                 </p>
                 
-                <div class="space-y-3">
-                    <button class="w-full bg-blue-500 text-white rounded-xl py-3 hover:bg-blue-600 transition font-semibold" data-action="start-report">
-                        <i class="fa-solid fa-chart-line mr-2"></i>Analyze Caught Pokémon
-                    </button>
-                    <button class="w-full bg-gray-200 text-gray-700 rounded-xl py-3 hover:bg-gray-300 transition" data-action="close">
-                        <i class="fa-solid fa-home mr-2"></i>Return to Collection
-                    </button>
-                </div>
+                <button class="w-full bg-gray-200 text-gray-700 rounded-xl py-3 hover:bg-gray-300 transition" data-action="close">
+                    <i class="fa-solid fa-home mr-2"></i>Return to Collection
+                </button>
             </div>
         `;
-        
-        modal.querySelector('[data-action="start-report"]').addEventListener('click', () => {
-            modal.remove();
-            this.app.catchReport.startQueue();
-        });
         
         modal.querySelector('[data-action="close"]').addEventListener('click', () => {
             modal.remove();
@@ -1566,8 +1686,13 @@ class ScreenshotProcessor {
                 shadow: Boolean(formData.shadow),
                 purified: Boolean(formData.purified),
                 dynamax: Boolean(formData.dynamax),
+                mega: Boolean(formData.mega),
                 xxl: Boolean(formData.xxl),
                 xxs: Boolean(formData.xxs),
+                
+                // Size measurements
+                weight: formData.weight || null,
+                height: formData.height || null,
                 
                 // Special attributes
                 background: formData.background || null,
@@ -1597,6 +1722,9 @@ class ScreenshotProcessor {
                 screenshot: formData.screenshot || null,
                 spriteThumb: spriteBlob
             };
+            
+            // Store the ID in formData for later use
+            formData.id = id;
             
             return new Promise((resolve, reject) => {
                 const dbRequest = indexedDB.open('PokemonGoDB');

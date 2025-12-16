@@ -1393,6 +1393,118 @@ async calculatePvETDO(pokemon, pvpMoves, pveMoves, updateProgress = null) {
                         )
                     };
                 }
+                
+                // Calculate Rocket TDO for megas
+                mega.rocketTDO = {};
+                for (const defenderType of allDefenderTypes) {
+                    mega.rocketTDO[defenderType] = {
+                        L40: this.calculateBestTDOForLevel(
+                            { ...p, stats: mega.stats, types: mega.types },
+                            pvpFastMoves,
+                            pvpChargeMoves,
+                            defenderType,
+                            { atk: 15, def: 15, sta: 15 },
+                            40,
+                            false,
+                            false,
+                            false
+                        ),
+                        L50: this.calculateBestTDOForLevel(
+                            { ...p, stats: mega.stats, types: mega.types },
+                            pvpFastMoves,
+                            pvpChargeMoves,
+                            defenderType,
+                            { atk: 15, def: 15, sta: 15 },
+                            50,
+                            false,
+                            false,
+                            false
+                        )
+                    };
+                }
+                
+                // Calculate spam TDO for megas
+                mega.spamTDO = [];
+                const spammyMovesets = [];
+                for (const fast of pvpFastMoves) {
+                    for (const charge of pvpChargeMoves) {
+                        const spamScore = (1 / (charge.energy / fast.ept)) * 100;
+                        if (spamScore > 11) {
+                            const movesetTypes = [fast.type, charge.type].sort().join('/');
+                            
+                            const existingIndex = spammyMovesets.findIndex(ms => 
+                                [ms.fast.type, ms.charge.type].sort().join('/') === movesetTypes
+                            );
+                            
+                            if (existingIndex === -1) {
+                                spammyMovesets.push({
+                                    fast: fast,
+                                    charge: charge,
+                                    spamScore: spamScore,
+                                    typeSignature: movesetTypes
+                                });
+                            } else {
+                                if (spamScore > spammyMovesets[existingIndex].spamScore) {
+                                    spammyMovesets[existingIndex] = {
+                                        fast: fast,
+                                        charge: charge,
+                                        spamScore: spamScore,
+                                        typeSignature: movesetTypes
+                                    };
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                for (const spamMoveset of spammyMovesets) {
+                    const tdoByType = {};
+                    
+                    for (const defenderType of allDefenderTypes) {
+                        const resultL40 = this.simulateRaidBattle(
+                            { ...p, stats: mega.stats, types: mega.types },
+                            spamMoveset.fast,
+                            spamMoveset.charge,
+                            defenderType,
+                            { atk: 15, def: 15, sta: 15 },
+                            40,
+                            false,
+                            false,
+                            false
+                        );
+                        const resultL50 = this.simulateRaidBattle(
+                            { ...p, stats: mega.stats, types: mega.types },
+                            spamMoveset.fast,
+                            spamMoveset.charge,
+                            defenderType,
+                            { atk: 15, def: 15, sta: 15 },
+                            50,
+                            false,
+                            false,
+                            false
+                        );
+                        
+                        tdoByType[defenderType] = {
+                            L40: { 
+                                tdo: resultL40.tdo, 
+                                dps: resultL40.dps,
+                                moveset: { fast: spamMoveset.fast.rawId, charge: spamMoveset.charge.rawId } 
+                            },
+                            L50: { 
+                                tdo: resultL50.tdo, 
+                                dps: resultL50.dps,
+                                moveset: { fast: spamMoveset.fast.rawId, charge: spamMoveset.charge.rawId } 
+                            }
+                        };
+                    }
+                    
+                    mega.spamTDO.push({
+                        moveset: { fast: spamMoveset.fast.rawId, charge: spamMoveset.charge.rawId },
+                        spamScore: spamMoveset.spamScore,
+                        typeSignature: spamMoveset.typeSignature,
+                        tdoByType: tdoByType
+                    });
+                }
             });
         }
     

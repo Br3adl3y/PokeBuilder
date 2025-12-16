@@ -509,22 +509,82 @@ class PokeApp {
     }
 
     /**
-     * Render a single menu item button
-     * @param {string} icon - FontAwesome icon class
+     * Render a single menu item button with Pokemon GO sprite
+     * @param {string} sprite - URL to Pokemon GO sprite image
      * @param {string} label - Button label text
      * @param {string|null} view - View to navigate to, null for disabled items
+     * @param {boolean} dualIcon - Whether to show two overlapping icons (for PVE)
+     * @param {string} sprite2 - Optional second sprite URL for dual icon display
      * @returns {string} HTML string
      */
-    renderMenuItem(icon, label, view) {
+    renderMenuItem(sprite, label, view, dualIcon = false, sprite2 = null) {
         const disabled = view === null;
+        
+        // Icon rendering based on whether it's a single or dual icon
+        const iconHTML = dualIcon && sprite2 ? `
+            <div class="relative w-12 h-12">
+                <img src="${sprite}" alt="" class="absolute top-0 left-0 w-10 h-10 object-contain opacity-80" />
+                <img src="${sprite2}" alt="" class="absolute bottom-0 right-0 w-8 h-8 object-contain opacity-80" />
+            </div>
+        ` : `
+            <img src="${sprite}" alt="" class="w-10 h-10 object-contain opacity-70" />
+        `;
+        
         return `
             <button 
                 class="menu-item w-full bg-white bg-opacity-10 backdrop-blur-sm rounded-2xl p-6 flex items-center justify-between ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}"
                 ${disabled ? 'disabled' : `data-view="${view}"`}
             >
                 <span class="text-white text-xl font-light tracking-widest">${label}</span>
-                <i class="${icon} text-white text-opacity-80 text-2xl"></i>
+                ${iconHTML}
             </button>
+        `;
+    }
+
+    /**
+     * Render main menu view
+     * Shows 5 menu items and 2 FAB buttons
+     * @returns {string} HTML string
+     */
+    renderMenu() {
+        const buildTime = document.lastModified || new Date().toISOString();
+        const commitHash = '{{COMMIT_HASH}}'; // Replaced by GitHub Actions during build
+        
+        // Pokemon GO sprite URLs
+        const SPRITES = {
+            POKEDEX: 'https://raw.githubusercontent.com/PokeMiners/pogo_assets/master/Images/Menu%20Icons/btn_pokedex.png',
+            COLLECTION: 'https://raw.githubusercontent.com/PokeMiners/pogo_assets/master/Images/Menu%20Icons/btn_pokemon.png',
+            PVP: 'https://raw.githubusercontent.com/PokeMiners/pogo_assets/master/Images/Menu%20Icons/btn_battle.png',
+            GYM: 'https://raw.githubusercontent.com/PokeMiners/pogo_assets/master/Images/Pokestops%20and%20Gyms/ActivityLogGymLogo.png',
+            ROCKET: 'https://raw.githubusercontent.com/PokeMiners/pogo_assets/master/Images/Rocket/teamrocket_r.png'
+        };
+        
+        return `
+            <div class="min-h-screen bg-gradient-to-br from-teal-400 via-teal-500 to-emerald-500 flex flex-col items-center justify-center p-8">
+                <div class="w-full max-w-md space-y-4">
+                    ${this.renderMenuItem(SPRITES.POKEDEX, 'POKÉDEX', 'pokedex')}
+                    ${this.renderMenuItem(SPRITES.COLLECTION, 'COLLECTION', 'collection')}
+                    ${this.renderMenuItem(SPRITES.PVP, 'PVP', null)}
+                    ${this.renderMenuItem(SPRITES.GYM, 'PVE', 'pve', true, SPRITES.ROCKET)}
+                    ${this.renderMenuItem('https://raw.githubusercontent.com/PokeMiners/pogo_assets/master/Images/Menu%20Icons/btn_news.png', 'FEEDBACK', null)}
+                </div>
+                
+                <!-- FAB: Team Builder (left) - may change -->
+                <button class="fab-button fab-left bg-blue-500 text-white" data-action="team-builder">
+                    <i class="fa-solid fa-calculator text-xl"></i>
+                </button>
+                
+                <!-- FAB: Add Pokemon (right) - primary action -->
+                <button class="fab-button fab-right bg-purple-500 text-white" data-action="add-pokemon">
+                    <i class="fa-solid fa-plus text-xl"></i>
+                </button>
+                
+                <!-- Build timestamp (dev purposes) -->
+                <div class="fixed bottom-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded backdrop-blur-sm font-mono">
+                    ${buildTime.split(' ')[0]} ${buildTime.split(' ')[1]?.substring(0,5) || ''}
+                    ${commitHash !== '{{COMMIT_HASH}}' ? `<br>${commitHash}` : ''}
+                </div>
+            </div>
         `;
     }
 
