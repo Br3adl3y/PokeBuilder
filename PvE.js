@@ -46,6 +46,18 @@ class PvEManager {
         this.detailPanelOpen = false;
         this.detailPanelData = null;
         
+        // ---- CACHED ARSENAL DATA ----
+        this.arsenalCache = null;
+        this.calculatingArsenal = false;
+
+        // Load cached data
+        this.loadCachedPVEArsenal().then(cache => {
+            if (cache) {
+                this.arsenalCache = cache;
+                console.log('Loaded cached PvE arsenal');
+            }
+        });
+        
         // ---- SCORING EXPONENTS ----
         this.dmgDpsExponent = 3;
         this.dmgTdoExponent = 1;
@@ -62,6 +74,15 @@ class PvEManager {
      * @returns {string} HTML string
      */
     render() {
+        // Check if we need to calculate arsenal
+        if (!this.arsenalCache && !this.calculatingArsenal) {
+            this.calculatingArsenal = true;
+            this.refreshArsenalCache().then(() => {
+                this.calculatingArsenal = false;
+                this.app.render();
+            });
+        }
+        
         const currentTab = this.pveTab || 'raid';
         
         return `
@@ -2769,20 +2790,813 @@ class PvEManager {
      * @returns {string} Hex color
      */
     getHeatMapColor(type1, type2) {
-        // TODO: Calculate actual TDO and scale to color
-        // For now, return placeholder
-        const colors = [
-            '#7DD3FC', // Light blue
-            '#22D3EE', // Cyan
-            '#10B981', // Green
-            '#EAB308', // Yellow
-            '#F97316', // Orange
-            '#DC2626'  // Red
+        if (!this.arsenalCache) return '#6B7280'; // Gray if no cache
+        
+        const POKEMON_TYPES = [
+            'NORMAL', 'FIRE', 'WATER', 'GRASS', 'ELECTRIC', 'ICE',
+            'FIGHTING', 'POISON', 'GROUND', 'FLYING', 'PSYCHIC', 'BUG',
+            'ROCK', 'GHOST', 'DRAGON', 'DARK', 'STEEL', 'FAIRY'
         ];
         
-        // Placeholder: random color
-        return colors[Math.floor(Math.random() * colors.length)];
+        const index1 = POKEMON_TYPES.indexOf(type1);
+        const index2 = POKEMON_TYPES.indexOf(type2);
+        
+        let defenderType;
+        if (type1 === type2) {
+            defenderType = type1;
+        } else if (index1 < index2) {
+            defenderType = type1 + '/' + type2;
+        } else {
+            defenderType = type2 + '/' + type1;
+        }
+        
+        const data = this.arsenalCache.raid[defenderType];
+        if (!data) return '#6B7280';
+        
+        const tdoValue = data.currentBestTotalTDO;
+        
+        // Calculate min and max from all type combos
+        const allTDOs = Object.values(this.arsenalCache.raid).map(d => d.currentBestTotalTDO);
+        const minTDO = Math.min(...allTDOs);
+        const maxTDO = Math.max(...allTDOs);
+        
+        // Scale to 0-1
+        const normalized = (tdoValue - minTDO) / (maxTDO - minTDO);
+        
+        // Color gradient: Light Blue -> Cyan -> Green -> Yellow -> Orange -> Red
+        const colors = [
+            {r: 125, g: 211, b: 252}, // #7DD3FC Light blue
+            {r: 34, g: 211, b: 238},  // #22D3EE Cyan
+            {r: 16, g: 185, b: 129},  // #10B981 Green
+            {r: 234, g: 179, b: 8},   // #EAB308 Yellow
+            {r: 249, g: 115, b: 22},  // #F97316 Orange
+            {r: 220, g: 38, b: 38}    // #DC2626 Red
+        ];
+        
+        const index = normalized * (colors.length - 1);
+        const lowerIndex = Math.floor(index);
+        const upperIndex = Math.ceil(index);
+        const fraction = index - lowerIndex;
+        
+        const lower = colors[lowerIndex];
+        const upper = colors[upperIndex];
+        
+        const r = Math.round(lower.r + (upper.r - lower.r) * fraction);
+        const g = Math.round(lower.g + (upper.g - lower.g) * fraction);
+        const b = Math.round(lower.b + (upper.b - lower.b) * fraction);
+        
+        return `rgb(${r}, ${g}, ${b})`;
     }
+
+    /**
+     * Calculate complete PvE arsenal data for all type combos and rocket lineups
+     * Stores in IndexedDB under 'pveArsenalCache'
+     * @returns {Promise<Object>} Complete arsenal data
+     */
+    async calculatePVEArsenal() {
+        console.log('Calculating PvE Arsenal...');
+        
+        const POKEMON_TYPES = [
+            'NORMAL', 'FIRE', 'WATER', 'GRASS', 'ELECTRIC', 'ICE',
+            'FIGHTING', 'POISON', 'GROUND', 'FLYING', 'PSYCHIC', 'BUG',
+            'ROCK', 'GHOST', 'DRAGON', 'DARK', 'STEEL', 'FAIRY'
+        ];
+        
+        const arsenalData = {
+            raid: {},
+            rocket: {},
+            timestamp: Date.now()
+        };
+        
+        // Get all user Pokemon once
+        const userPokemon = await this.getAllUserPokemon();
+        
+        // ====================================
+        // RAID DATA
+        // ====================================
+        
+        for (const type1 of POKEMON_TYPES) {
+            for (const type2 of POKEMON_TYPES) {
+                const index1 = POKEMON_TYPES.indexOf(type1);
+                const index2 = POKEMON_TYPES.indexOf(type2);
+                
+                let defenderType;
+                if (type1 === type2) {
+                    defenderType = type1;
+                } else if (index1 < index2) {
+                    defenderType = type1 + '/' + type2;
+                } else {
+                    continue; // Skip redundant combos (we already did WATER/FIRE when we did FIRE/WATER)
+                }
+                
+                arsenalData.raid[defenderType] = await this.calculateRaidTypeComboData(
+                    defenderType,
+                    userPokemon
+                );
+                
+                console.log(`Calculated ${defenderType}`);
+            }
+        }
+        
+        // ====================================
+        // ROCKET DATA
+        // ====================================
+        
+        const rocketTeams = await this.getRocketTeamsData();
+        
+        // Giovanni
+        if (rocketTeams.giovanni) {
+            arsenalData.rocket['leader:giovanni'] = await this.calculateRocketMemberData(
+                rocketTeams.giovanni,
+                userPokemon
+            );
+        }
+        
+        // Leaders
+        for (const leaderName of ['arlo', 'sierra', 'cliff']) {
+            if (rocketTeams.leaders?.[leaderName]) {
+                arsenalData.rocket[`leader:${leaderName}`] = await this.calculateRocketMemberData(
+                    rocketTeams.leaders[leaderName],
+                    userPokemon
+                );
+            }
+        }
+        
+        // Grunts
+        const allGrunts = {
+            ...rocketTeams.grunts?.male,
+            ...rocketTeams.grunts?.female
+        };
+        
+        for (const [gruntKey, lineup] of Object.entries(allGrunts)) {
+            // Parse grunt type from key
+            let gruntType;
+            if (gruntKey.includes('Decoy')) {
+                gruntType = 'Decoy';
+            } else if (gruntKey.includes('-type')) {
+                const match = gruntKey.match(/^(\w+)-type/);
+                gruntType = match ? match[1] : null;
+            } else if (gruntKey.includes('Grunt') && !gruntKey.includes('-type')) {
+                gruntType = 'Typeless';
+            }
+            
+            if (gruntType) {
+                const gruntId = `grunt:${gruntType}`;
+                if (!arsenalData.rocket[gruntId]) {
+                    arsenalData.rocket[gruntId] = await this.calculateRocketMemberData(
+                        lineup,
+                        userPokemon
+                    );
+                }
+            }
+        }
+        
+        // Store in IndexedDB
+        await this.storePVEArsenal(arsenalData);
+        
+        console.log('PvE Arsenal calculation complete!');
+        return arsenalData;
+    }
+
+    /**
+     * Calculate data for a single raid type combo
+     * @param {string} defenderType - Type combo key (e.g., 'FIRE', 'FIRE/WATER')
+     * @param {Array} userPokemon - All user Pokemon
+     * @returns {Promise<Object>} Type combo data
+     */
+    async calculateRaidTypeComboData(defenderType, userPokemon) {
+        // ---- CURRENT BEST (no filters) ----
+        const currentBestCandidates = [];
+        
+        for (const userMon of userPokemon) {
+            const score = this.calculateUserMonRaidScore(
+                userMon.currentRaidTDO,
+                defenderType
+            );
+            
+            if (score) {
+                currentBestCandidates.push({
+                    userMonId: userMon.id,
+                    name: userMon.name,
+                    form: userMon.form,
+                    nickname: userMon.nickname,
+                    isShadow: userMon.shadow,
+                    level: userMon.level,
+                    dps: score.dps,
+                    tdo: score.tdo,
+                    damageScore: score.damageScore,
+                    surviveScore: score.surviveScore,
+                    moveset: score.moveset
+                });
+            }
+        }
+        
+        // Sort and split
+        const currentBestDMG = [...currentBestCandidates]
+            .sort((a, b) => b.damageScore - a.damageScore)
+            .slice(0, 6);
+        
+        const currentBestDMGIds = new Set(currentBestDMG.map(p => p.userMonId));
+        const currentBestSRV = currentBestCandidates
+            .filter(p => !currentBestDMGIds.has(p.userMonId))
+            .sort((a, b) => b.surviveScore - a.surviveScore)
+            .slice(0, 6);
+        
+        // Calculate totals (double for 12-mon team)
+        const currentBestTotalTDO = (
+            currentBestDMG.reduce((sum, p) => sum + p.tdo, 0) +
+            currentBestSRV.reduce((sum, p) => sum + p.tdo, 0)
+        ) * 2;
+        
+        const currentBestTotalDPS = (
+            currentBestDMG.reduce((sum, p) => sum + p.dps, 0) +
+            currentBestSRV.reduce((sum, p) => sum + p.dps, 0)
+        ) * 2;
+        
+        // ---- POTENTIAL BEST (all filter combos, XL always enabled) ----
+        const filterCombos = [
+            {special: false, mega: false, shadow: false, xl: true},
+            {special: true, mega: false, shadow: false, xl: true},
+            {special: false, mega: true, shadow: false, xl: true},
+            {special: false, mega: false, shadow: true, xl: true},
+            {special: true, mega: true, shadow: false, xl: true},
+            {special: true, mega: false, shadow: true, xl: true},
+            {special: false, mega: true, shadow: true, xl: true},
+            {special: true, mega: true, shadow: true, xl: true}
+        ];
+        
+        const potentialBestDMGMap = new Map();
+        const potentialBestSRVMap = new Map();
+        
+        for (const filters of filterCombos) {
+            const candidates = [];
+            
+            for (const userMon of userPokemon) {
+                // Find base Pokemon for filter checks
+                const basePokemon = this.app.pokemon.find(p => 
+                    p.name === userMon.name && 
+                    (p.form === userMon.form || (!p.form && !userMon.form))
+                );
+                
+                if (!basePokemon) continue;
+                
+                // Apply filters
+                if (!filters.shadow && userMon.shadow) continue;
+                if (!filters.special && basePokemon.thirdMoveCost?.stardust === 100000) continue;
+                
+                if (!userMon.assignedRaidTDO?.[defenderType]) continue;
+                
+                // Get best version (current level, L40, or L50)
+                const versions = [];
+                
+                if (userMon.level < 40) {
+                    // Below L40: show L40 and L50
+                    if (userMon.assignedRaidTDO[defenderType].L40) {
+                        const data = userMon.assignedRaidTDO[defenderType].L40;
+                        versions.push({
+                            level: 40,
+                            dps: data.dps,
+                            tdo: data.tdo,
+                            moveset: data.moveset
+                        });
+                    }
+                    if (userMon.assignedRaidTDO[defenderType].L50) {
+                        const data = userMon.assignedRaidTDO[defenderType].L50;
+                        versions.push({
+                            level: 50,
+                            dps: data.dps,
+                            tdo: data.tdo,
+                            moveset: data.moveset
+                        });
+                    }
+                } else if (userMon.level < 50) {
+                    // L40-49: show current and L50
+                    const currentScore = this.calculateUserMonRaidScore(
+                        userMon.currentRaidTDO,
+                        defenderType
+                    );
+                    if (currentScore) {
+                        versions.push({
+                            level: userMon.level,
+                            dps: currentScore.dps,
+                            tdo: currentScore.tdo,
+                            moveset: currentScore.moveset
+                        });
+                    }
+                    if (userMon.assignedRaidTDO[defenderType].L50) {
+                        const data = userMon.assignedRaidTDO[defenderType].L50;
+                        versions.push({
+                            level: 50,
+                            dps: data.dps,
+                            tdo: data.tdo,
+                            moveset: data.moveset
+                        });
+                    }
+                } else {
+                    // L50: show L50
+                    if (userMon.assignedRaidTDO[defenderType].L50) {
+                        const data = userMon.assignedRaidTDO[defenderType].L50;
+                        versions.push({
+                            level: 50,
+                            dps: data.dps,
+                            tdo: data.tdo,
+                            moveset: data.moveset
+                        });
+                    }
+                }
+                
+                // Add all versions to candidates
+                for (const version of versions) {
+                    const damageScore = Math.pow(version.dps, this.dmgDpsExponent) * Math.pow(version.tdo, this.dmgTdoExponent);
+                    const surviveScore = Math.pow(version.dps, this.surviveDpsExponent) * Math.pow(version.tdo, this.surviveTdoExponent);
+                    
+                    candidates.push({
+                        userMonId: `${userMon.id}-${version.level}`,
+                        name: userMon.name,
+                        form: userMon.form,
+                        nickname: userMon.nickname,
+                        isShadow: userMon.shadow,
+                        level: version.level,
+                        dps: version.dps,
+                        tdo: version.tdo,
+                        damageScore: damageScore,
+                        surviveScore: surviveScore,
+                        moveset: version.moveset
+                    });
+                }
+            }
+            
+            // Get top 6 by damage
+            const top6Damage = [...candidates]
+                .sort((a, b) => b.damageScore - a.damageScore)
+                .slice(0, 6);
+            
+            // Add to map (using userMonId as key to avoid duplicates)
+            for (const mon of top6Damage) {
+                if (!potentialBestDMGMap.has(mon.userMonId) || 
+                    potentialBestDMGMap.get(mon.userMonId).damageScore < mon.damageScore) {
+                    potentialBestDMGMap.set(mon.userMonId, mon);
+                }
+            }
+            
+            // Get top 6 by survivability (excluding damage picks)
+            const top6DamageIds = new Set(top6Damage.map(p => p.userMonId));
+            const top6Survive = candidates
+                .filter(p => !top6DamageIds.has(p.userMonId))
+                .sort((a, b) => b.surviveScore - a.surviveScore)
+                .slice(0, 6);
+            
+            for (const mon of top6Survive) {
+                if (!potentialBestSRVMap.has(mon.userMonId) || 
+                    potentialBestSRVMap.get(mon.userMonId).surviveScore < mon.surviveScore) {
+                    potentialBestSRVMap.set(mon.userMonId, mon);
+                }
+            }
+        }
+        
+        const potentialBestDMG = Array.from(potentialBestDMGMap.values())
+            .sort((a, b) => b.damageScore - a.damageScore);
+        const potentialBestSRV = Array.from(potentialBestSRVMap.values())
+            .sort((a, b) => b.surviveScore - a.surviveScore);
+        
+        // Calculate potential totals (use top 6 from each, doubled)
+        const potentialBestTotalTDO = (
+            potentialBestDMG.slice(0, 6).reduce((sum, p) => sum + p.tdo, 0) +
+            potentialBestSRV.slice(0, 6).reduce((sum, p) => sum + p.tdo, 0)
+        ) * 2;
+        
+        const potentialBestTotalDPS = (
+            potentialBestDMG.slice(0, 6).reduce((sum, p) => sum + p.dps, 0) +
+            potentialBestSRV.slice(0, 6).reduce((sum, p) => sum + p.dps, 0)
+        ) * 2;
+        
+        return {
+            currentBestDMG,
+            currentBestSRV,
+            potentialBestDMG,
+            potentialBestSRV,
+            currentBestTotalTDO,
+            currentBestTotalDPS,
+            potentialBestTotalTDO,
+            potentialBestTotalDPS
+        };
+    }
+
+    /**
+     * Calculate data for a rocket member (leader or grunt)
+     * @param {Object} lineup - Lineup with slot1, slot2, slot3
+     * @param {Array} userPokemon - All user Pokemon
+     * @returns {Promise<Object>} Member data with slot1, slot2, slot3
+     */
+    async calculateRocketMemberData(lineup, userPokemon) {
+        const memberData = {};
+        
+        for (let slotNum = 1; slotNum <= 3; slotNum++) {
+            const slotKey = `slot${slotNum}`;
+            const possibleTypes = this.formatSlotTypes(lineup[slotKey]);
+            
+            if (!possibleTypes || possibleTypes.length === 0) continue;
+            
+            memberData[slotKey] = await this.calculateRocketSlotData(
+                possibleTypes,
+                userPokemon
+            );
+        }
+        
+        return memberData;
+    }
+
+    /**
+     * Calculate data for a single rocket slot
+     * @param {Array} possibleTypes - Array of type keys for this slot
+     * @param {Array} userPokemon - All user Pokemon
+     * @returns {Promise<Object>} Slot data
+     */
+    async calculateRocketSlotData(possibleTypes, userPokemon) {
+        // ---- CURRENT BEST (no filters) ----
+        const currentSpamCandidates = [];
+        const currentDamageCandidates = [];
+        
+        for (const userMon of userPokemon) {
+            // Spam
+            if (userMon.currentSpamTDO && userMon.currentSpamTDO.length > 0) {
+                const spamMoveset = userMon.currentSpamTDO[0];
+                
+                let dpsSum = 0;
+                let tdoSum = 0;
+                
+                for (const defenderType of possibleTypes) {
+                    const typeData = spamMoveset.tdoByType[defenderType];
+                    if (typeData) {
+                        dpsSum += typeData.dps;
+                        tdoSum += typeData.tdo;
+                    }
+                }
+                
+                if (tdoSum > 0) {
+                    const compositeScore = spamMoveset.spamScore * 
+                        Math.pow(dpsSum, this.dmgDpsExponent) * 
+                        Math.pow(tdoSum, this.dmgTdoExponent);
+                    
+                    currentSpamCandidates.push({
+                        userMonId: userMon.id,
+                        name: userMon.name,
+                        form: userMon.form,
+                        nickname: userMon.nickname,
+                        isShadow: userMon.shadow,
+                        level: userMon.level,
+                        dps: dpsSum,
+                        tdo: tdoSum,
+                        compositeScore: compositeScore,
+                        moveset: spamMoveset.moveset
+                    });
+                }
+            }
+            
+            // Damage
+            if (userMon.currentRocketTDO) {
+                let dpsSum = 0;
+                let tdoSum = 0;
+                let moveset = null;
+                
+                for (const defenderType of possibleTypes) {
+                    const typeData = userMon.currentRocketTDO[defenderType];
+                    if (typeData) {
+                        dpsSum += typeData.dps;
+                        tdoSum += typeData.tdo;
+                        if (!moveset) moveset = typeData.moveset;
+                    }
+                }
+                
+                if (tdoSum > 0) {
+                    const compositeScore = 
+                        Math.pow(dpsSum, this.dmgDpsExponent) * 
+                        Math.pow(tdoSum, this.dmgTdoExponent);
+                    
+                    currentDamageCandidates.push({
+                        userMonId: userMon.id,
+                        name: userMon.name,
+                        form: userMon.form,
+                        nickname: userMon.nickname,
+                        isShadow: userMon.shadow,
+                        level: userMon.level,
+                        dps: dpsSum,
+                        tdo: tdoSum,
+                        compositeScore: compositeScore,
+                        moveset: moveset
+                    });
+                }
+            }
+        }
+        
+        const currentBestSpam = currentSpamCandidates
+            .sort((a, b) => b.compositeScore - a.compositeScore)
+            .slice(0, 6);
+        const currentBestDamage = currentDamageCandidates
+            .sort((a, b) => b.compositeScore - a.compositeScore)
+            .slice(0, 6);
+        
+        // Calculate totals
+        const currentBestTotalTDO = 
+            currentBestSpam.reduce((sum, p) => sum + p.tdo, 0) +
+            currentBestDamage.reduce((sum, p) => sum + p.tdo, 0);
+        const currentBestTotalDPS = 
+            currentBestSpam.reduce((sum, p) => sum + p.dps, 0) +
+            currentBestDamage.reduce((sum, p) => sum + p.dps, 0);
+        
+        // ---- POTENTIAL BEST (all filter combos) ----
+        const filterCombos = [
+            {special: false, mega: false, shadow: false, xl: true},
+            {special: true, mega: false, shadow: false, xl: true},
+            {special: false, mega: true, shadow: false, xl: true},
+            {special: false, mega: false, shadow: true, xl: true},
+            {special: true, mega: true, shadow: false, xl: true},
+            {special: true, mega: false, shadow: true, xl: true},
+            {special: false, mega: true, shadow: true, xl: true},
+            {special: true, mega: true, shadow: true, xl: true}
+        ];
+        
+        const potentialSpamMap = new Map();
+        const potentialDamageMap = new Map();
+        
+        for (const filters of filterCombos) {
+            const spamCandidates = [];
+            const damageCandidates = [];
+            
+            for (const userMon of userPokemon) {
+                // Find base Pokemon for filter checks
+                const basePokemon = this.app.pokemon.find(p => 
+                    p.name === userMon.name && 
+                    (p.form === userMon.form || (!p.form && !userMon.form))
+                );
+                
+                if (!basePokemon) continue;
+                
+                // Apply filters
+                if (!filters.shadow && userMon.shadow) continue;
+                if (!filters.special && basePokemon.thirdMoveCost?.stardust === 100000) continue;
+                
+                // SPAM
+                if (userMon.assignedSpamTDO && userMon.assignedSpamTDO.length > 0) {
+                    for (const spamMoveset of userMon.assignedSpamTDO) {
+                        const versions = [];
+                        
+                        if (userMon.level < 40) {
+                            const l40Score = this.calculateSlotScore(spamMoveset.tdoByType, possibleTypes, 'L40');
+                            if (l40Score.tdoSum > 0) {
+                                versions.push({level: 40, ...l40Score, moveset: spamMoveset.moveset, spamScore: spamMoveset.spamScore});
+                            }
+                            const l50Score = this.calculateSlotScore(spamMoveset.tdoByType, possibleTypes, 'L50');
+                            if (l50Score.tdoSum > 0) {
+                                versions.push({level: 50, ...l50Score, moveset: spamMoveset.moveset, spamScore: spamMoveset.spamScore});
+                            }
+                        } else if (userMon.level < 50) {
+                            // Current level
+                            if (userMon.currentSpamTDO && userMon.currentSpamTDO.length > 0) {
+                                const currentMoveset = userMon.currentSpamTDO[0];
+                                let dpsSum = 0, tdoSum = 0;
+                                for (const defenderType of possibleTypes) {
+                                    const typeData = currentMoveset.tdoByType[defenderType];
+                                    if (typeData) {
+                                        dpsSum += typeData.dps;
+                                        tdoSum += typeData.tdo;
+                                    }
+                                }
+                                if (tdoSum > 0) {
+                                    versions.push({
+                                        level: userMon.level,
+                                        dpsSum, tdoSum,
+                                        moveset: currentMoveset.moveset,
+                                        spamScore: currentMoveset.spamScore
+                                    });
+                                }
+                            }
+                            const l50Score = this.calculateSlotScore(spamMoveset.tdoByType, possibleTypes, 'L50');
+                            if (l50Score.tdoSum > 0) {
+                                versions.push({level: 50, ...l50Score, moveset: spamMoveset.moveset, spamScore: spamMoveset.spamScore});
+                            }
+                        } else {
+                            const l50Score = this.calculateSlotScore(spamMoveset.tdoByType, possibleTypes, 'L50');
+                            if (l50Score.tdoSum > 0) {
+                                versions.push({level: 50, ...l50Score, moveset: spamMoveset.moveset, spamScore: spamMoveset.spamScore});
+                            }
+                        }
+                        
+                        for (const version of versions) {
+                            const compositeScore = version.spamScore * 
+                                Math.pow(version.dpsSum, this.dmgDpsExponent) * 
+                                Math.pow(version.tdoSum, this.dmgTdoExponent);
+                            
+                            spamCandidates.push({
+                                userMonId: `${userMon.id}-spam-${version.level}`,
+                                name: userMon.name,
+                                form: userMon.form,
+                                nickname: userMon.nickname,
+                                isShadow: userMon.shadow,
+                                level: version.level,
+                                dps: version.dpsSum,
+                                tdo: version.tdoSum,
+                                compositeScore: compositeScore,
+                                moveset: version.moveset
+                            });
+                        }
+                    }
+                }
+                
+                // DAMAGE
+                if (userMon.assignedRocketTDO) {
+                    const versions = [];
+                    
+                    if (userMon.level < 40) {
+                        const l40Score = this.calculateSlotScoreFromRocketTDO(userMon.assignedRocketTDO, possibleTypes, 'L40');
+                        if (l40Score.tdoSum > 0) versions.push({level: 40, ...l40Score});
+                        const l50Score = this.calculateSlotScoreFromRocketTDO(userMon.assignedRocketTDO, possibleTypes, 'L50');
+                        if (l50Score.tdoSum > 0) versions.push({level: 50, ...l50Score});
+                    } else if (userMon.level < 50) {
+                        // Current level
+                        if (userMon.currentRocketTDO) {
+                            let dpsSum = 0, tdoSum = 0, moveset = null;
+                            for (const defenderType of possibleTypes) {
+                                const typeData = userMon.currentRocketTDO[defenderType];
+                                if (typeData) {
+                                    dpsSum += typeData.dps;
+                                    tdoSum += typeData.tdo;
+                                    if (!moveset) moveset = typeData.moveset;
+                                }
+                            }
+                            if (tdoSum > 0) {
+                                versions.push({level: userMon.level, dpsSum, tdoSum, moveset});
+                            }
+                        }
+                        const l50Score = this.calculateSlotScoreFromRocketTDO(userMon.assignedRocketTDO, possibleTypes, 'L50');
+                        if (l50Score.tdoSum > 0) versions.push({level: 50, ...l50Score});
+                    } else {
+                        const l50Score = this.calculateSlotScoreFromRocketTDO(userMon.assignedRocketTDO, possibleTypes, 'L50');
+                        if (l50Score.tdoSum > 0) versions.push({level: 50, ...l50Score});
+                    }
+                    
+                    for (const version of versions) {
+                        const compositeScore = 
+                            Math.pow(version.dpsSum, this.dmgDpsExponent) * 
+                            Math.pow(version.tdoSum, this.dmgTdoExponent);
+                        
+                        damageCandidates.push({
+                            userMonId: `${userMon.id}-damage-${version.level}`,
+                            name: userMon.name,
+                            form: userMon.form,
+                            nickname: userMon.nickname,
+                            isShadow: userMon.shadow,
+                            level: version.level,
+                            dps: version.dpsSum,
+                            tdo: version.tdoSum,
+                            compositeScore: compositeScore,
+                            moveset: version.moveset
+                        });
+                    }
+                }
+            }
+            
+            // Get top 6 and add to maps
+            const top6Spam = spamCandidates.sort((a, b) => b.compositeScore - a.compositeScore).slice(0, 6);
+            for (const mon of top6Spam) {
+                if (!potentialSpamMap.has(mon.userMonId) || 
+                    potentialSpamMap.get(mon.userMonId).compositeScore < mon.compositeScore) {
+                    potentialSpamMap.set(mon.userMonId, mon);
+                }
+            }
+            
+            const top6Damage = damageCandidates.sort((a, b) => b.compositeScore - a.compositeScore).slice(0, 6);
+            for (const mon of top6Damage) {
+                if (!potentialDamageMap.has(mon.userMonId) || 
+                    potentialDamageMap.get(mon.userMonId).compositeScore < mon.compositeScore) {
+                    potentialDamageMap.set(mon.userMonId, mon);
+                }
+            }
+        }
+        
+        const potentialBestSpam = Array.from(potentialSpamMap.values())
+            .sort((a, b) => b.compositeScore - a.compositeScore);
+        const potentialBestDamage = Array.from(potentialDamageMap.values())
+            .sort((a, b) => b.compositeScore - a.compositeScore);
+        
+        const potentialBestTotalTDO = 
+            potentialBestSpam.slice(0, 6).reduce((sum, p) => sum + p.tdo, 0) +
+            potentialBestDamage.slice(0, 6).reduce((sum, p) => sum + p.tdo, 0);
+        const potentialBestTotalDPS = 
+            potentialBestSpam.slice(0, 6).reduce((sum, p) => sum + p.dps, 0) +
+            potentialBestDamage.slice(0, 6).reduce((sum, p) => sum + p.dps, 0);
+        
+        return {
+            currentBestSpam,
+            currentBestDamage,
+            potentialBestSpam,
+            potentialBestDamage,
+            currentBestTotalTDO,
+            currentBestTotalDPS,
+            potentialBestTotalTDO,
+            potentialBestTotalDPS
+        };
+    }
+
+    /**
+     * Get all user Pokemon from IndexedDB
+     * @returns {Promise<Array>} All user Pokemon
+     */
+    async getAllUserPokemon() {
+        return new Promise((resolve) => {
+            const dbRequest = indexedDB.open('PokemonGoDB');
+            
+            dbRequest.onsuccess = (event) => {
+                const db = event.target.result;
+                const tx = db.transaction(['userPokemon'], 'readonly');
+                const store = tx.objectStore('userPokemon');
+                const request = store.getAll();
+                
+                request.onsuccess = () => {
+                    resolve(request.result || []);
+                };
+            };
+        });
+    }
+
+    /**
+     * Get rocket teams data from IndexedDB
+     * @returns {Promise<Object>} Rocket teams data
+     */
+    async getRocketTeamsData() {
+        return new Promise((resolve) => {
+            const dbRequest = indexedDB.open('PokemonGoDB');
+            
+            dbRequest.onsuccess = (event) => {
+                const db = event.target.result;
+                const tx = db.transaction(['metadata'], 'readonly');
+                const store = tx.objectStore('metadata');
+                const request = store.get('rocketTeams');
+                
+                request.onsuccess = () => {
+                    resolve(request.result?.value || {});
+                };
+            };
+        });
+    }
+
+    /**
+     * Store PvE arsenal data in IndexedDB
+     * @param {Object} arsenalData - Complete arsenal data
+     * @returns {Promise<void>}
+     */
+    async storePVEArsenal(arsenalData) {
+        return new Promise((resolve) => {
+            const dbRequest = indexedDB.open('PokemonGoDB');
+            
+            dbRequest.onsuccess = (event) => {
+                const db = event.target.result;
+                const tx = db.transaction(['metadata'], 'readwrite');
+                const store = tx.objectStore('metadata');
+                
+                store.put({
+                    key: 'pveArsenalCache',
+                    value: arsenalData
+                });
+                
+                tx.oncomplete = () => {
+                    console.log('PvE Arsenal cached in IndexedDB');
+                    resolve();
+                };
+            };
+        });
+    }
+
+    /**
+     * Load cached PvE arsenal data from IndexedDB
+     * @returns {Promise<Object|null>} Cached data or null
+     */
+    async loadCachedPVEArsenal() {
+        return new Promise((resolve) => {
+            const dbRequest = indexedDB.open('PokemonGoDB');
+            
+            dbRequest.onsuccess = (event) => {
+                const db = event.target.result;
+                const tx = db.transaction(['metadata'], 'readonly');
+                const store = tx.objectStore('metadata');
+                const request = store.get('pveArsenalCache');
+                
+                request.onsuccess = () => {
+                    resolve(request.result?.value || null);
+                };
+            };
+        });
+    }
+
+    /**
+     * Invalidate and recalculate arsenal cache
+     */
+    async refreshArsenalCache() {
+        console.log('Refreshing PvE arsenal cache...');
+        this.arsenalCache = await this.calculatePVEArsenal();
+        this.app.render();
+    }
+
     // ====================================
     // EVENT LISTENERS
     // ====================================

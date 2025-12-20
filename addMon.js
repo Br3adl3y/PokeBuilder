@@ -43,36 +43,37 @@ class ScreenshotProcessor {
 
     // Process batch images one by one
     async processBatch() {
-    if (this.currentBatchIndex >= this.batchImages.length) {
-        this.batchImages = [];
-        this.currentBatchIndex = 0;
-        this.showBatchCompleteModal();
-        return;
-    }
+        if (this.currentBatchIndex >= this.batchImages.length) {
+            this.batchImages = [];
+            this.currentBatchIndex = 0;
+            // DON'T show batch complete modal - just return silently
+            // The catch report "Keep" or "Toss" action will handle next screenshot
+            return;
+        }
 
-    const file = this.batchImages[this.currentBatchIndex];
-    
-    // Initialize on first image
-    if (this.currentBatchIndex === 0) {
-        this.showProcessingModal('Initializing OCR...');
-        await this.ocr.initTesseract();
-    }
-    
-    this.showProcessingModal(`Processing ${this.currentBatchIndex + 1} of ${this.batchImages.length}...`);
-
-    try {
-        const imageData = await this.loadImage(file);
-        const extractedData = await this.ocr.processScreenshot(imageData, this.app.pokemon);
+        const file = this.batchImages[this.currentBatchIndex];
         
-        this.hideProcessingModal();
-        this.showConfirmationModal(extractedData, imageData, true);
-    } catch (error) {
-        console.error('❌ Error processing screenshot:', error);
-        console.error('Stack:', error.stack);
-        this.hideProcessingModal();
-        this.showSkipImageModal(error.message);
+        // Initialize on first image
+        if (this.currentBatchIndex === 0) {
+            this.showProcessingModal('Initializing OCR...');
+            await this.ocr.initTesseract();
+        }
+        
+        this.showProcessingModal(`Processing ${this.currentBatchIndex + 1} of ${this.batchImages.length}...`);
+
+        try {
+            const imageData = await this.loadImage(file);
+            const extractedData = await this.ocr.processScreenshot(imageData, this.app.pokemon);
+            
+            this.hideProcessingModal();
+            this.showConfirmationModal(extractedData, imageData, true);
+        } catch (error) {
+            console.error('❌ Error processing screenshot:', error);
+            console.error('Stack:', error.stack);
+            this.hideProcessingModal();
+            this.showSkipImageModal(error.message);
+        }
     }
-}
 
     setupNameAutocomplete(modal) {
         const nameInput = modal.querySelector('[data-field="name"]');
@@ -1181,32 +1182,33 @@ class ScreenshotProcessor {
                         modal.querySelector('[data-field="currentChargeMove2"]').selectedIndex = 0;
                     }
                 }
+            });
+        });
+
+        // Size state buttons (XXL/Regular/XXS)
+        modal.querySelectorAll('[data-size-state]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const state = btn.dataset.sizeState;
                 
-                // Size state buttons (XXL/Regular/XXS)
-                modal.querySelectorAll('[data-size-state]').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        const state = btn.dataset.sizeState;
-                        
-                        // Update button styles
-                        modal.querySelectorAll('[data-size-state]').forEach(b => {
-                            if (b.dataset.sizeState === state) {
-                                b.className = 'px-3 py-1 text-xs rounded-lg transition bg-white text-teal-600';
-                            } else {
-                                b.className = 'px-3 py-1 text-xs rounded-lg transition bg-white bg-opacity-20 text-white';
-                            }
-                        });
-                        
-                        // Show/hide weight and height fields for XXL or XXS
-                        const sizeFields = modal.querySelector('[data-size-fields]');
-                        if (state === 'xxl' || state === 'xxs') {
-                            sizeFields.style.display = 'block';
-                        } else {
-                            sizeFields.style.display = 'none';
-                            modal.querySelector('[data-field="weight"]').value = '';
-                            modal.querySelector('[data-field="height"]').value = '';
-                        }
-                    });
+                // Update button styles
+                modal.querySelectorAll('[data-size-state]').forEach(b => {
+                    if (b.dataset.sizeState === state) {
+                        b.className = 'px-3 py-1 text-xs rounded-lg transition bg-white text-teal-600';
+                    } else {
+                        b.className = 'px-3 py-1 text-xs rounded-lg transition bg-white bg-opacity-20 text-white';
+                    }
                 });
+                
+                // Show/hide weight and height fields for XXL or XXS
+                const sizeFields = modal.querySelector('[data-size-fields]');
+                if (state === 'xxl' || state === 'xxs') {
+                    sizeFields.style.display = 'block';
+                } else {
+                    sizeFields.style.display = 'none';
+                    modal.querySelector('[data-field="weight"]').value = '';
+                    modal.querySelector('[data-field="height"]').value = '';
+                }
             });
         });
 
