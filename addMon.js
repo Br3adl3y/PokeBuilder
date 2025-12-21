@@ -1676,9 +1676,9 @@ class ScreenshotProcessor {
                 cp: parseInt(formData.cp) || 0,
                 level: parseFloat(formData.level) || null,
                 ivs: {
-                    attack: parseInt(formData.ivs?.attack) || 0,
-                    defense: parseInt(formData.ivs?.defense) || 0,
-                    stamina: parseInt(formData.ivs?.stamina) || 0
+                    atk: parseInt(formData.ivs?.attack) || 0,
+                    def: parseInt(formData.ivs?.defense) || 0,
+                    sta: parseInt(formData.ivs?.stamina) || 0
                 },
                 ivEfficiency: formData.ivEfficiency || null,
                 

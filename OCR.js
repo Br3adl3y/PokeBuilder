@@ -47,10 +47,9 @@ class OCRProcessor {
     async processScreenshot(imageData, pokemonList) {        
         try {
             // Extract regions from the Pokémon GO screenshot
-            const anchor = this.findAnchorStar(imageData);
             const statsBoxTop = this.findStatsBoxEdge(imageData);
             const nickname = await this.extractNickname(imageData, statsBoxTop);
-            const cp = await this.extractCP(imageData, anchor.x, anchor.y);
+            const cp = await this.extractCP(imageData);  // ✅ Fixed
             const dateFirstPass = await this.extractDateCaught(imageData, { usedFallback: false });
             const pokemonName = await this.extractPokemonName(imageData, dateFirstPass, pokemonList);
             const dateCaught = await this.extractDateCaught(imageData, pokemonName);
@@ -225,54 +224,6 @@ class OCRProcessor {
         }
     }
 
-    findAnchorStar(imageData) {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d', { willReadFrequently: true }); 
-        const w = imageData.width;
-        const h = imageData.height;
-        
-        canvas.width = w;
-        canvas.height = h;
-        ctx.drawImage(imageData.image, 0, 0);
-        
-        const searchRegion = {
-            x: Math.floor(w * 0.88),
-            y: 0,
-            width: Math.floor(w * 0.04),
-            height: Math.floor(h * 0.10)
-        };
-        
-        const imageData2 = ctx.getImageData(searchRegion.x, searchRegion.y, searchRegion.width, searchRegion.height);
-        const data = imageData2.data;
-        
-        const yellowStar = { r: 0xf7, g: 0xc2, b: 0x10 };
-        const grayStar = { r: 0xc8, g: 0xd5, b: 0xdb };
-        
-        function colorMatches(r, g, b, target, tolerance = 30) {
-            return Math.abs(r - target.r) <= tolerance &&
-                   Math.abs(g - target.g) <= tolerance &&
-                   Math.abs(b - target.b) <= tolerance;
-        }
-        
-        for (let y = searchRegion.height - 1; y >= 0; y--) {
-            for (let x = 0; x < searchRegion.width; x++) {
-                const idx = (y * searchRegion.width + x) * 4;
-                const r = data[idx];
-                const g = data[idx + 1];
-                const b = data[idx + 2];
-                
-                if (colorMatches(r, g, b, yellowStar) || colorMatches(r, g, b, grayStar)) {
-                    const starEdgeY = searchRegion.y + y;
-                    const starCenterY = starEdgeY - 45;
-                    const starCenterX = Math.floor(w * 0.9025);
-                    return { x: starCenterX, y: starCenterY };
-                }
-            }
-        }
-        
-        return { x: Math.floor(w * 0.9025), y: Math.floor(h * 0.078) };
-    }
-
     findStatsBoxEdge(imageData) {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
@@ -375,22 +326,16 @@ class OCRProcessor {
         };
     }
 
-    async extractCP(imageData, anchorX, anchorY) {
+    async extractCP(imageData) {
         const w = imageData.width;
         const h = imageData.height;
         
-        const refWidth = 1180;
-        const refHeight = 2556;
-        const scale = Math.min(w / refWidth, h / refHeight);
-        
-        const cpX = anchorX + (-475 * scale);
-        const cpY = anchorY + (-5 * scale);
-        
+        // New top-down positioning
         const region = {
-            x: Math.floor(cpX - (w * 0.25)),
-            y: Math.floor(cpY - (h * 0.02)),
-            width: Math.floor(w * 0.45),
-            height: Math.floor(h * 0.04)
+            x: Math.floor(w * 0.335),      // 33% width, centered
+            y: 0,                           // Start from top
+            width: Math.floor(w * 0.33),   // 33% width
+            height: Math.floor(h * 0.106)  // 270px / 2556px = ~10.6%
         };
         
         // Check if background is shadow purple
@@ -666,22 +611,19 @@ class OCRProcessor {
     // Draw original image
     ctx.drawImage(imageData.image, 0, 0);
     
-    // Get anchor and stats box for accurate positioning
-    const anchor = this.findAnchorStar(imageData);
+    // Get stats box for accurate positioning
     const statsBoxTop = this.findStatsBoxEdge(imageData);
     
     // Calculate all regions using the same logic as extraction
     const regions = [];
     
-    // 1. CP Region
-    const cpX = anchor.x + (-475 * scale);
-    const cpY = anchor.y + (-5 * scale);
+    // 1. CP Region (updated to match new extractCP)
     const cpRegion = {
         name: 'CP',
-        x: Math.floor(cpX - (w * 0.25)),
-        y: Math.floor(cpY - (h * 0.02)),
-        width: Math.floor(w * 0.45),
-        height: Math.floor(h * 0.04),
+        x: Math.floor(w * 0.335),      // 33% width, centered
+        y: 0,                           // Start from top
+        width: Math.floor(w * 0.33),   // 33% width
+        height: Math.floor(h * 0.106), // 270px / 2556px
         success: !!extractedData.cp,
         showPreprocessed: true
     };

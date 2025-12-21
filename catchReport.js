@@ -88,7 +88,7 @@ class CatchReport {
         if (!pvpSection) return;
         
         pvpSection.innerHTML = `
-            <h2 class="text-xl font-bold mb-4">PvP Analysis</h2>
+            <h2 class="text-xl font-bold mb-4">PvP</h2>
             <div class="text-center py-8">
                 <i class="fa-solid fa-exclamation-circle text-red-500 text-4xl mb-3"></i>
                 <p class="text-gray-600">Failed to run simulations</p>
@@ -218,12 +218,6 @@ class CatchReport {
             this.loadTypeChart()
         ]);
         
-        console.log('📊 Loaded data:', {
-            hasPokemonData: !!pokemonData,
-            movesCount: allMoves?.length,
-            hasTypeData: !!typeData
-        });
-        
         if (!pokemonData) {
             console.error('❌ No Pokemon data found');
             return pvpRoles;
@@ -231,37 +225,206 @@ class CatchReport {
         
         // Get evolution chain (forward only)
         const evolutionChain = await this.getEvolutionChain(pokemonData);
-        console.log('🧬 Evolution chain:', evolutionChain.map(e => e.name));
-        
+
+        // Only keep the current Pokemon and its forward evolutions
+        const caughtIndex = evolutionChain.findIndex(e => e.name === userPokemon.name && (e.form || null) === (userPokemon.form || null));
+        const forwardChain = caughtIndex >= 0 ? evolutionChain.slice(caughtIndex) : evolutionChain;
+
         // Check each evolution
-        for (const evolution of evolutionChain) {
-            console.log(`\n🔬 Checking ${evolution.name}...`);
+        for (const evolution of forwardChain) {
             this.updateAnalyzingStatus(`Analyzing ${evolution.name}...`);
             
             // Check each league
             for (const league of this.standardLeagues) {
                 const leagueData = evolution[league.property];
                 
-                console.log(`  📍 ${league.name}:`, {
-                    hasLeagueData: !!leagueData,
-                    maxCP: evolution.maxCP,
-                    cpLimit: league.cpLimit
-                });
-                
                 if (!leagueData) {
-                    console.log(`    ⏭️  No league data for ${league.name}`);
+                    console.log(`  📍 ${league.name}: No league data`);
                     continue;
                 }
                 
-                // Check if Pokemon can get within 100 CP of league limit (or any CP for Master)
-                if (league.cpLimit && evolution.maxCP < league.cpLimit - 100) {
-                    console.log(`    ⏭️  Max CP too low (${evolution.maxCP} < ${league.cpLimit - 100})`);
-                    continue;
+                // Special handling for Little League (500 CP)
+                if (league.cpLimit === 500) {
+                    const allPokemon = await this.getAllPokemonData();
+                    
+                    // Check if this is a first-stage that can evolve
+                    const hasEvolutions = evolution.evolutions && evolution.evolutions.length > 0;
+                    const isFirstStage = !allPokemon.some(other => 
+                        other.evolutions && other.evolutions.some(evo => 
+                            evo.name === evolution.name && (evo.form === evolution.form || (!evo.form && !evolution.form))
+                        )
+                    );
+                    
+                    const isEligibleForLittle = hasEvolutions && isFirstStage;
+                    
+                    // Simulate Little League if eligible (first-stage that can evolve)
+                    if (isEligibleForLittle) {
+                        const maxCPWithIVs = this.calculateCP(evolution.stats, userPokemon.ivs, 50);
+                        
+                        if (userPokemon.cp < league.cpLimit && maxCPWithIVs >= league.cpLimit - 100) {
+                            const ivEfficiency = await this.calculateIVEfficiency(userPokemon.ivs, leagueData, evolution.stats, league);
+                            
+                            this.updateAnalyzingStatus(`Simulating ${evolution.name} in ${league.name}...`);
+                            
+                            const adjustedLevel = await this.findOptimalLevel(
+                                evolution,
+                                userPokemon.ivs,
+                                league,
+                                leagueData.level
+                            );
+                            
+                            const [regularResults, antiMetaResults] = await Promise.all([
+                                this.simulatePokemon(evolution, userPokemon.ivs, adjustedLevel, league, allMoves, typeData, false),
+                                this.simulatePokemon(evolution, userPokemon.ivs, adjustedLevel, league, allMoves, typeData, true)
+                            ]);
+                            
+                            if (regularResults) {
+                                const leagueId = this.getLeagueId(league.name);
+                                const rankings = await this.loadRankings(leagueId);
+                                const beatsExisting = await this.checkIfBeatsExisting(evolution.name, evolution.form, league.name, regularResults.rawScore);
+                                
+                                let speciesBestRank = null;
+                                let speciesBestAntiMetaRank = null;
+                                if (rankings && rankings.rankings) {
+                                    const speciesRankings = rankings.rankings.filter(r => 
+                                        r.name === evolution.name && (r.form || null) === (evolution.form || null)
+                                    );
+                                    if (speciesRankings.length > 0) {
+                                        speciesBestRank = Math.max(...speciesRankings.map(r => r.displayRank));
+                                    }
+                                }
+                                
+                                const antiMetaRankings = await this.loadRankings(`antimeta-${leagueId}`);
+                                if (antiMetaRankings && antiMetaRankings.rankings) {
+                                    const speciesAntiMeta = antiMetaRankings.rankings.filter(r => 
+                                        r.name === evolution.name && (r.form || null) === (evolution.form || null)
+                                    );
+                                    if (speciesAntiMeta.length > 0) {
+                                        speciesBestAntiMetaRank = Math.max(...speciesAntiMeta.map(r => r.displayRank));
+                                    }
+                                }
+                                
+                                pvpRoles.push({
+                                    evolution: evolution.name,
+                                    form: evolution.form || null,
+                                    league: league.name,
+                                    ivEfficiency: Math.round(ivEfficiency * 10) / 10,
+                                    level: adjustedLevel,
+                                    cp: this.calculateCP(evolution.stats, userPokemon.ivs, adjustedLevel),
+                                    rating: regularResults.rawScore,
+                                    displayRank: regularResults.displayRank,
+                                    speciesBestRank: speciesBestRank,
+                                    speciesBestAntiMetaRank: speciesBestAntiMetaRank,
+                                    antiMetaRating: antiMetaResults ? antiMetaResults.rawScore : null,
+                                    antiMetaDisplayRank: antiMetaResults ? antiMetaResults.displayRank : null,
+                                    recommendedMoveset: regularResults.recommendedMoveset,
+                                    scenarioScores: regularResults.scenarioScores,
+                                    bestMatchups: regularResults.bestMatchups,
+                                    worstMatchups: regularResults.worstMatchups,
+                                    beatsExisting: beatsExisting,
+                                    needsXL: adjustedLevel > 40
+                                });
+                            }
+                        }
+                    }
+                    
+                    // Simulate Little Jungle (all Pokemon eligible)
+                    const maxCPWithIVs = this.calculateCP(evolution.stats, userPokemon.ivs, 50);
+                    
+                    if (userPokemon.cp < league.cpLimit && maxCPWithIVs >= league.cpLimit - 100) {
+                        const ivEfficiency = await this.calculateIVEfficiency(userPokemon.ivs, leagueData, evolution.stats, league);
+                        
+                        const littleJungleLeague = { name: 'Little Jungle', cpLimit: 500, property: 'little' };
+                        
+                        this.updateAnalyzingStatus(`Simulating ${evolution.name} in Little Jungle...`);
+                        
+                        const adjustedLevel = await this.findOptimalLevel(
+                            evolution,
+                            userPokemon.ivs,
+                            littleJungleLeague,
+                            leagueData.level
+                        );
+                        
+                        const [regularResults, antiMetaResults] = await Promise.all([
+                            this.simulatePokemon(evolution, userPokemon.ivs, adjustedLevel, littleJungleLeague, allMoves, typeData, false),
+                            this.simulatePokemon(evolution, userPokemon.ivs, adjustedLevel, littleJungleLeague, allMoves, typeData, true)
+                        ]);
+                        
+                        if (regularResults) {
+                            const leagueId = 'combat-league-vs-seeker-great-little-jungle';
+                            const rankings = await this.loadRankings(leagueId);
+                            const beatsExisting = await this.checkIfBeatsExisting(evolution.name, evolution.form, 'Little Jungle', regularResults.rawScore);
+                            
+                            let speciesBestRank = null;
+                            let speciesBestAntiMetaRank = null;
+                            if (rankings && rankings.rankings) {
+                                const speciesRankings = rankings.rankings.filter(r => 
+                                    r.name === evolution.name && (r.form || null) === (evolution.form || null)
+                                );
+                                if (speciesRankings.length > 0) {
+                                    speciesBestRank = Math.max(...speciesRankings.map(r => r.displayRank));
+                                }
+                            }
+                            
+                            const antiMetaRankings = await this.loadRankings(`antimeta-${leagueId}`);
+                            if (antiMetaRankings && antiMetaRankings.rankings) {
+                                const speciesAntiMeta = antiMetaRankings.rankings.filter(r => 
+                                    r.name === evolution.name && (r.form || null) === (evolution.form || null)
+                                );
+                                if (speciesAntiMeta.length > 0) {
+                                    speciesBestAntiMetaRank = Math.max(...speciesAntiMeta.map(r => r.displayRank));
+                                }
+                            }
+                            
+                            pvpRoles.push({
+                                evolution: evolution.name,
+                                form: evolution.form || null,
+                                league: 'Little Jungle',
+                                ivEfficiency: Math.round(ivEfficiency * 10) / 10,
+                                level: adjustedLevel,
+                                cp: this.calculateCP(evolution.stats, userPokemon.ivs, adjustedLevel),
+                                rating: regularResults.rawScore,
+                                displayRank: regularResults.displayRank,
+                                speciesBestRank: speciesBestRank,
+                                speciesBestAntiMetaRank: speciesBestAntiMetaRank,
+                                antiMetaRating: antiMetaResults ? antiMetaResults.rawScore : null,
+                                antiMetaDisplayRank: antiMetaResults ? antiMetaResults.displayRank : null,
+                                recommendedMoveset: regularResults.recommendedMoveset,
+                                scenarioScores: regularResults.scenarioScores,
+                                bestMatchups: regularResults.bestMatchups,
+                                worstMatchups: regularResults.worstMatchups,
+                                beatsExisting: beatsExisting,
+                                needsXL: adjustedLevel > 40
+                            });
+                        }
+                    }
+                    
+                    continue; // Skip to next league after handling Little
+                }
+                
+                // Calculate max CP this Pokemon can reach with its IVs
+                const maxCPWithIVs = this.calculateCP(evolution.stats, userPokemon.ivs, 50);
+                
+                // Check eligibility for this league
+                if (league.cpLimit) {
+                    // Current CP must be under the limit
+                    if (userPokemon.cp >= league.cpLimit) {
+                        continue;
+                    }
+                    
+                    // Max CP with IVs must be within 100 of the limit
+                    if (maxCPWithIVs < league.cpLimit - 100) {
+                        continue;
+                    }
+                } else {
+                    // Master League - only eligible if can reach Ultra League
+                    if (maxCPWithIVs < 2400) {
+                        continue;
+                    }
                 }
                 
                 // Calculate IV efficiency
                 const ivEfficiency = await this.calculateIVEfficiency(userPokemon.ivs, leagueData, evolution.stats, league);
-                console.log(`    📈 IV Efficiency: ${ivEfficiency.toFixed(1)}%`);
                 
                 // Always add role, regardless of threshold
                 this.updateAnalyzingStatus(`Simulating ${evolution.name} in ${league.name}...`);
@@ -274,20 +437,22 @@ class CatchReport {
                     leagueData.level
                 );
                 
-                console.log(`    🎯 Adjusted level: ${adjustedLevel}`);
                 
                 // Simulate battles
                 const [regularResults, antiMetaResults] = await Promise.all([
                     this.simulatePokemon(evolution, userPokemon.ivs, adjustedLevel, league, allMoves, typeData, false),
                     this.simulatePokemon(evolution, userPokemon.ivs, adjustedLevel, league, allMoves, typeData, true)
                 ]);
-                
                 console.log(`    ⚔️  Simulation results:`, {
                     regular: regularResults ? regularResults.rawScore.toFixed(1) : 'null',
                     antiMeta: antiMetaResults ? antiMetaResults.rawScore.toFixed(1) : 'null'
                 });
                 
                 if (regularResults) {
+                    // Load rankings for species best comparison
+                    const leagueId = this.getLeagueId(league.name);
+                    const rankings = await this.loadRankings(leagueId);
+
                     // Check if this beats existing Pokemon with same role
                     const beatsExisting = await this.checkIfBeatsExisting(
                         evolution.name,
@@ -296,6 +461,31 @@ class CatchReport {
                         regularResults.rawScore
                     );
                     
+                    // Find the best displayRank for this species in the rankings
+                    let speciesBestRank = null;
+                    let speciesBestAntiMetaRank = null;
+                    if (rankings && rankings.rankings) {
+                        const speciesRankings = rankings.rankings.filter(r => 
+                            r.name === evolution.name && 
+                            (r.form || null) === (evolution.form || null)
+                        );
+                        if (speciesRankings.length > 0) {
+                            speciesBestRank = Math.max(...speciesRankings.map(r => r.displayRank));
+                        }
+                    }
+
+                    // Load anti-meta rankings for species best
+                    const antiMetaRankings = await this.loadRankings(`antimeta-${leagueId}`);
+                    if (antiMetaRankings && antiMetaRankings.rankings) {
+                        const speciesAntiMeta = antiMetaRankings.rankings.filter(r => 
+                            r.name === evolution.name && 
+                            (r.form || null) === (evolution.form || null)
+                        );
+                        if (speciesAntiMeta.length > 0) {
+                            speciesBestAntiMetaRank = Math.max(...speciesAntiMeta.map(r => r.displayRank));
+                        }
+                    }
+
                     pvpRoles.push({
                         evolution: evolution.name,
                         form: evolution.form || null,
@@ -304,7 +494,11 @@ class CatchReport {
                         level: adjustedLevel,
                         cp: this.calculateCP(evolution.stats, userPokemon.ivs, adjustedLevel),
                         rating: regularResults.rawScore,
+                        displayRank: regularResults.displayRank,
+                        speciesBestRank: speciesBestRank,
+                        speciesBestAntiMetaRank: speciesBestAntiMetaRank,
                         antiMetaRating: antiMetaResults ? antiMetaResults.rawScore : null,
+                        antiMetaDisplayRank: antiMetaResults ? antiMetaResults.displayRank : null,
                         recommendedMoveset: regularResults.recommendedMoveset,
                         scenarioScores: regularResults.scenarioScores,
                         bestMatchups: regularResults.bestMatchups,
@@ -313,7 +507,6 @@ class CatchReport {
                         needsXL: adjustedLevel > 40
                     });
                     
-                    console.log(`    ✅ Added PvP role`);
                 } else {
                     console.log(`    ❌ No simulation results`);
                 }
@@ -322,9 +515,8 @@ class CatchReport {
         
         // Sort by rating descending
         pvpRoles.sort((a, b) => b.rating - a.rating);
-        
-        console.log(`\n📋 Total PvP roles found: ${pvpRoles.length}`);
-        
+        console.log('Finished all loops. Final pvpRoles length:', pvpRoles.length);
+        console.log('Final pvpRoles:', pvpRoles);
         return pvpRoles;
     }
 
@@ -365,9 +557,9 @@ class CatchReport {
         const cpmValue = cpm[levelIndex];
         
         return Math.max(10, Math.floor(
-            (stats.attack + ivs.attack) * 
-            Math.sqrt(stats.defense + ivs.defense) * 
-            Math.sqrt(stats.hp + ivs.stamina) * 
+            (stats.attack + ivs.atk) * 
+            Math.sqrt(stats.defense + ivs.def) * 
+            Math.sqrt(stats.hp + ivs.sta) *
             cpmValue * cpmValue / 10
         ));
     }
@@ -375,7 +567,7 @@ class CatchReport {
     async calculateIVEfficiency(userIVs, leagueData, baseStats, league) {
         // Master League is simple - just sum of IVs
         if (!league.cpLimit) {
-            const ivSum = userIVs.attack + userIVs.defense + userIVs.stamina;
+            const ivSum = userIVs.atk + userIVs.def + userIVs.sta;
             return (ivSum / 45) * 100;
         }
         
@@ -392,9 +584,9 @@ class CatchReport {
         // Calculate stat product with user's IVs at THEIR optimal level
         const userLevelIndex = Math.round((userOptimalLevel - 1) * 2);
         const userCpmValue = cpm[userLevelIndex];
-        const userAttack = (baseStats.attack + userIVs.attack) * userCpmValue;
-        const userDefense = (baseStats.defense + userIVs.defense) * userCpmValue;
-        const userStamina = Math.floor((baseStats.hp + userIVs.stamina) * userCpmValue);
+        const userAttack = (baseStats.attack + userIVs.atk) * userCpmValue;
+        const userDefense = (baseStats.defense + userIVs.def) * userCpmValue;
+        const userStamina = Math.floor((baseStats.hp + userIVs.sta) * userCpmValue);
         const userSP = userAttack * userDefense * userStamina;
         
         // Use pre-calculated max/min SP from league data
@@ -403,7 +595,7 @@ class CatchReport {
         
         // Normalize to 0-100 scale
         if (maxSP === minSP) {
-            return 100; // Fallback
+            return 100;
         }
         
         return ((userSP - minSP) / (maxSP - minSP)) * 100;
@@ -411,35 +603,59 @@ class CatchReport {
 
     async simulatePokemon(pokemon, ivs, level, league, allMoves, typeData, isAntiMeta) {
         try {
-            // Load rankings to get eligible opponents
-            const leagueId = this.getLeagueId(league.name);
-            const rankingId = isAntiMeta ? `antimeta-${leagueId}` : leagueId;
-            const rankings = await this.loadRankings(rankingId);
-            
-            if (!rankings || !rankings.rankings || rankings.rankings.length === 0) {
-                console.warn(`No rankings found for ${rankingId}`);
-                return null;
+            let opponents;
+
+            if (isAntiMeta) {
+                // Anti-meta: use top 50 from MAIN rankings
+                const leagueId = this.getLeagueId(league.name);
+                const rankings = await this.loadRankings(leagueId);  // Not antimeta rankings
+                
+                if (!rankings || !rankings.rankings || rankings.rankings.length === 0) {
+                    console.warn(`No rankings found for ${leagueId}`);
+                    return null;
+                }
+                
+                opponents = rankings.rankings.slice(0, 50);
+            } else {
+                // Regular: use all Pokemon with league data
+                const allPokemon = await this.getAllPokemonData();
+                opponents = allPokemon.filter(p => p[league.property] && p[league.property].level);
             }
             
-            // Get opponents (all eligible for regular, top 50 for anti-meta)
-            const opponents = isAntiMeta ? rankings.rankings.slice(0, 50) : rankings.rankings;
-            
-            // Load opponent Pokemon data
-            const opponentPokemon = await Promise.all(
-                opponents.map(async (ranking) => {
-                    const pokData = await this.getPokemonData(ranking.name, ranking.form);
-                    if (!pokData) return null;
-                    return {
-                        ...pokData,
-                        isShadow: ranking.isShadow,
-                        ranking: ranking,
-                        variantId: `${pokData.id}${ranking.isShadow ? '-shadow' : ''}`
-                    };
-                })
-            );
-            
+            let opponentPokemon;
+
+            if (isAntiMeta) {
+                opponentPokemon = await Promise.all(
+                    opponents.map(async (ranking) => {
+                        const pokData = await this.getPokemonData(ranking.name, ranking.form);
+                        if (!pokData) return null;
+                        return {
+                            ...pokData,
+                            isShadow: ranking.isShadow,
+                            ranking: ranking
+                        };
+                    })
+                );
+            } else {
+                // Load main rankings to get recommended movesets
+                const leagueId = this.getLeagueId(league.name);
+                const mainRankings = await this.loadRankings(leagueId);
+                
+                opponentPokemon = opponents.map(p => {
+                    const ranking = mainRankings?.rankings?.find(r => 
+                        r.speciesId === p.id && 
+                        (r.form || null) === (p.form || null) &&
+                        r.isShadow === false
+                    );
+                    
+                    return ranking ? {
+                        ...p,
+                        ranking: ranking
+                    } : null;
+                });
+            }
+
             const validOpponents = opponentPokemon.filter(p => p !== null);
-            
             // Build caught Pokemon for simulation
             const caughtForSim = this.buildPokemonForSim(pokemon, ivs, level, allMoves);
             if (!caughtForSim) return null;
@@ -503,6 +719,27 @@ class CatchReport {
                 1 / scores.length
             );
             
+            // Load rankings to calculate where this Pokemon would rank
+            const leagueId = this.getLeagueId(league.name);
+            const rankingId = isAntiMeta ? `antimeta-${leagueId}` : leagueId;
+            const rankings = await this.loadRankings(rankingId);
+
+            let displayRank = null;
+            if (rankings && rankings.rankings && rankings.rankings.length > 0) {
+                // Find where this score would fit
+                const betterCount = rankings.rankings.filter(r => r.rawScore > rawScore).length;
+                const totalCount = rankings.rankings.length;
+                
+                // Calculate normalized rank (0-100 scale like in the rankings)
+                displayRank = Math.round(((totalCount - betterCount) / totalCount) * 100 * 10) / 10;
+            }
+
+            console.log(`    ⚔️  Simulation results:`, {
+                rawScore: rawScore,
+                scenarioScores: scenarioScores,
+                matchupsCount: results.allMatchups.length
+            });
+
             // Sort matchups and get top/bottom 10
             const sortedMatchups = results.allMatchups.sort((a, b) => b.rating - a.rating);
             
@@ -511,7 +748,8 @@ class CatchReport {
                 scenarioScores: scenarioScores,
                 recommendedMoveset: caughtForSim.recommendedMoveset,
                 bestMatchups: sortedMatchups.slice(0, 10),
-                worstMatchups: sortedMatchups.slice(-10).reverse()
+                worstMatchups: sortedMatchups.slice(-10).reverse(),
+                displayRank: displayRank
             };
             
         } catch (error) {
@@ -545,7 +783,7 @@ class CatchReport {
                 name: pokemon.name,
                 types: pokemon.types,
                 stats: pokemon.stats,
-                ivs: { atk: ivs.attack, def: ivs.defense, sta: ivs.stamina, cpm: cpmValue },
+                ivs: { atk: ivs.atk, def: ivs.def, sta: ivs.sta, cpm: cpmValue },
                 fastMove: fastMove,
                 chargedMoves: charged,
                 isShadow: pokemon.isShadow || false,
@@ -567,12 +805,12 @@ class CatchReport {
                 fast: fastMoves[0].rawId,
                 charged: chargedMoves.slice(0, 2).map(m => m.rawId)
             };
-            
+
             return {
                 name: pokemon.name,
                 types: pokemon.types,
                 stats: pokemon.stats,
-                ivs: { atk: ivs.attack, def: ivs.defense, sta: ivs.stamina, cpm: cpmValue },
+                ivs: { atk: ivs.atk, def: ivs.def, sta: ivs.sta, cpm: cpmValue },
                 fastMove: fastMoves[0],
                 chargedMoves: chargedMoves.slice(0, 2),
                 isShadow: pokemon.isShadow || pokemon.shadow || false,
@@ -693,7 +931,7 @@ class CatchReport {
                         ${userPokemon.spriteThumb ? `<img src="${URL.createObjectURL(userPokemon.spriteThumb)}" class="w-20 h-20 object-contain">` : ''}
                         <div class="flex-1">
                             <h1 class="text-2xl font-bold">${userPokemon.name}${userPokemon.form ? ` (${userPokemon.form})` : ''}</h1>
-                            <p class="text-gray-600">CP ${userPokemon.cp} • Level ${userPokemon.level || '?'} • ${userPokemon.ivs.attack}/${userPokemon.ivs.defense}/${userPokemon.ivs.stamina}</p>
+                            <p class="text-gray-600">CP ${userPokemon.cp} • Level ${userPokemon.level || '?'} • ${userPokemon.ivs.atk}/${userPokemon.ivs.def}/${userPokemon.ivs.sta}</p>
                         </div>
                         <button class="text-2xl text-gray-500 hover:text-gray-700" data-action="close">
                             <i class="fa-solid fa-times"></i>
@@ -779,7 +1017,7 @@ class CatchReport {
         if (pvpRoles === null) {
             return `
                 <div class="bg-white rounded-xl p-6 shadow" data-pvp-section>
-                    <h2 class="text-xl font-bold mb-4">PvP Analysis</h2>
+                    <h2 class="text-xl font-bold mb-4">PvP</h2>
                     <div class="text-center py-8">
                         <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
                         <p class="text-gray-600">Running simulations...</p>
@@ -791,7 +1029,7 @@ class CatchReport {
         if (!pvpRoles || pvpRoles.length === 0) {
             return `
                 <div class="bg-white rounded-xl p-6 shadow">
-                    <h2 class="text-xl font-bold mb-2">PvP Analysis</h2>
+                    <h2 class="text-xl font-bold mb-2">PvP</h2>
                     <p class="text-gray-500">No PvP roles analyzed yet</p>
                 </div>
             `;
@@ -802,11 +1040,11 @@ class CatchReport {
         
         return `
             <div class="bg-white rounded-xl p-6 shadow">
-                <h2 class="text-xl font-bold mb-4">PvP Analysis</h2>
+                <h2 class="text-xl font-bold mb-4">PvP</h2>
                 
                 ${viableRoles.length > 0 ? `
                     <div class="mb-4">
-                        <h3 class="font-semibold text-green-600 mb-2">Viable Roles (${viableRoles.length})</h3>
+                        <h3 class="font-semibold text-green-600 mb-2">Viable Leagues (${viableRoles.length})</h3>
                         <div class="space-y-3">
                             ${viableRoles.map((role, index) => `
                                 <div class="border-2 rounded-lg p-4 hover:border-blue-500 cursor-pointer transition" data-pvp-role="${pvpRoles.indexOf(role)}">
@@ -815,12 +1053,17 @@ class CatchReport {
                                             <p class="font-bold text-lg">
                                                 ${role.evolution}${role.form ? ` (${role.form})` : ''} - ${role.league}
                                             </p>
-                                            <p class="text-sm text-gray-600">
+                                           <p class="text-sm text-gray-600">
                                                 Level ${role.level} • CP ${role.cp} • IV Efficiency: ${role.ivEfficiency}%
                                             </p>
                                             <p class="text-sm text-gray-600">
-                                                Rating: ${role.rating.toFixed(1)} • Anti-Meta: ${role.antiMetaRating ? role.antiMetaRating.toFixed(1) : 'N/A'}
+                                                Rank: ${role.displayRank !== null ? role.displayRank : 'Unranked'} • Anti-Meta: ${role.antiMetaDisplayRank !== null ? role.antiMetaDisplayRank : 'N/A'}
                                             </p>
+                                            ${role.speciesBestRank ? `
+                                                <p class="text-sm text-gray-600">
+                                                    Species Best Rank: ${Math.round(role.speciesBestRank * 10) / 10} • Anti-Meta: ${role.speciesBestAntiMetaRank ? Math.round(role.speciesBestAntiMetaRank * 10) / 10 : 'N/A'}
+                                                </p>
+                                            ` : ''}
                                         </div>
                                         <div class="flex flex-col items-end gap-1">
                                             ${role.needsXL ? '<span class="bg-purple-500 text-white px-3 py-1 rounded-full text-sm">XL</span>' : ''}
@@ -844,7 +1087,7 @@ class CatchReport {
                         </div>
                     </div>
                 ` : `
-                    <p class="text-gray-500 mb-4">No viable roles found (threshold: ${this.viabilityThreshold}% IV efficiency)</p>
+                    <p class="text-gray-500 mb-4">No viable leagues found (threshold: ${this.viabilityThreshold}% IV efficiency)</p>
                 `}
                 
                 ${belowThreshold.length > 0 ? `
@@ -878,18 +1121,14 @@ class CatchReport {
     renderPvESection(pveRoles) {
         return `
             <div class="bg-white rounded-xl p-6 shadow">
-                <h2 class="text-xl font-bold mb-4">PvE Roles</h2>
-                <div class="grid grid-cols-3 gap-4">
+                <h2 class="text-xl font-bold mb-4">PvE</h2>
+                <div class="grid grid-cols-2 gap-4">
                     <div class="p-4 bg-gray-50 rounded-lg text-center">
                         <p class="font-semibold mb-2">Gym/Raid</p>
                         <p class="text-xs text-gray-500">Coming Soon</p>
                     </div>
                     <div class="p-4 bg-gray-50 rounded-lg text-center">
-                    <p class="font-semibold mb-2">Rocket Grunts</p>
-                    <p class="text-xs text-gray-500">Coming Soon</p>
-                    </div>
-                    <div class="p-4 bg-gray-50 rounded-lg text-center">
-                    <p class="font-semibold mb-2">Rocket Leaders</p>
+                    <p class="font-semibold mb-2">Team Rocket</p>
                     <p class="text-xs text-gray-500">Coming Soon</p>
                     </div>
                     </div>
@@ -1218,22 +1457,9 @@ class CatchReport {
                 const tx = db.transaction(['rankings'], 'readonly');
                 const store = tx.objectStore('rankings');
                 
-                // Try with date suffix first, then without
-                const todayDate = new Date().toISOString().split('T')[0];
-                const requestWithDate = store.get(`${leagueId}-${todayDate}`);
-                
-                requestWithDate.onsuccess = () => {
-                    if (requestWithDate.result) {
-                        resolve(requestWithDate.result);
-                    } else {
-                        // Try without date
-                        const requestWithoutDate = store.get(leagueId);
-                        requestWithoutDate.onsuccess = () => resolve(requestWithoutDate.result);
-                        requestWithoutDate.onerror = () => reject(requestWithoutDate.error);
-                    }
-                };
-                
-                requestWithDate.onerror = () => reject(requestWithDate.error);
+                const request = store.get(leagueId);
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
             };
             
             dbRequest.onerror = () => reject(dbRequest.error);
@@ -1610,18 +1836,30 @@ class BattleSimulator {
     }
 
     calculateAttack(stats, ivs) {
-        const cpmValue = ivs.cpm || 0.84030001;
+        const cpmValue = ivs.cpm;
         return (stats.attack + ivs.atk) * cpmValue;
     }
 
     calculateDefense(stats, ivs) {
-        const cpmValue = ivs.cpm || 0.84030001;
+        const cpmValue = ivs.cpm;
         return (stats.defense + ivs.def) * cpmValue;
     }
 
     calculateHP(stats, ivs) {
-        const cpmValue = ivs.cpm || 0.84030001;
-        return Math.max(10, Math.floor((stats.hp + ivs.sta) * cpmValue));
+        const cpmValue = ivs.cpm;
+        const hp = Math.max(10, Math.floor((stats.hp + ivs.sta) * cpmValue));
+        
+        if (!window.debuggedHP && isNaN(hp)) {
+            console.log('NaN HP:', {
+                stats_hp: stats.hp,
+                ivs_sta: ivs.sta,
+                ivs: ivs,
+                cpmValue: cpmValue
+            });
+            window.debuggedHP = true;
+        }
+        
+        return hp;
     }
 
     getTypeEffectiveness(attackType, defenderTypes) {

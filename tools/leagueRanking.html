@@ -1423,7 +1423,8 @@
             
             // Group cups by CP limit - check for specific IDs
             const standardCups = [
-                { cpLimit: 500, cup: cups.find(c => c.id === 'COMBAT_LEAGUE_VS_SEEKER_GREAT_LITTLE'), label: '500 CP' },
+                { cpLimit: 500, cup: cups.find(c => c.id === 'COMBAT_LEAGUE_VS_SEEKER_GREAT_LITTLE'), label: '500 CP (First Stage Only)' },
+                { cpLimit: 500, cup: { id: 'COMBAT_LEAGUE_VS_SEEKER_GREAT_LITTLE_JUNGLE', title: 'Little Jungle Cup', cpLimit: 500, allowedTypes: [], allowedPokemon: [], bannedPokemon: [], isStandard: true }, label: '500 CP (All Pokemon)', isJungle: true },
                 { cpLimit: 1500, cup: cups.find(c => c.id === 'COMBAT_LEAGUE_VS_SEEKER_GREAT'), label: '1500 CP' },
                 { cpLimit: 2500, cup: cups.find(c => c.id === 'COMBAT_LEAGUE_VS_SEEKER_ULTRA'), label: '2500 CP' },
                 { cpLimit: null, cup: cups.find(c => c.id === 'COMBAT_LEAGUE_VS_SEEKER_MASTER'), label: 'No Limit' }
@@ -1448,7 +1449,7 @@
             let html = '<div style="margin-bottom: 20px;"><strong>Standard Leagues</strong><br>';
             
             // Standard leagues
-            for (const { cpLimit, cup, label } of standardCups) {
+            for (const { cpLimit, cup, label, isJungle } of standardCups) {
                 if (!cup) continue;
                 
                 const leagueName = cup.id.toLowerCase().replace(/_/g, '-');
