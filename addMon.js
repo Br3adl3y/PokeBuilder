@@ -589,6 +589,11 @@ class ScreenshotProcessor {
 
     // Show confirmation/edit modal
     showConfirmationModal(data, imageData, isBatch = false) {
+        // Don't show confirmation if catch report is already open
+        if (document.querySelector('[data-modal="catch-report"]')) {
+            return;
+        }
+        
         const needsAttention = this.getFieldsNeedingAttention(data);
         
         // Determine initial shadow state based on OCR detection

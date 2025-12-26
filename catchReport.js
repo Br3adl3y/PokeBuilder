@@ -603,61 +603,75 @@ class CatchReport {
 
     async simulatePokemon(pokemon, ivs, level, league, allMoves, typeData, isAntiMeta) {
         try {
-            let opponents;
+            // Load rankings first (used for both opponents and caught Pokemon moveset)
+        const leagueId = this.getLeagueId(league.name);
+        const mainRankings = await this.loadRankings(leagueId); // Always load main rankings
+        
+        let opponents;
 
-            if (isAntiMeta) {
-                // Anti-meta: use top 50 from MAIN rankings
-                const leagueId = this.getLeagueId(league.name);
-                const rankings = await this.loadRankings(leagueId);  // Not antimeta rankings
-                
-                if (!rankings || !rankings.rankings || rankings.rankings.length === 0) {
-                    console.warn(`No rankings found for ${leagueId}`);
-                    return null;
-                }
-                
-                opponents = rankings.rankings.slice(0, 50);
-            } else {
-                // Regular: use all Pokemon with league data
-                const allPokemon = await this.getAllPokemonData();
-                opponents = allPokemon.filter(p => p[league.property] && p[league.property].level);
+        if (isAntiMeta) {
+            // Anti-meta: use top 50 from MAIN rankings
+            if (!mainRankings || !mainRankings.rankings || mainRankings.rankings.length === 0) {
+                console.warn(`No rankings found for ${leagueId}`);
+                return null;
             }
             
-            let opponentPokemon;
+            opponents = mainRankings.rankings.slice(0, 50);
+        } else {
+            // Regular: use all Pokemon with league data
+            const allPokemon = await this.getAllPokemonData();
+            opponents = allPokemon.filter(p => p[league.property] && p[league.property].level);
+        }
+        
+        let opponentPokemon;
 
-            if (isAntiMeta) {
-                opponentPokemon = await Promise.all(
-                    opponents.map(async (ranking) => {
-                        const pokData = await this.getPokemonData(ranking.name, ranking.form);
-                        if (!pokData) return null;
-                        return {
-                            ...pokData,
-                            isShadow: ranking.isShadow,
-                            ranking: ranking
-                        };
-                    })
-                );
-            } else {
-                // Load main rankings to get recommended movesets
-                const leagueId = this.getLeagueId(league.name);
-                const mainRankings = await this.loadRankings(leagueId);
-                
-                opponentPokemon = opponents.map(p => {
-                    const ranking = mainRankings?.rankings?.find(r => 
-                        r.speciesId === p.id && 
-                        (r.form || null) === (p.form || null) &&
-                        r.isShadow === false
-                    );
-                    
-                    return ranking ? {
-                        ...p,
+        if (isAntiMeta) {
+            opponentPokemon = await Promise.all(
+                opponents.map(async (ranking) => {
+                    const pokData = await this.getPokemonData(ranking.name, ranking.form);
+                    if (!pokData) return null;
+                    return {
+                        ...pokData,
+                        isShadow: ranking.isShadow,
                         ranking: ranking
-                    } : null;
-                });
+                    };
+                })
+            );
+        } else {
+            opponentPokemon = opponents.map(p => {
+                const ranking = mainRankings?.rankings?.find(r => 
+                    r.speciesId === p.id && 
+                    (r.form || null) === (p.form || null) &&
+                    r.isShadow === false
+                );
+                
+                return ranking ? {
+                    ...p,
+                    ranking: ranking
+                } : null;
+            });
+        }
+
+        const validOpponents = opponentPokemon.filter(p => p !== null);
+        
+        // Find caught Pokemon's recommended moveset
+        const caughtRanking = mainRankings?.rankings?.find(r =>
+                r.name === pokemon.name && 
+                (r.form || null) === (pokemon.form || null) &&
+                r.isShadow === (pokemon.isShadow || false)
+            );
+
+            if (!caughtRanking) {
+                console.warn(`No ranking found for ${pokemon.name} in ${leagueId}`);
+                return null;
             }
 
-            const validOpponents = opponentPokemon.filter(p => p !== null);
-            // Build caught Pokemon for simulation
-            const caughtForSim = this.buildPokemonForSim(pokemon, ivs, level, allMoves);
+            const pokemonWithRanking = {
+                ...pokemon,
+                ranking: caughtRanking
+            };
+
+            const caughtForSim = this.buildPokemonForSim(pokemonWithRanking, ivs, level, allMoves);
             if (!caughtForSim) return null;
             
             // Run battles
@@ -720,7 +734,6 @@ class CatchReport {
             );
             
             // Load rankings to calculate where this Pokemon would rank
-            const leagueId = this.getLeagueId(league.name);
             const rankingId = isAntiMeta ? `antimeta-${leagueId}` : leagueId;
             const rankings = await this.loadRankings(rankingId);
 
@@ -765,11 +778,8 @@ class CatchReport {
         
         const pvpMoves = allMoves.filter(m => m.mode === 'pvp');
         
-        // Get moves - use ranking's recommended moveset if available, otherwise generate all combinations
-        let fastMoves, chargedMoves;
-        
+        // Always use ranking's recommended moveset if available
         if (pokemon.ranking && pokemon.ranking.recommendedMoveset) {
-            // Use pre-calculated moveset from rankings
             const fastMove = pvpMoves.find(m => 
                 m.rawId === pokemon.ranking.recommendedMoveset.fast && m.category === 'fast'
             );
@@ -789,34 +799,9 @@ class CatchReport {
                 isShadow: pokemon.isShadow || false,
                 recommendedMoveset: pokemon.ranking.recommendedMoveset
             };
-        } else {
-            // For caught Pokemon without ranking, use first available moveset
-            fastMoves = pokemon.moves.fast.map(name => 
-                pvpMoves.find(m => m.name === name && m.category === 'fast')
-            ).filter(m => m);
-            
-            chargedMoves = [...pokemon.moves.charge, ...pokemon.moves.chargeElite].map(name =>
-                pvpMoves.find(m => m.name === name && m.category === 'charge')
-            ).filter(m => m);
-            
-            if (fastMoves.length === 0 || chargedMoves.length === 0) return null;
-            
-            const recommendedMoveset = {
-                fast: fastMoves[0].rawId,
-                charged: chargedMoves.slice(0, 2).map(m => m.rawId)
-            };
-
-            return {
-                name: pokemon.name,
-                types: pokemon.types,
-                stats: pokemon.stats,
-                ivs: { atk: ivs.atk, def: ivs.def, sta: ivs.sta, cpm: cpmValue },
-                fastMove: fastMoves[0],
-                chargedMoves: chargedMoves.slice(0, 2),
-                isShadow: pokemon.isShadow || pokemon.shadow || false,
-                recommendedMoveset: recommendedMoveset
-            };
         }
+        
+        return null; // No ranking = can't simulate
     }
 
     simulateBattle(pokemon1, pokemon2, scenario, typeChart, typeOrder) {
