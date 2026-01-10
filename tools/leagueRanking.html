@@ -109,7 +109,7 @@
         // ============================================================
 
         const DB_NAME = 'PokemonGoDB';
-        const DB_VERSION = 5;
+        const DB_VERSION = 2;
         let db = null;
 
         const cpm = [0.0939999967813491, 0.135137430784308, 0.166397869586944, 0.192650914456886, 0.215732470154762, 0.236572655026622, 0.255720049142837, 0.273530381100769, 0.29024988412857, 0.306057381335773, 0.321087598800659, 0.335445032295077, 0.349212676286697, 0.36245774877879, 0.375235587358474, 0.387592411085168, 0.399567276239395, 0.41119354951725, 0.422500014305114, 0.432926413410414, 0.443107545375824, 0.453059953871985, 0.46279838681221, 0.472336077786704, 0.481684952974319, 0.490855810259008, 0.499858438968658, 0.508701756943992, 0.517393946647644, 0.525942508771329, 0.534354329109191, 0.542635762230353, 0.550792694091796, 0.558830599438087, 0.566754519939422, 0.574569148039264, 0.582278907299041, 0.589887911977272, 0.59740000963211, 0.604823657502073, 0.61215728521347, 0.61940411056605, 0.626567125320434, 0.633649181622743, 0.640652954578399, 0.647580963301656, 0.654435634613037, 0.661219263506722, 0.667934000492096, 0.674581899290818, 0.681164920330047, 0.687684905887771, 0.694143652915954, 0.700542893277978, 0.706884205341339, 0.713169102333341, 0.719399094581604, 0.725575616972598, 0.731700003147125, 0.734741011137376, 0.737769484519958, 0.740785574597326, 0.743789434432983, 0.746781208702482, 0.749761044979095, 0.752729105305821, 0.75568550825119, 0.758630366519684, 0.761563837528228, 0.764486065255226, 0.767397165298461, 0.77029727397159, 0.77318650484085, 0.776064945942412, 0.778932750225067, 0.781790064808426, 0.784636974334716, 0.787473583646825, 0.790300011634826, 0.792803950958807, 0.795300006866455, 0.79780392148697, 0.800300002098083, 0.802803892322847, 0.805299997329711, 0.807803863460723, 0.81029999256134, 0.812803834895026, 0.815299987792968, 0.817803806620319, 0.820299983024597, 0.822803778631297, 0.825299978256225, 0.827803750922782, 0.830299973487854, 0.832803753381377, 0.835300028324127, 0.837803755931569, 0.840300023555755, 0.842803729034748, 0.845300018787384, 0.847803702398935, 0.850300014019012, 0.852803676019539, 0.85530000925064, 0.857803649892077, 0.860300004482269, 0.862803624012168, 0.865299999713897];
@@ -488,8 +488,10 @@
             ];
             
             for (const cup of selectedCups) {
+                console.log(`\n=== Processing ${cup.title} ===`);
                 updateStatus(`⚔️ Simulating ${cup.title} (${cup.cpLimit || 'No Limit'} CP)...`);                
 
+                console.log(`Processing cup: ${cup.id}, cpLimit: ${cup.cpLimit}`);
                 
                 // Ultra and Master both use 2500 CP pruning
                 let cpPrune;
@@ -510,7 +512,9 @@
                     bannedPokemon: cup.bannedPokemon,
                     maxLevel: cup.maxLevel
                 };
-                                
+                
+                console.log(`League config:`, leagueConfig);
+                
                 const eligiblePokemon = getEligiblePokemon(allPokemon, leagueConfig, allMoves);
                 if (eligiblePokemon.length === 0) {
                     updateStatus(`⚠️ No eligible Pokemon for ${cup.title}`);
@@ -576,6 +580,9 @@
                 else if (league.cpLimit === 2500) leagueProperty = 'ultra';
                 else leagueProperty = 'master';
                 
+                console.log(`\n=== Eligibility Check for ${league.name} ===`);
+                console.log(`CP Limit: ${league.cpLimit}, League Property: ${leagueProperty}, CP Prune: ${league.cpPrune}`);
+                
                 let eligibilityBreakdown = {
                     total: allPokemon.length,
                     banned: 0,
@@ -634,24 +641,7 @@
                             continue;
                         }
                     }
-
-                    /// Little Jungle - inverse of Little Cup (everyone NOT in standard Little Cup)
-                    if (league.name.includes('jungle')) {
-                        // Skip if it would qualify for standard Little Cup (first stage AND evolvable)
-                        const hasEvolutions = p.evolutions && p.evolutions.length > 0;
-                        if (hasEvolutions) {
-                            const isFirstStage = !allPokemon.some(other => 
-                                other.evolutions && other.evolutions.some(evo => 
-                                    evo.name === p.name && (evo.form === p.form || (!evo.form && !p.form))
-                                )
-                            );
-                            if (isFirstStage) {
-                                eligibilityBreakdown.notFirstStage++;
-                                continue;
-                            }
-                        }
-                    }
-
+                    
                     const leagueData = p[leagueProperty];
                     if (!leagueData) {
                         eligibilityBreakdown.noLeagueData++;
@@ -664,6 +654,9 @@
                     
                     if (idealCP < minCP) {
                         eligibilityBreakdown.lowCP++;
+                        if (eligibilityBreakdown.lowCP <= 5) {
+                            console.log(`${p.name} (${p.form || 'base'}): idealCP=${idealCP}, minCP=${minCP}`);
+                        }
                         continue;
                     }
                     
@@ -678,6 +671,8 @@
                     eligible.push(...variants);
                 }
                 
+                console.log('Eligibility breakdown:', eligibilityBreakdown);
+                console.log(`Total eligible: ${eligible.length} Pokemon`);
                 return eligible;
             } catch (error) {
                 console.error('Error in getEligiblePokemon:', error);
@@ -695,8 +690,6 @@
         }
 
         async function simulateAntimeta(eligiblePokemon, mainRankings, league, scenarios, typeChart, typeOrder, allMoves) {
-            updateStatus(`🎯 Phase 3/3: Running anti-meta analysis for ${league.displayName}...`);
-            
             const top50 = mainRankings.slice(0, 50);
             
             const results = new Map();
@@ -707,12 +700,12 @@
                     form: p.form || null,
                     isShadow: p.isShadow,
                     scenarioRatings: {},
+                    moveTallies: {},
                     bestMatchups: [],
                     worstMatchups: []
                 });
             }
             
-            // Get recommended movesets for all eligible Pokemon
             const movesets = generateMovesets(eligiblePokemon, allMoves);
             const movesetsByPokemon = new Map();
             for (const moveset of movesets) {
@@ -723,31 +716,6 @@
                 movesetsByPokemon.get(variantId).push(moveset);
             }
             
-            // Build recommended movesets map from rankings
-            const recommendedMovesets = new Map();
-            for (const p of eligiblePokemon) {
-                const ranking = mainRankings.find(r => 
-                    r.speciesId === p.id && 
-                    r.isShadow === p.isShadow &&
-                    (r.form || null) === (p.form || null)
-                );
-                
-                if (ranking && ranking.recommendedMoveset) {
-                    const allMovesets = movesetsByPokemon.get(p.variantId);
-                    if (allMovesets) {
-                        const moveset = allMovesets.find(ms => 
-                            ms.fast.rawId === ranking.recommendedMoveset.fast &&
-                            ms.charged.length === ranking.recommendedMoveset.charged.length &&
-                            ms.charged.every(cm => ranking.recommendedMoveset.charged.includes(cm.rawId))
-                        );
-                        if (moveset) {
-                            recommendedMovesets.set(p.variantId, moveset);
-                        }
-                    }
-                }
-            }
-            
-            // Build top 50 movesets
             const top50Movesets = new Map();
             const pvpMoves = allMoves.filter(m => m.mode === 'pvp');
             
@@ -781,15 +749,13 @@
             const totalMatchups = n * top50Count * scenarios.length;
             
             let matchupsCompleted = 0;
-            updateProgress(0, totalMatchups, `Phase 3/3 - Anti-Meta: 0 / ${totalMatchups.toLocaleString()}`);
+            updateProgress(0, totalMatchups, `Anti-meta ${league.name}: 0 / ${totalMatchups.toLocaleString()} matchups`);
             
             const movesetCache = new Map();
             
             for (let i = 0; i < eligiblePokemon.length; i++) {
                 const pokemon1 = eligiblePokemon[i];
-                const p1Moveset = recommendedMovesets.get(pokemon1.variantId);
-                if (!p1Moveset) continue;
-                
+                const p1Movesets = movesetsByPokemon.get(pokemon1.variantId);
                 const p1Data = results.get(pokemon1.variantId);
                 
                 for (const [p2VariantId, p2Moveset] of top50Movesets) {
@@ -799,22 +765,47 @@
                         const isBaited = scenario.includes('-baited');
                         const baseScenario = scenario.replace('-baited', '');
                         
-                        let finalP1Rating;
+                        let bestP1Moveset, finalP1Rating;
                         
                         if (isBaited) {
                             const cacheKey = `${pokemon1.variantId}-${p2VariantId}-${baseScenario}`;
                             const cached = movesetCache.get(cacheKey);
                             
                             if (cached) {
-                                finalP1Rating = simulateBattle(p1Moveset, p2Moveset, scenario, league, typeChart, typeOrder);
+                                bestP1Moveset = cached.p1Moveset;
+                                finalP1Rating = simulateBattle(bestP1Moveset, p2Moveset, scenario, league, typeChart, typeOrder);
                             } else {
                                 continue;
                             }
                         } else {
-                            finalP1Rating = simulateBattle(p1Moveset, p2Moveset, scenario, league, typeChart, typeOrder);
+                            let bestP1Rating = -Infinity;
+                            const p1Tallies = new Map();
+                            
+                            for (const ms1 of p1Movesets) {
+                                const rating = simulateBattle(ms1, p2Moveset, scenario, league, typeChart, typeOrder);
+                                
+                                if (rating > bestP1Rating) {
+                                    bestP1Rating = rating;
+                                    bestP1Moveset = ms1;
+                                }
+                                
+                                if (rating > 500) {
+                                    const key = getMovesetKey(ms1);
+                                    p1Tallies.set(key, (p1Tallies.get(key) || 0) + 1);
+                                }
+                            }
+                            
+                            for (const [key, wins] of p1Tallies) {
+                                if (!p1Data.moveTallies[key]) {
+                                    p1Data.moveTallies[key] = { moveset: bestP1Moveset, wins: 0 };
+                                }
+                                p1Data.moveTallies[key].wins += wins;
+                            }
+                            
+                            finalP1Rating = bestP1Rating;
                             
                             const cacheKey = `${pokemon1.variantId}-${p2VariantId}-${scenario}`;
-                            movesetCache.set(cacheKey, true);
+                            movesetCache.set(cacheKey, { p1Moveset: bestP1Moveset });
                         }
                         
                         if (!p1Data.scenarioRatings[scenario]) {
@@ -828,64 +819,36 @@
                             r.isShadow === pokemon2.isShadow &&
                             (r.form || null) === (pokemon2.form || null)
                         )?.name || pokemon2.name;
-
+                        
                         const opponentKey = `${opponentName}|${pokemon2.form || 'base'}|${pokemon2.isShadow}`;
-
-                        // Skip opponents with only Splash/Struggle
-                        const isUselessOpponent = p2Moveset.fast.name === 'Splash' || 
-                                                p2Moveset.fast.name === 'Struggle' ||
-                                                (p2Moveset.charged.length === 1 && 
-                                                (p2Moveset.charged[0].name === 'Struggle' || 
-                                                    p2Moveset.charged[0].name === 'Splash'));
-
-                        if (!isUselessOpponent) {
-                            p1Data.bestMatchups.push({
-                                opponentKey: opponentKey,
-                                opponent: opponentName,
-                                opponentForm: pokemon2.form || null,
-                                opponentShadow: pokemon2.isShadow,
-                                rating: finalP1Rating,
-                                scenario: scenario,
-                                opponentMoveset: {
-                                    fast: p2Moveset.fast.name,
-                                    charged: p2Moveset.charged.map(m => m.name)
-                                }
-                            });
-                        }
+                        p1Data.bestMatchups.push({
+                            opponentKey: opponentKey,
+                            opponent: opponentName,
+                            opponentForm: pokemon2.form || null,
+                            opponentShadow: pokemon2.isShadow,
+                            rating: finalP1Rating,
+                            scenario: scenario,
+                            opponentMoveset: {
+                                fast: p2Moveset.fast.name,
+                                charged: p2Moveset.charged.map(m => m.name)
+                            }
+                        });
 
                         matchupsCompleted++;
                         
                         if (matchupsCompleted % 100 === 0) {
                             updateProgress(matchupsCompleted, totalMatchups, 
-                                `Phase 3/3 - Anti-Meta: ${matchupsCompleted.toLocaleString()} / ${totalMatchups.toLocaleString()}`);
+                                `Anti-meta ${league.name}: ${matchupsCompleted.toLocaleString()} / ${totalMatchups.toLocaleString()} matchups`);
                             await new Promise(resolve => setTimeout(resolve, 0));
                         }
                     }
                 }
             }
             
-            updateProgress(totalMatchups, totalMatchups, `Phase 3/3 - Anti-Meta: Complete`);
+            updateProgress(totalMatchups, totalMatchups, 
+                `Anti-meta ${league.name}: ${totalMatchups.toLocaleString()} / ${totalMatchups.toLocaleString()} matchups - Aggregating...`);
             
             const rankings = aggregateResults(results, eligiblePokemon);
-            
-            // Add recommended movesets to anti-meta rankings
-            for (const ranking of rankings) {
-                const pokemon = eligiblePokemon.find(p => 
-                    p.id === ranking.speciesId && 
-                    p.isShadow === ranking.isShadow &&
-                    (p.form || null) === ranking.form
-                );
-                
-                if (pokemon) {
-                    const moveset = recommendedMovesets.get(pokemon.variantId);
-                    if (moveset) {
-                        ranking.recommendedMoveset = {
-                            fast: moveset.fast.rawId,
-                            charged: moveset.charged.map(m => m.rawId)
-                        };
-                    }
-                }
-            }
             
             results.clear();
             movesets.length = 0;
@@ -895,11 +858,19 @@
         }
 
         async function simulateLeague(eligiblePokemon, league, scenarios, typeChart, typeOrder, allMoves) {
-            // ============================================================
-            // PHASE 1: DETERMINE RECOMMENDED MOVESETS
-            // ============================================================
-            
-            updateStatus(`🔍 Phase 1/3: Determining best movesets for ${league.displayName}...`);
+            const results = new Map();
+            for (const p of eligiblePokemon) {
+                results.set(p.variantId, {
+                    speciesId: p.id,
+                    name: p.name,
+                    form: p.form || null,
+                    isShadow: p.isShadow,
+                    scenarioRatings: {},
+                    moveTallies: {},
+                    bestMatchups: [],
+                    worstMatchups: []
+                });
+            }
             
             const movesets = generateMovesets(eligiblePokemon, allMoves);
             const movesetsByPokemon = new Map();
@@ -911,147 +882,26 @@
                 movesetsByPokemon.get(variantId).push(moveset);
             }
             
-            // Temporary tallies for moveset determination only
-            const moveTallies = new Map();
-            for (const p of eligiblePokemon) {
-                moveTallies.set(p.variantId, new Map());
-            }
-            
             const n = eligiblePokemon.length;
             const symmetricCount = scenarios.filter(s => isScenarioSymmetric(s)).length;
             const asymmetricCount = scenarios.length - symmetricCount;
-            const totalPhase1 = (n * (n - 1) / 2) * symmetricCount + (n * (n - 1)) * asymmetricCount;
+            const totalMatchups = (n * (n - 1) / 2) * symmetricCount + (n * (n - 1)) * asymmetricCount;
             
-            let phase1Completed = 0;
-            updateProgress(0, totalPhase1, `Phase 1/3 - Determining Movesets: 0 / ${totalPhase1.toLocaleString()}`);
-            
-            // Run all moveset combinations to determine best movesets
-            for (let i = 0; i < eligiblePokemon.length; i++) {
-                const pokemon1 = eligiblePokemon[i];
-                const p1Movesets = movesetsByPokemon.get(pokemon1.variantId);
-                const p1Tallies = moveTallies.get(pokemon1.variantId);
-                
-                for (let j = 0; j < eligiblePokemon.length; j++) {
-                    if (i === j) continue;
-                    
-                    const pokemon2 = eligiblePokemon[j];
-                    const p2Movesets = movesetsByPokemon.get(pokemon2.variantId);
-                    console.log(pokemon2.name);
-                    const p2Tallies = moveTallies.get(pokemon2.variantId);
-                    
-                    for (const scenario of scenarios) {
-                        const isSymmetric = isScenarioSymmetric(scenario);
-                        const isBaited = scenario.includes('-baited');
-                        
-                        if (isSymmetric && j < i) continue;
-                        if (isBaited) continue; // Skip baited scenarios in Phase 1
-                        
-                        // Test all moveset combinations
-                        for (const ms1 of p1Movesets) {
-                            for (const ms2 of p2Movesets) {
-                                const rating = simulateBattle(ms1, ms2, scenario, league, typeChart, typeOrder);
-                                
-                                // Tally moves for winners only
-                                if (rating > 500) {
-                                    const key = getMovesetKey(ms1);
-                                    p1Tallies.set(key, (p1Tallies.get(key) || 0) + 1);
-                                }
-                                
-                                if (isSymmetric) {
-                                    const p2Rating = 1000 - rating;
-                                    if (p2Rating > 500) {
-                                        const key = getMovesetKey(ms2);
-                                        p2Tallies.set(key, (p2Tallies.get(key) || 0) + 1);
-                                    }
-                                }
-                            }
-                        }
-                        
-                        phase1Completed++;
-                        
-                        if (phase1Completed % 100 === 0) {
-                            updateProgress(phase1Completed, totalPhase1, 
-                                `Phase 1/3 - Determining Movesets: ${phase1Completed.toLocaleString()} / ${totalPhase1.toLocaleString()}`);
-                            await new Promise(resolve => setTimeout(resolve, 0));
-                        }
-                    }
-                }
-            }
-            
-            updateProgress(totalPhase1, totalPhase1, `Phase 1/3 - Determining Movesets: Complete`);
-            
-            // Extract recommended movesets
-            const recommendedMovesets = new Map();
-            for (const [variantId, tallies] of moveTallies.entries()) {
-                if (tallies.size === 0) continue;
-                
-                let bestKey = null;
-                let maxWins = 0;
-                
-                for (const [key, wins] of tallies) {
-                    if (wins > maxWins) {
-                        maxWins = wins;
-                        bestKey = key;
-                    }
-                }
-                
-                if (bestKey) {
-                    const pokemon = eligiblePokemon.find(p => p.variantId === variantId);
-                    const allMovesets = movesetsByPokemon.get(variantId);
-                    const bestMoveset = allMovesets.find(ms => getMovesetKey(ms) === bestKey);
-                    
-                    if (bestMoveset) {
-                        recommendedMovesets.set(variantId, bestMoveset);
-                    }
-                }
-            }
-            
-            // Clear Phase 1 data
-            moveTallies.clear();
-            movesets.length = 0;
-            movesetsByPokemon.clear();
-            
-            // ============================================================
-            // PHASE 2: SIMULATE LEAGUE WITH RECOMMENDED MOVESETS
-            // ============================================================
-            
-            updateStatus(`⚔️ Phase 2/3: Simulating ${league.displayName} battles...`);
-            
-            const results = new Map();
-            for (const p of eligiblePokemon) {
-                results.set(p.variantId, {
-                    speciesId: p.id,
-                    name: p.name,
-                    form: p.form || null,
-                    isShadow: p.isShadow,
-                    scenarioRatings: {},
-                    bestMatchups: [],
-                    worstMatchups: []
-                });
-            }
-            
-            const totalPhase2 = (n * (n - 1) / 2) * scenarios.filter(s => isScenarioSymmetric(s)).length + 
-                                (n * (n - 1)) * scenarios.filter(s => !isScenarioSymmetric(s)).length;
-            
-            let phase2Completed = 0;
-            updateProgress(0, totalPhase2, `Phase 2/3 - Simulating League: 0 / ${totalPhase2.toLocaleString()}`);
+            let matchupsCompleted = 0;
+            updateProgress(0, totalMatchups, `${league.name}: 0 / ${totalMatchups.toLocaleString()} matchups`);
             
             const movesetCache = new Map();
             
             for (let i = 0; i < eligiblePokemon.length; i++) {
                 const pokemon1 = eligiblePokemon[i];
-                const p1Moveset = recommendedMovesets.get(pokemon1.variantId);
-                if (!p1Moveset) continue;
-                
+                const p1Movesets = movesetsByPokemon.get(pokemon1.variantId);
                 const p1Data = results.get(pokemon1.variantId);
                 
                 for (let j = 0; j < eligiblePokemon.length; j++) {
                     if (i === j) continue;
                     
                     const pokemon2 = eligiblePokemon[j];
-                    const p2Moveset = recommendedMovesets.get(pokemon2.variantId);
-                    if (!p2Moveset) continue;
-                    
+                    const p2Movesets = movesetsByPokemon.get(pokemon2.variantId);
                     const p2Data = results.get(pokemon2.variantId);
                     
                     for (const scenario of scenarios) {
@@ -1061,22 +911,75 @@
                         
                         if (isSymmetric && j < i) continue;
                         
-                        let finalP1Rating;
+                        let bestP1Moveset, bestP2Moveset, finalP1Rating;
                         
                         if (isBaited) {
                             const cacheKey = `${pokemon1.variantId}-${pokemon2.variantId}-${baseScenario}`;
                             const cached = movesetCache.get(cacheKey);
                             
                             if (cached) {
-                                finalP1Rating = simulateBattle(p1Moveset, p2Moveset, scenario, league, typeChart, typeOrder);
+                                bestP1Moveset = cached.p1Moveset;
+                                bestP2Moveset = cached.p2Moveset;
+                                finalP1Rating = simulateBattle(bestP1Moveset, bestP2Moveset, scenario, league, typeChart, typeOrder);
                             } else {
                                 continue;
                             }
                         } else {
-                            finalP1Rating = simulateBattle(p1Moveset, p2Moveset, scenario, league, typeChart, typeOrder);
+                            let bestP1Rating = -Infinity;
+                            let bestP2Rating = -Infinity;
+                            
+                            const p1Tallies = new Map();
+                            const p2Tallies = new Map();
+                            
+                            for (const ms1 of p1Movesets) {
+                                for (const ms2 of p2Movesets) {
+                                    const rating = simulateBattle(ms1, ms2, scenario, league, typeChart, typeOrder);
+                                    
+                                    if (rating > bestP1Rating) {
+                                        bestP1Rating = rating;
+                                        bestP1Moveset = ms1;
+                                    }
+                                    
+                                    const p2Rating = 1000 - rating;
+                                    if (p2Rating > bestP2Rating) {
+                                        bestP2Rating = p2Rating;
+                                        bestP2Moveset = ms2;
+                                    }
+                                    
+                                    if (rating > 500) {
+                                        const key = getMovesetKey(ms1);
+                                        p1Tallies.set(key, (p1Tallies.get(key) || 0) + 1);
+                                    }
+                                    if (p2Rating > 500) {
+                                        const key = getMovesetKey(ms2);
+                                        p2Tallies.set(key, (p2Tallies.get(key) || 0) + 1);
+                                    }
+                                }
+                            }
+                            
+                            for (const [key, wins] of p1Tallies) {
+                                if (!p1Data.moveTallies[key]) {
+                                    p1Data.moveTallies[key] = { moveset: bestP1Moveset, wins: 0 };
+                                }
+                                p1Data.moveTallies[key].wins += wins;
+                            }
+                            
+                            if (isSymmetric) {
+                                for (const [key, wins] of p2Tallies) {
+                                    if (!p2Data.moveTallies[key]) {
+                                        p2Data.moveTallies[key] = { moveset: bestP2Moveset, wins: 0 };
+                                    }
+                                    p2Data.moveTallies[key].wins += wins;
+                                }
+                            }
+                            
+                            finalP1Rating = simulateBattle(bestP1Moveset, bestP2Moveset, scenario, league, typeChart, typeOrder);
                             
                             const cacheKey = `${pokemon1.variantId}-${pokemon2.variantId}-${scenario}`;
-                            movesetCache.set(cacheKey, true);
+                            movesetCache.set(cacheKey, {
+                                p1Moveset: bestP1Moveset,
+                                p2Moveset: bestP2Moveset
+                            });
                         }
                         
                         if (!p1Data.scenarioRatings[scenario]) {
@@ -1086,101 +989,63 @@
                         
                         // Track best/worst matchups for P1
                         const opponentKey = `${pokemon2.name}|${pokemon2.form || 'base'}|${pokemon2.isShadow}`;
+                        p1Data.bestMatchups.push({
+                            opponentKey: opponentKey,
+                            opponent: pokemon2.name,
+                            opponentForm: pokemon2.form || null,
+                            opponentShadow: pokemon2.isShadow,
+                            rating: finalP1Rating,
+                            scenario: scenario,
+                            opponentMoveset: {
+                                fast: bestP2Moveset.fast.name,
+                                charged: bestP2Moveset.charged.map(m => m.name)
+                            }
+                        });
 
-                        // Skip opponents with only Splash/Struggle
-                        const isUselessOpponent = p2Moveset.fast.name === 'Splash' || 
-                                                p2Moveset.fast.name === 'Struggle' ||
-                                                (p2Moveset.charged.length === 1 && 
-                                                (p2Moveset.charged[0].name === 'Struggle' || 
-                                                    p2Moveset.charged[0].name === 'Splash'));
-
-                        if (!isUselessOpponent) {
-                            p1Data.bestMatchups.push({
-                                opponentKey: opponentKey,
-                                opponent: pokemon2.name,
-                                opponentForm: pokemon2.form || null,
-                                opponentShadow: pokemon2.isShadow,
-                                rating: finalP1Rating,
-                                scenario: scenario,
-                                opponentMoveset: {
-                                    fast: p2Moveset.fast.name,
-                                    charged: p2Moveset.charged.map(m => m.name)
-                                }
-                            });
-                        }
-
-                        // And for P2 in symmetric scenarios:
                         if (isSymmetric) {
                             const finalP2Rating = 1000 - finalP1Rating;
                             if (!p2Data.scenarioRatings[scenario]) {
                                 p2Data.scenarioRatings[scenario] = [];
                             }
                             p2Data.scenarioRatings[scenario].push(finalP2Rating);
-                            
+                        }
+                        
+                        if (isSymmetric) {
                             // Track best/worst matchups for P2
                             const opponentKey2 = `${pokemon1.name}|${pokemon1.form || 'base'}|${pokemon1.isShadow}`;
-                            
-                            // Skip opponents with only Splash/Struggle
-                            const isUselessOpponent2 = p1Moveset.fast.name === 'Splash' || 
-                                                    p1Moveset.fast.name === 'Struggle' ||
-                                                    (p1Moveset.charged.length === 1 && 
-                                                        (p1Moveset.charged[0].name === 'Struggle' || 
-                                                        p1Moveset.charged[0].name === 'Splash'));
-                            
-                            if (!isUselessOpponent2) {
-                                p2Data.bestMatchups.push({
-                                    opponentKey: opponentKey2,
-                                    opponent: pokemon1.name,
-                                    opponentForm: pokemon1.form || null,
-                                    opponentShadow: pokemon1.isShadow,
-                                    rating: finalP2Rating,
-                                    scenario: scenario,
-                                    opponentMoveset: {
-                                        fast: p1Moveset.fast.name,
-                                        charged: p1Moveset.charged.map(m => m.name)
-                                    }
-                                });
-                            }
+                            p2Data.bestMatchups.push({
+                                opponentKey: opponentKey2,
+                                opponent: pokemon1.name,
+                                opponentForm: pokemon1.form || null,
+                                opponentShadow: pokemon1.isShadow,
+                                rating: finalP2Rating,
+                                scenario: scenario,
+                                opponentMoveset: {
+                                    fast: bestP1Moveset.fast.name,
+                                    charged: bestP1Moveset.charged.map(m => m.name)
+                                }
+                            });
                         }
 
-                        phase2Completed++;
+                        matchupsCompleted++;
                         
-                        if (phase2Completed % 100 === 0) {
-                            updateProgress(phase2Completed, totalPhase2, 
-                                `Phase 2/3 - Simulating League: ${phase2Completed.toLocaleString()} / ${totalPhase2.toLocaleString()}`);
+                        if (matchupsCompleted % 100 === 0) {
+                            updateProgress(matchupsCompleted, totalMatchups, 
+                                `${league.name}: ${matchupsCompleted.toLocaleString()} / ${totalMatchups.toLocaleString()} matchups`);
                             await new Promise(resolve => setTimeout(resolve, 0));
                         }
                     }
                 }
             }
             
-            updateProgress(totalPhase2, totalPhase2, `Phase 2/3 - Simulating League: Complete`);
+            updateProgress(totalMatchups, totalMatchups, 
+                `${league.name}: ${totalMatchups.toLocaleString()} / ${totalMatchups.toLocaleString()} matchups - Aggregating...`);
             
-            movesetCache.clear();
-            
-            // Aggregate results and add recommended movesets
             const rankings = aggregateResults(results, eligiblePokemon);
             
-            // Add recommended movesets to rankings
-            for (const ranking of rankings) {
-                const pokemon = eligiblePokemon.find(p => 
-                    p.id === ranking.speciesId && 
-                    p.isShadow === ranking.isShadow &&
-                    (p.form || null) === ranking.form
-                );
-                
-                if (pokemon) {
-                    const moveset = recommendedMovesets.get(pokemon.variantId);
-                    if (moveset) {
-                        ranking.recommendedMoveset = {
-                            fast: moveset.fast.rawId,
-                            charged: moveset.charged.map(m => m.rawId)
-                        };
-                    }
-                }
-            }
-            
             results.clear();
+            movesets.length = 0;
+            movesetCache.clear();
             
             return rankings;
         }
@@ -1311,44 +1176,61 @@
                     }
                 }
                 
-                // Deduplicate matchups
-                const matchupsByOpponent = new Map();
-                
-                for (const matchup of data.bestMatchups) {
-                    const existing = matchupsByOpponent.get(matchup.opponentKey);
-                    
-                    if (!existing || matchup.rating > existing.rating || 
-                        (matchup.rating === existing.rating && matchup.scenario < existing.scenario)) {
-                        matchupsByOpponent.set(matchup.opponentKey, matchup);
+                let recommendedMoveset = null;
+                let maxWins = 0;
+                for (const [key, tallyData] of Object.entries(data.moveTallies)) {
+                    if (tallyData.wins > maxWins) {
+                        maxWins = tallyData.wins;
+                        const moveset = tallyData.moveset;
+                        recommendedMoveset = {
+                            fast: moveset.fast.rawId,
+                            charged: moveset.charged.map(m => m.rawId)
+                        };
                     }
                 }
                 
-                const deduplicatedMatchups = Array.from(matchupsByOpponent.values());
-                const sortedMatchups = deduplicatedMatchups.sort((a, b) => b.rating - a.rating);
-                
-                const top10Best = sortedMatchups.slice(0, 10).map(m => {
-                    const { opponentKey, ...rest } = m;
-                    return rest;
-                });
-                
-                const top10Worst = sortedMatchups.slice(-10).reverse().map(m => {
-                    const { opponentKey, ...rest } = m;
-                    return rest;
-                });
-                
-                rankings.push({
-                    speciesId: data.speciesId,
-                    name: data.name,
-                    form: data.form,
-                    isShadow: data.isShadow,
-                    recommendedMoveset: null, // Will be set in simulateLeague/simulateAntimeta
-                    role: bestRole,
-                    rawScore: geometricMean,
-                    displayRank: 0,
-                    scenarioScores: scenarioAverages,
-                    bestMatchups: top10Best,
-                    worstMatchups: top10Worst
-                });
+                if (recommendedMoveset) {
+                    // Deduplicate matchups - keep best rating per opponent for best matchups,
+                    // keep worst rating per opponent for worst matchups
+                    const matchupsByOpponent = new Map();
+                    
+                    for (const matchup of data.bestMatchups) {
+                        const existing = matchupsByOpponent.get(matchup.opponentKey);
+                        
+                        if (!existing || matchup.rating > existing.rating || 
+                            (matchup.rating === existing.rating && matchup.scenario < existing.scenario)) {
+                            matchupsByOpponent.set(matchup.opponentKey, matchup);
+                        }
+                    }
+                    
+                    // Get best 10 and worst 10 unique opponents
+                    const deduplicatedMatchups = Array.from(matchupsByOpponent.values());
+                    const sortedMatchups = deduplicatedMatchups.sort((a, b) => b.rating - a.rating);
+                    
+                    const top10Best = sortedMatchups.slice(0, 10).map(m => {
+                        const { opponentKey, ...rest } = m;
+                        return rest;
+                    });
+                    
+                    const top10Worst = sortedMatchups.slice(-10).reverse().map(m => {
+                        const { opponentKey, ...rest } = m;
+                        return rest;
+                    });
+                    
+                    rankings.push({
+                        speciesId: data.speciesId,
+                        name: data.name,
+                        form: data.form,
+                        isShadow: data.isShadow,
+                        recommendedMoveset: recommendedMoveset,
+                        role: bestRole,
+                        rawScore: geometricMean,
+                        displayRank: 0,
+                        scenarioScores: scenarioAverages,
+                        bestMatchups: top10Best,
+                        worstMatchups: top10Worst
+                    });
+                }
             }
             
             if (rankings.length > 0) {
@@ -1365,10 +1247,26 @@
             
             rankings.sort((a, b) => b.displayRank - a.displayRank);
             
+            console.log('=== RANKING DEBUG ===');
+            console.log('Total Pokemon ranked:', rankings.length);
+            
             const rawScores = rankings.map(r => r.rawScore);
             const maxRaw = Math.max(...rawScores);
             const minRaw = Math.min(...rawScores);
             const avgRaw = rawScores.reduce((a,b) => a+b, 0) / rawScores.length;
+            
+            console.log('Raw score stats:', {
+                max: maxRaw.toFixed(2),
+                min: minRaw.toFixed(2),
+                avg: avgRaw.toFixed(2),
+                range: (maxRaw - minRaw).toFixed(2)
+            });
+            
+            console.log('Top 10:', rankings.slice(0, 10).map(r => ({
+                name: r.name,
+                rawScore: r.rawScore.toFixed(2),
+                displayRank: r.displayRank.toFixed(2)
+            })));
             
             return rankings;
         }
@@ -1388,24 +1286,7 @@
                 }
                 
                 const allCups = await loadFromDatabase('cups');
-
-                // Hardcode Little Jungle Cup since it doesn't exist in game master
-                const littleJungleCup = {
-                    id: 'COMBAT_LEAGUE_VS_SEEKER_GREAT_LITTLE_JUNGLE',
-                    title: 'Little Jungle Cup',
-                    cpLimit: 500,
-                    allowedTypes: null,
-                    allowedPokemon: null,
-                    bannedPokemon: ['DITTO', 'SMEARGLE'],
-                    maxLevel: null,
-                    isStandard: true
-                };
-
-                // Add Little Jungle to cups array
-                const allCupsWithJungle = [...allCups, littleJungleCup];
-
-                // Filter selected cups
-                const selectedCups = allCupsWithJungle.filter(c => selectedCupIds.includes(c.id));
+                const selectedCups = allCups.filter(c => selectedCupIds.includes(c.id));
                 
                 updateStatus(`⏳ Running battle simulations for ${selectedCups.length} leagues...`);
                 

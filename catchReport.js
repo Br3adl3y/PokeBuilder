@@ -617,6 +617,7 @@ class CatchReport {
             }
             
             opponents = mainRankings.rankings.slice(0, 50);
+            console.log('ANTI-META OPPONENTS:', opponents.map(o => `${o.name}${o.form ? `-${o.form}` : ''} ${o.isShadow ? '(S)' : ''}`));
         } else {
             // Regular: use all Pokemon with league data
             const allPokemon = await this.getAllPokemonData();
@@ -642,7 +643,7 @@ class CatchReport {
                 const ranking = mainRankings?.rankings?.find(r => 
                     r.speciesId === p.id && 
                     (r.form || null) === (p.form || null) &&
-                    r.isShadow === false
+                    r.isShadow === p.isShadow
                 );
                 
                 return ranking ? {
@@ -673,7 +674,15 @@ class CatchReport {
 
             const caughtForSim = this.buildPokemonForSim(pokemonWithRanking, ivs, level, allMoves);
             if (!caughtForSim) return null;
-            
+            console.log('CAUGHT POKEMON DEBUG:', {
+                name: pokemon.name,
+                ivs: ivs,
+                level: level,
+                caughtIVsInSim: caughtForSim.ivs,
+                fastMove: caughtForSim.fastMove.name,
+                chargedMoves: caughtForSim.chargedMoves.map(m => m.name),
+                isShadow: caughtForSim.isShadow
+            });
             // Run battles
             const scenarios = [
                 'leads', 'leads-baited', 'switches', 'switches-baited',
@@ -684,7 +693,16 @@ class CatchReport {
                 scenarioRatings: {},
                 allMatchups: []
             };
-            
+            console.log('=== SIMULATION DEBUG ===');
+            console.log('Caught Pokemon:', pokemon.name, 'Level:', level, 'IVs:', ivs);
+            console.log('Caught moveset:', caughtRanking.recommendedMoveset);
+            console.log('Number of opponents:', validOpponents.length);
+            console.log('First 5 opponents:', validOpponents.slice(0, 5).map(o => ({
+                name: o.name,
+                level: o[league.property]?.level,
+                iv: o[league.property]?.iv,
+                moveset: o.ranking?.recommendedMoveset
+            })));
             for (const opponent of validOpponents) {
                 const opponentForSim = this.buildPokemonForSim(
                     opponent,
@@ -694,7 +712,17 @@ class CatchReport {
                 );
                 
                 if (!opponentForSim) continue;
-                
+                if (opponent.name === 'Azumarill' && !window.debuggedAzumarill) {
+                    console.log('OPPONENT DEBUG (Azumarill):', {
+                        opponentIVs: opponent[league.property].iv,
+                        opponentLevel: opponent[league.property].level,
+                        opponentIVsInSim: opponentForSim.ivs,
+                        fastMove: opponentForSim.fastMove.name,
+                        chargedMoves: opponentForSim.chargedMoves.map(m => m.name),
+                        isShadow: opponentForSim.isShadow
+                    });
+                    window.debuggedAzumarill = true;
+                }
                 for (const scenario of scenarios) {
                     const rating = this.simulateBattle(
                         caughtForSim,
@@ -793,7 +821,7 @@ class CatchReport {
                 name: pokemon.name,
                 types: pokemon.types,
                 stats: pokemon.stats,
-                ivs: { atk: ivs.atk, def: ivs.def, sta: ivs.sta, cpm: cpmValue },
+                ivs: { ...ivs, cpm: cpmValue },
                 fastMove: fastMove,
                 chargedMoves: charged,
                 isShadow: pokemon.isShadow || false,
